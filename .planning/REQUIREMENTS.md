@@ -74,7 +74,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [x] **PRIV-01**: No student PII is sent to LLM providers in prompts (anonymized context only)
 - [x] **PRIV-02**: Student data is scoped to the deploying instance — no cross-instance data sharing
-- [ ] **PRIV-03**: Data retention TTL fields enforce automatic cleanup of expired student data
+- [x] **PRIV-03**: Data retention TTL fields enforce automatic cleanup of expired student data
 
 ### Demo & Polish
 
@@ -180,7 +180,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | INFR-01 | Phase 6 | Complete |
 | INFR-02 | Phase 6 | Complete |
 | INFR-05 | Phase 6 | Complete |
-| PRIV-03 | Phase 6 | Pending |
+| PRIV-03 | Phase 6 | Complete |
 | DEMO-01 | Phase 6 | Pending |
 | DEMO-02 | Phase 6 | Pending |
 | DEMO-03 | Phase 6 | Pending |

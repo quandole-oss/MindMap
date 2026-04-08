@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-04-08T23:29:25.808Z"
+last_updated: "2026-04-08T23:33:01.912Z"
 progress:
   total_phases: 6
   completed_phases: 5
   total_plans: 21
-  completed_plans: 19
-  percent: 90
+  completed_plans: 20
+  percent: 95
 ---
 
 # State: MindMap
@@ -31,7 +31,7 @@ progress:
 ## Current Position
 
 Phase: 06 (Demo & Deployment) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 **Milestone**: v1 — Initial Release
 **Current Phase**: 5 (Teacher Dashboard) — COMPLETE
 **Current Plan**: 3 (05-03) — DONE
@@ -63,6 +63,7 @@ Phase 6: Demo & Deployment   [ Not started ]
 | Phase 05 P02 | 480 | 2 tasks | 8 files |
 | Phase 05 P03 | 240 | 2 tasks | 3 files |
 | Phase 06 P02 | 300 | 2 tasks | 6 files |
+| Phase 06 P03 | 420 | 2 tasks | 3 files |
 
 ### Execution History
 
@@ -132,6 +133,8 @@ Phase 6: Demo & Deployment   [ Not started ]
 | pnpm@10.30.3 pinned in Dockerfile corepack (06-02) | Matches root packageManager field; mismatched version would cause build failures |
 | Non-root nextjs user in Docker runner stage (06-02) | T-06-06 threat mitigation — elevation of privilege; addgroup/adduser + USER nextjs before CMD |
 | next/font/google self-hosts fonts at build time (06-02) | No external tracking despite import name; Next.js downloads and serves font files statically |
+| CRON_SECRET returns 503 when env var absent (06-03) | Distinguishes misconfiguration from bad auth token — 503 signals "not configured", 401 signals "wrong token" |
+| PRIV-01 audit (06-03): all 9 LLM call sites confirmed compliant | No PII crosses application→LLM boundary; userId used only for DB ownership checks, never in prompts |
 
 ### Open Questions
 
@@ -151,8 +154,8 @@ None.
 ## Session Continuity
 
 **Last updated**: 2026-04-08
-**Last action**: Completed 06-02 — Multi-stage Dockerfile with turbo prune, docker-compose web service with healthcheck, vercel.json, .env.example, and INFR-05 telemetry audit (clean)
-**Next action**: Continue Phase 6 — Plan 03
+**Last action**: Completed 06-03 — COPPA TTL cleanup endpoint (/api/cron/cleanup, bearer token auth), deleteExpiredUsers DB query, PRIV-01 audit (9 call sites, all compliant)
+**Next action**: Continue Phase 6 — Plan 04
 
 **Stack snapshot**:
 
