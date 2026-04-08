@@ -81,9 +81,9 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **DEMO-01**: Demo seed data scripts generate a realistic 30-day student session with populated knowledge graph
 - [ ] **DEMO-02**: Demo seed data scripts generate a 60-day student session showing graph maturity over time
 - [ ] **DEMO-03**: Demo seed data includes a class of 20+ students for teacher dashboard demonstration
-- [ ] **DEMO-04**: Accessible color palette meeting WCAG AA contrast requirements for all node health states
-- [ ] **DEMO-05**: Responsive design works on tablet and mobile browsers
-- [ ] **DEMO-06**: Graceful error handling when LLM API is unavailable or slow
+- [x] **DEMO-04**: Accessible color palette meeting WCAG AA contrast requirements for all node health states
+- [x] **DEMO-05**: Responsive design works on tablet and mobile browsers
+- [x] **DEMO-06**: Graceful error handling when LLM API is unavailable or slow
 
 ## v2 Requirements
 
@@ -184,9 +184,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DEMO-01 | Phase 6 | Pending |
 | DEMO-02 | Phase 6 | Pending |
 | DEMO-03 | Phase 6 | Pending |
-| DEMO-04 | Phase 6 | Pending |
-| DEMO-05 | Phase 6 | Pending |
-| DEMO-06 | Phase 6 | Pending |
+| DEMO-04 | Phase 6 | Complete |
+| DEMO-05 | Phase 6 | Complete |
+| DEMO-06 | Phase 6 | Complete |
 
 **Coverage:**
 - v1 requirements: 49 total

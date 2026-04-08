@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-04-08T23:33:01.912Z"
+last_updated: "2026-04-08T23:38:52.280Z"
 progress:
   total_phases: 6
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 21
-  completed_plans: 20
-  percent: 95
+  completed_plans: 21
+  percent: 100
 ---
 
 # State: MindMap
@@ -30,12 +30,12 @@ progress:
 
 ## Current Position
 
-Phase: 06 (Demo & Deployment) — EXECUTING
-Plan: 3 of 4
+Phase: 06 (Demo & Deployment) — COMPLETE
+Plan: 4 of 4
 **Milestone**: v1 — Initial Release
-**Current Phase**: 5 (Teacher Dashboard) — COMPLETE
-**Current Plan**: 3 (05-03) — DONE
-**Phase Status**: Phase 5 complete — 3/3 plans done
+**Current Phase**: 6 (Demo & Deployment) — COMPLETE
+**Current Plan**: 4 (06-04) — DONE
+**Phase Status**: Phase 6 complete — 4/4 plans done
 
 ```
 Progress: [██████████] 100%
@@ -45,7 +45,7 @@ Phase 2: Curiosity Engine    [ COMPLETE — 4/4 plans done ]
 Phase 3: Knowledge Graph     [ COMPLETE — 4/4 plans done ]
 Phase 4: Misconception Diag  [ COMPLETE — 2/2 plans done ]
 Phase 5: Teacher Dashboard   [ COMPLETE — 3/3 plans done ]
-Phase 6: Demo & Deployment   [ Not started ]
+Phase 6: Demo & Deployment   [ COMPLETE — 4/4 plans done ]
 ```
 
 ---
@@ -64,6 +64,7 @@ Phase 6: Demo & Deployment   [ Not started ]
 | Phase 05 P03 | 240 | 2 tasks | 3 files |
 | Phase 06 P02 | 300 | 2 tasks | 6 files |
 | Phase 06 P03 | 420 | 2 tasks | 3 files |
+| Phase 06 P04 | 360 | 2 tasks | 17 files |
 
 ### Execution History
 
@@ -135,6 +136,9 @@ Phase 6: Demo & Deployment   [ Not started ]
 | next/font/google self-hosts fonts at build time (06-02) | No external tracking despite import name; Next.js downloads and serves font files statically |
 | CRON_SECRET returns 503 when env var absent (06-03) | Distinguishes misconfiguration from bad auth token — 503 signals "not configured", 401 signals "wrong token" |
 | PRIV-01 audit (06-03): all 9 LLM call sites confirmed compliant | No PII crosses application→LLM boundary; userId used only for DB ownership checks, never in prompts |
+| WCAG AA colors via CSS custom props (06-04) | globals.css --color-* update propagates to health-legend.tsx via var() automatically; no direct component change needed |
+| 503 for missing ANTHROPIC_API_KEY (06-04) | Returns generic JSON message; does not leak env var values (T-06-11); placed after auth check, before LLM calls |
+| AppShell use client for mobile drawer (06-04) | Sidebar hidden below lg: breakpoint; hamburger triggers full-screen overlay drawer; main content px-4 sm:px-6 lg:px-8 |
 
 ### Open Questions
 
@@ -154,8 +158,8 @@ None.
 ## Session Continuity
 
 **Last updated**: 2026-04-08
-**Last action**: Completed 06-03 — COPPA TTL cleanup endpoint (/api/cron/cleanup, bearer token auth), deleteExpiredUsers DB query, PRIV-01 audit (9 call sites, all compliant)
-**Next action**: Continue Phase 6 — Plan 04
+**Last action**: Completed 06-04 — WCAG AA color audit (all 4 health states + 6 additional files), responsive mobile sidebar drawer, 503 ANTHROPIC_API_KEY checks in /api/ask and /api/diagnose, retry UI in question-form and diagnostic-chat
+**Next action**: Phase 6 complete — all 4 plans done
 
 **Stack snapshot**:
 
