@@ -51,7 +51,7 @@ Plans:
 **Plans**: 4 plans
 Plans:
 - [x] 02-01-PLAN.md — LLM adapter (Anthropic Claude via AI SDK v6) + routing engine with tests
-- [ ] 02-02-PLAN.md — Database schema (questions, concepts, concept_questions) + drizzle-kit push
+- [x] 02-02-PLAN.md — Database schema (questions, concepts, concept_questions) + drizzle-kit push
 - [ ] 02-03-PLAN.md — Streaming API route + question form UI + concept extraction pipeline
 - [ ] 02-04-PLAN.md — Question history page + streak tracking + sidebar navigation update
 **UI hint**: yes
