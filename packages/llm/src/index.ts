@@ -7,6 +7,7 @@ export {
   conceptExtractionSchema,
 } from "./prompts/extract";
 export type { ConceptExtractionResult } from "./prompts/extract";
+export { generateEmbedding } from "./embeddings";
 
 export interface LLMAdapter {
   getModel(): unknown;
