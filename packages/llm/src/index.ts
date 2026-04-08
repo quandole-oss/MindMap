@@ -8,6 +8,7 @@ export {
 } from "./prompts/extract";
 export type { ConceptExtractionResult } from "./prompts/extract";
 export { generateEmbedding } from "./embeddings";
+export { disambiguateConcept, buildDisambiguatePrompt } from "./prompts/disambiguate";
 
 export interface LLMAdapter {
   getModel(): unknown;
