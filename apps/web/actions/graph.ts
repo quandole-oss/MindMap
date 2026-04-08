@@ -3,6 +3,7 @@
 import { auth } from "@/lib/auth";
 import { db, schema } from "@mindmap/db";
 import { eq, and, inArray, or } from "drizzle-orm";
+import { findTopBridgeNode } from "@/lib/graph/centrality";
 
 export interface GraphNode {
   id: string;
@@ -54,19 +55,25 @@ export async function getGraphData(): Promise<{ nodes: GraphNode[]; edges: Graph
       )
     );
 
+  const edges: GraphEdge[] = rawEdges.map((e) => ({
+    source: e.sourceConceptId,
+    target: e.targetConceptId,
+    edgeType: e.edgeType,
+  }));
+
+  // Detect bridge node via betweenness centrality (T-03-13: O(V*E), server-side only)
+  const bridge = findTopBridgeNode(
+    concepts.map((c) => ({ id: c.id, domain: c.domain })),
+    edges.map((e) => ({ source: e.source, target: e.target }))
+  );
+
   const nodes: GraphNode[] = concepts.map((c) => ({
     id: c.id,
     name: c.name,
     domain: c.domain,
     status: c.status as "unprobed" | "healthy" | "misconception",
     visitCount: c.visitCount,
-    isBridge: false, // Plan 04 marks bridges via betweenness centrality
-  }));
-
-  const edges: GraphEdge[] = rawEdges.map((e) => ({
-    source: e.sourceConceptId,
-    target: e.targetConceptId,
-    edgeType: e.edgeType,
+    isBridge: bridge !== null && c.id === bridge.nodeId,
   }));
 
   return { nodes, edges };
@@ -136,5 +143,72 @@ export async function getNodeDetails(
       visitCount: concept.visitCount,
     },
     exchanges,
+  };
+}
+
+/**
+ * Get the top bridge node info for the weekly "surprise connection" toast.
+ * T-03-11: userId sourced from auth() session only — never from client params.
+ */
+export async function getBridgeConnection(): Promise<{
+  bridgeNodeId: string;
+  bridgeNodeName: string;
+  domainA: string;
+  domainB: string;
+} | null> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return null;
+  }
+
+  const concepts = await db.query.concepts.findMany({
+    where: eq(schema.concepts.userId, session.user.id),
+    columns: { id: true, name: true, domain: true },
+  });
+
+  if (concepts.length < 3) {
+    return null;
+  }
+
+  const conceptIds = concepts.map((c) => c.id);
+
+  const rawEdges = await db
+    .select()
+    .from(schema.conceptEdges)
+    .where(
+      or(
+        inArray(schema.conceptEdges.sourceConceptId, conceptIds),
+        inArray(schema.conceptEdges.targetConceptId, conceptIds)
+      )
+    );
+
+  if (rawEdges.length < 2) {
+    return null;
+  }
+
+  const edges = rawEdges.map((e) => ({
+    source: e.sourceConceptId,
+    target: e.targetConceptId,
+  }));
+
+  const bridge = findTopBridgeNode(
+    concepts.map((c) => ({ id: c.id, domain: c.domain })),
+    edges
+  );
+
+  if (!bridge) {
+    return null;
+  }
+
+  const bridgeNode = concepts.find((c) => c.id === bridge.nodeId);
+  if (!bridgeNode) {
+    return null;
+  }
+
+  return {
+    bridgeNodeId: bridge.nodeId,
+    bridgeNodeName: bridgeNode.name,
+    domainA: bridge.connectedDomains[0],
+    domainB: bridge.connectedDomains[1],
   };
 }
