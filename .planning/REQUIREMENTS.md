@@ -133,66 +133,66 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AUTH-01 | TBD | Pending |
-| AUTH-02 | TBD | Pending |
-| AUTH-03 | TBD | Pending |
-| AUTH-04 | TBD | Pending |
-| AUTH-05 | TBD | Pending |
-| AUTH-06 | TBD | Pending |
-| AUTH-07 | TBD | Pending |
-| AUTH-08 | TBD | Pending |
-| CURI-01 | TBD | Pending |
-| CURI-02 | TBD | Pending |
-| CURI-03 | TBD | Pending |
-| CURI-04 | TBD | Pending |
-| CURI-05 | TBD | Pending |
-| CURI-06 | TBD | Pending |
-| CURI-07 | TBD | Pending |
-| GRPH-01 | TBD | Pending |
-| GRPH-02 | TBD | Pending |
-| GRPH-03 | TBD | Pending |
-| GRPH-04 | TBD | Pending |
-| GRPH-05 | TBD | Pending |
-| GRPH-06 | TBD | Pending |
-| GRPH-07 | TBD | Pending |
-| GRPH-08 | TBD | Pending |
-| MISC-01 | TBD | Pending |
-| MISC-02 | TBD | Pending |
-| MISC-03 | TBD | Pending |
-| MISC-04 | TBD | Pending |
-| MISC-05 | TBD | Pending |
-| MISC-06 | TBD | Pending |
-| MISC-07 | TBD | Pending |
-| MISC-08 | TBD | Pending |
-| MISC-09 | TBD | Pending |
-| MISC-10 | TBD | Pending |
-| DASH-01 | TBD | Pending |
-| DASH-02 | TBD | Pending |
-| DASH-03 | TBD | Pending |
-| DASH-04 | TBD | Pending |
-| DASH-05 | TBD | Pending |
-| DASH-06 | TBD | Pending |
-| INFR-01 | TBD | Pending |
-| INFR-02 | TBD | Pending |
-| INFR-03 | TBD | Pending |
-| INFR-04 | TBD | Pending |
-| INFR-05 | TBD | Pending |
-| INFR-06 | TBD | Pending |
-| PRIV-01 | TBD | Pending |
-| PRIV-02 | TBD | Pending |
-| PRIV-03 | TBD | Pending |
-| DEMO-01 | TBD | Pending |
-| DEMO-02 | TBD | Pending |
-| DEMO-03 | TBD | Pending |
-| DEMO-04 | TBD | Pending |
-| DEMO-05 | TBD | Pending |
-| DEMO-06 | TBD | Pending |
+| AUTH-01 | Phase 1 | Pending |
+| AUTH-02 | Phase 1 | Pending |
+| AUTH-03 | Phase 1 | Pending |
+| AUTH-04 | Phase 1 | Pending |
+| AUTH-05 | Phase 1 | Pending |
+| AUTH-06 | Phase 1 | Pending |
+| AUTH-07 | Phase 1 | Pending |
+| AUTH-08 | Phase 1 | Pending |
+| MISC-01 | Phase 1 | Pending |
+| MISC-02 | Phase 1 | Pending |
+| MISC-03 | Phase 1 | Pending |
+| INFR-06 | Phase 1 | Pending |
+| PRIV-02 | Phase 1 | Pending |
+| CURI-01 | Phase 2 | Pending |
+| CURI-02 | Phase 2 | Pending |
+| CURI-03 | Phase 2 | Pending |
+| CURI-04 | Phase 2 | Pending |
+| CURI-05 | Phase 2 | Pending |
+| CURI-06 | Phase 2 | Pending |
+| CURI-07 | Phase 2 | Pending |
+| MISC-04 | Phase 2 | Pending |
+| MISC-05 | Phase 2 | Pending |
+| INFR-03 | Phase 2 | Pending |
+| INFR-04 | Phase 2 | Pending |
+| PRIV-01 | Phase 2 | Pending |
+| GRPH-01 | Phase 3 | Pending |
+| GRPH-02 | Phase 3 | Pending |
+| GRPH-03 | Phase 3 | Pending |
+| GRPH-04 | Phase 3 | Pending |
+| GRPH-05 | Phase 3 | Pending |
+| GRPH-06 | Phase 3 | Pending |
+| GRPH-07 | Phase 3 | Pending |
+| GRPH-08 | Phase 3 | Pending |
+| MISC-06 | Phase 4 | Pending |
+| MISC-07 | Phase 4 | Pending |
+| MISC-08 | Phase 4 | Pending |
+| MISC-09 | Phase 4 | Pending |
+| MISC-10 | Phase 4 | Pending |
+| DASH-01 | Phase 5 | Pending |
+| DASH-02 | Phase 5 | Pending |
+| DASH-03 | Phase 5 | Pending |
+| DASH-04 | Phase 5 | Pending |
+| DASH-05 | Phase 5 | Pending |
+| DASH-06 | Phase 5 | Pending |
+| INFR-01 | Phase 6 | Pending |
+| INFR-02 | Phase 6 | Pending |
+| INFR-05 | Phase 6 | Pending |
+| PRIV-03 | Phase 6 | Pending |
+| DEMO-01 | Phase 6 | Pending |
+| DEMO-02 | Phase 6 | Pending |
+| DEMO-03 | Phase 6 | Pending |
+| DEMO-04 | Phase 6 | Pending |
+| DEMO-05 | Phase 6 | Pending |
+| DEMO-06 | Phase 6 | Pending |
 
 **Coverage:**
 - v1 requirements: 49 total
-- Mapped to phases: 0
-- Unmapped: 49
+- Mapped to phases: 49
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-04-08*
-*Last updated: 2026-04-08 after initial definition*
+*Last updated: 2026-04-08 after roadmap creation — all 49 requirements mapped*
