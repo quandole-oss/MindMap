@@ -2,18 +2,21 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, Users, LogOut, User } from "lucide-react";
+import { BookOpen, Users, LogOut, User, MessageSquare } from "lucide-react";
 
 import { signOutAction } from "@/actions/auth";
 import { cn } from "@/lib/utils";
+import { StreakBadge } from "@/components/questions/streak-badge";
 
 interface SidebarProps {
   role: "student" | "teacher";
   userName?: string | null;
+  streak?: number;
 }
 
 const studentNavItems = [
   { href: "/student", label: "Dashboard", icon: User },
+  { href: "/student/questions", label: "My Questions", icon: MessageSquare },
   { href: "/student/join", label: "Join a Class", icon: BookOpen },
 ];
 
@@ -22,7 +25,7 @@ const teacherNavItems = [
   { href: "/teacher/classes/new", label: "Create a Class", icon: BookOpen },
 ];
 
-export function Sidebar({ role, userName }: SidebarProps) {
+export function Sidebar({ role, userName, streak }: SidebarProps) {
   const pathname = usePathname();
   const navItems = role === "teacher" ? teacherNavItems : studentNavItems;
 
@@ -60,6 +63,11 @@ export function Sidebar({ role, userName }: SidebarProps) {
       <div className="px-2 py-3 border-t border-[#e4e4e7]">
         {userName && (
           <p className="px-4 pb-2 text-[12px] text-[#71717a] truncate">{userName}</p>
+        )}
+        {role === "student" && (
+          <div className="px-4 pb-2">
+            <StreakBadge streak={streak ?? 0} />
+          </div>
         )}
         <form action={signOutAction}>
           <button
