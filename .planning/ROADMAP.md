@@ -30,7 +30,12 @@
   3. Teacher can view their class roster including each student's grade level
   4. The YAML misconception library loads from `@mindmap/misconceptions`, passes CI schema validation, and returns probe questions for a given concept + grade band lookup
   5. Running `pnpm build` from the repo root completes without errors across all packages in dependency order
-**Plans**: TBD
+**Plans**: 4 plans
+Plans:
+- [ ] 01-01-PLAN.md — Monorepo scaffold, Docker Compose, Drizzle schema with COPPA TTL
+- [ ] 01-02-PLAN.md — Misconception library package (YAML + Zod + Vitest)
+- [ ] 01-03-PLAN.md — Auth.js v5 authentication, landing page, app shell UI
+- [ ] 01-04-PLAN.md — Class management (create, join, roster, grade levels)
 **UI hint**: yes
 
 ### Phase 2: Curiosity Engine
@@ -103,7 +108,7 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 0/? | Not started | - |
+| 1. Foundation | 0/4 | Planning complete | - |
 | 2. Curiosity Engine | 0/? | Not started | - |
 | 3. Knowledge Graph | 0/? | Not started | - |
 | 4. Misconception Diagnostics | 0/? | Not started | - |
