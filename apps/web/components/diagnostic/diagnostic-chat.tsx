@@ -28,7 +28,7 @@ export function DiagnosticChat({
   // Track whether probe has been initiated (to avoid double-init on Strict Mode)
   const probeInitiated = useRef(false);
 
-  const { messages, sendMessage, status, error, reload } = useChat({
+  const { messages, sendMessage, status, error } = useChat({
     id: sessionId,
     messages: initialMessages,
     transport: new DefaultChatTransport({
@@ -158,7 +158,17 @@ export function DiagnosticChat({
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => reload()}
+                onClick={() => {
+                  // Retry by re-sending the last user message text
+                  const lastUserMsg = [...messages].reverse().find(m => m.role === "user");
+                  if (lastUserMsg) {
+                    const text = lastUserMsg.parts
+                      ?.filter((p: { type: string }) => p.type === "text")
+                      .map((p: { type: string; text?: string }) => p.text ?? "")
+                      .join("") ?? "";
+                    if (text) sendMessage({ text });
+                  }
+                }}
                 className="flex items-center gap-2 text-[13px]"
               >
                 <RefreshCw className="size-3.5" />
