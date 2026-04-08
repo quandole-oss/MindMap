@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-04-08T22:41:31.400Z"
+last_updated: "2026-04-08T22:44:32.719Z"
 progress:
   total_phases: 6
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 17
-  completed_plans: 16
-  percent: 94
+  completed_plans: 17
+  percent: 100
 ---
 
 # State: MindMap
@@ -30,21 +30,21 @@ progress:
 
 ## Current Position
 
-Phase: 05 (Teacher Dashboard) — EXECUTING
-Plan: 3 of 3
+Phase: 05 (Teacher Dashboard) — COMPLETE
+Plan: 3 of 3 — DONE
 **Milestone**: v1 — Initial Release
-**Current Phase**: 5 (Teacher Dashboard) — IN PROGRESS
-**Current Plan**: 3 (05-03) — NEXT
-**Phase Status**: Phase 5 in progress; 2/3 plans done
+**Current Phase**: 5 (Teacher Dashboard) — COMPLETE
+**Current Plan**: 3 (05-03) — DONE
+**Phase Status**: Phase 5 complete — 3/3 plans done
 
 ```
-Progress: [█████████░] 94%
+Progress: [██████████] 100%
 
 Phase 1: Foundation          [ COMPLETE — 4/4 plans done ]
 Phase 2: Curiosity Engine    [ COMPLETE — 4/4 plans done ]
 Phase 3: Knowledge Graph     [ COMPLETE — 4/4 plans done ]
 Phase 4: Misconception Diag  [ COMPLETE — 2/2 plans done ]
-Phase 5: Teacher Dashboard   [ In Progress — 2/3 plans done ]
+Phase 5: Teacher Dashboard   [ COMPLETE — 3/3 plans done ]
 Phase 6: Demo & Deployment   [ Not started ]
 ```
 
@@ -61,6 +61,7 @@ Phase 6: Demo & Deployment   [ Not started ]
 | Node repairs used | 0 |
 | Phase 05 P01 | 130 | 2 tasks | 3 files |
 | Phase 05 P02 | 480 | 2 tasks | 8 files |
+| Phase 05 P03 | 240 | 2 tasks | 3 files |
 
 ### Execution History
 
@@ -125,6 +126,8 @@ Phase 6: Demo & Deployment   [ Not started ]
 | Custom tab bar with useState instead of shadcn Tabs (05-02) | Plan specifies this explicitly to avoid extra dependency; matches existing sidebar active/inactive styling |
 | Teacher layout fetches getTeacherClasses server-side for sidebar (05-02) | Single fetch point for all teacher routes; no client-side data fetching needed for nav |
 | Nested anchor fix in teacher class list (05-02) | Outer Link changed to div; dashboard link wraps content area, roster link is sibling — valid HTML, no onClick stopPropagation hacks |
+| ConceptsTab is RSC-compatible (no use client) (05-03) | Only receives props, no interaction needed; MisconceptionsTab uses use client for drill-down toggle via useState |
+| Heatmap and progress bar widths use inline styles for dynamic values (05-03) | Tailwind cannot express arbitrary runtime percentages/opacities; rgba opacity and percentage widths must be inline |
 
 ### Open Questions
 
@@ -144,8 +147,8 @@ None.
 ## Session Continuity
 
 **Last updated**: 2026-04-08
-**Last action**: Completed 05-02 — Dashboard UI (tab navigation, OverviewTab stats cards, StudentsTab with MiniGraphSvg thumbnails + inactivity badges, sidebar class links, teacher page dashboard navigation)
-**Next action**: Execute Phase 5 Plan 03 — Concepts and Misconceptions tabs
+**Last action**: Completed 05-03 — Concepts heatmap tab (color-intensity table) and Misconceptions cluster tab (progress bars + student drill-down); all 4 dashboard tabs now render real data
+**Next action**: Begin Phase 6 — Demo & Deployment
 
 **Stack snapshot**:
 
@@ -155,7 +158,7 @@ None.
 - Frontend: Next.js 15.5.14, D3.js v7 installed, Sheet + Tooltip shadcn components added
 - LLM: Vercel AI SDK, Anthropic Claude primary (Phase 2); diagnose-probe/confront/resolve prompt builders added
 - Deployment: Docker Compose + Vercel/Neon
-- Dashboard: getClassDashboardData() + all types + MiniGraphSvg (05-01); dashboard page + DashboardTabs + OverviewTab + StudentsTab + sidebar nav (05-02)
+- Dashboard: getClassDashboardData() + all types + MiniGraphSvg (05-01); dashboard page + DashboardTabs + OverviewTab + StudentsTab + sidebar nav (05-02); ConceptsTab + MisconceptionsTab wired into all 4 tabs (05-03)
 
 ---
 *State initialized: 2026-04-08*

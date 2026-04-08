@@ -13,7 +13,7 @@
 - [x] **Phase 2: Curiosity Engine** - Daily question submission, AI-powered answers, concept extraction, and routing logic (completed 2026-04-08)
 - [x] **Phase 3: Knowledge Graph** - pgvector concept deduplication, graph storage, and D3.js force-directed visualization (completed 2026-04-08)
 - [x] **Phase 4: Misconception Diagnostics** - Full probe/classify/confront/resolve diagnostic flow with node state management (completed 2026-04-08)
-- [ ] **Phase 5: Teacher Dashboard** - Class management, misconception heatmap, engagement analytics, and curiosity metrics
+- [x] **Phase 5: Teacher Dashboard** - Class management, misconception heatmap, engagement analytics, and curiosity metrics (completed 2026-04-08)
 - [ ] **Phase 6: Demo & Deployment** - Seed data generation, Docker Compose, Vercel deployment, privacy hardening, and polish
 
 ---
@@ -104,7 +104,7 @@ Plans:
 Plans:
 - [x] 05-01-PLAN.md — Dashboard server actions, TypeScript types, and mini graph SVG component
 - [x] 05-02-PLAN.md — Dashboard page, tab navigation, Overview tab, Students tab, sidebar updates
-- [ ] 05-03-PLAN.md — Concepts heatmap tab and Misconceptions cluster tab with repair progress
+- [x] 05-03-PLAN.md — Concepts heatmap tab and Misconceptions cluster tab with repair progress
 **UI hint**: yes
 
 ### Phase 6: Demo & Deployment
@@ -130,7 +130,7 @@ Plans:
 | 2. Curiosity Engine | 4/4 | Complete   | 2026-04-08 |
 | 3. Knowledge Graph | 4/4 | Complete   | 2026-04-08 |
 | 4. Misconception Diagnostics | 2/2 | Complete   | 2026-04-08 |
-| 5. Teacher Dashboard | 2/3 | In Progress|  |
+| 5. Teacher Dashboard | 3/3 | Complete   | 2026-04-08 |
 | 6. Demo & Deployment | 0/? | Not started | - |
 
 ---
