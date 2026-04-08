@@ -12,3 +12,4 @@ export { schema };
 
 // Re-export query helpers
 export * from "./queries/concepts";
+export * from "./queries/cleanup";
