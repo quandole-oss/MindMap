@@ -12,7 +12,8 @@ Show what students actually believe, why they believe it, and how it connects to
 
 ### Validated
 
-(None yet — ship to validate)
+- ✓ User auth (students and teachers) with class management — Phase 1
+- ✓ Misconception library (YAML, research-backed, 40 entries across 4 domains) — Phase 1
 
 ### Active
 
@@ -20,12 +21,10 @@ Show what students actually believe, why they believe it, and how it connects to
 - [ ] Concept extraction pipeline from student questions
 - [ ] Personal knowledge graph with force-directed D3.js visualization
 - [ ] Node health states (healthy/misconception/unprobed/bridge)
-- [ ] Misconception library (YAML, research-backed, 35+ entries across 4 domains)
 - [ ] Misconception detection and Socratic diagnostic flow (probe/classify/confront/resolve)
 - [ ] Routing engine: enrich mode vs. diagnose mode based on concept + grade band
 - [ ] Concept deduplication via pgvector semantic similarity + LLM disambiguation
 - [ ] Teacher class dashboard with misconception heatmap and engagement tracking
-- [ ] User auth (students and teachers) with class management
 - [ ] Pluggable LLM layer (Anthropic first, then OpenAI/Ollama adapters)
 - [ ] Docker Compose self-hosted deployment
 - [ ] Cloud deployment support (Vercel + Neon)
