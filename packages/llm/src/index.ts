@@ -9,6 +9,10 @@ export {
 export type { ConceptExtractionResult } from "./prompts/extract";
 export { generateEmbedding } from "./embeddings";
 export { disambiguateConcept, buildDisambiguatePrompt } from "./prompts/disambiguate";
+export { buildProbeSystemPrompt } from "./prompts/diagnose-probe";
+export { buildConfrontSystemPrompt } from "./prompts/diagnose-confront";
+export { evaluateResolution, buildResolveMessage } from "./prompts/diagnose-resolve";
+export type { ResolutionResult } from "./prompts/diagnose-resolve";
 
 export interface LLMAdapter {
   getModel(): unknown;

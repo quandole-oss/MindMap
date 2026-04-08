@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { db, schema, findSimilarConcepts, createConceptEdges } from "@mindmap/db";
 import { and, eq, gte, lt, sql } from "drizzle-orm";
 import { createLLMAdapter, buildEnrichSystemPrompt, extractConcepts, generateEmbedding, disambiguateConcept } from "@mindmap/llm";
+import { getMisconceptionById } from "@mindmap/misconceptions";
 import { routeQuestion } from "@mindmap/router";
 import { z } from "zod";
 
@@ -234,6 +235,40 @@ export async function POST(req: Request) {
 
         // Create curiosity_link edges between all concepts from this question (GRPH-03)
         await createConceptEdges(resolvedConceptIds, "curiosity_link");
+
+        // Diagnose branch: create a diagnostic session when the router returns diagnose mode
+        // T-04-02: This runs server-side in onFinish — student cannot influence session creation
+        if (primaryDecision.mode === "diagnose" && resolvedConceptIds.length > 0) {
+          const misconceptionEntry = getMisconceptionById(primaryDecision.misconceptionId);
+          if (misconceptionEntry) {
+            const diagConceptId = resolvedConceptIds[0];
+
+            // Set concept status to misconception (coral node in graph)
+            await db
+              .update(schema.concepts)
+              .set({ status: "misconception" })
+              .where(eq(schema.concepts.id, diagConceptId));
+
+            // Create a diagnostic session at stage=probe
+            await db.insert(schema.diagnosticSessions).values({
+              userId,
+              conceptId: diagConceptId,
+              questionId: savedQuestion.id,
+              misconceptionId: misconceptionEntry.id,
+              misconceptionName: misconceptionEntry.name,
+              stage: "probe",
+              messages: [],
+            });
+
+            console.log(
+              `[diagnose] created session for misconception "${misconceptionEntry.name}" (concept: ${diagConceptId})`
+            );
+          } else {
+            console.warn(
+              `[diagnose] misconception not found in library: ${primaryDecision.misconceptionId}`
+            );
+          }
+        }
       } catch (err) {
         console.error("[onFinish] concept extraction failed:", err);
       }
