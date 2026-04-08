@@ -22,10 +22,10 @@ interface SimLink {
 }
 
 const NODE_COLORS = {
-  healthy: "#14b8a6",
-  misconception: "#f87171",
-  unprobed: "#a1a1aa",
-  bridge: "#a78bfa",
+  healthy: "#0d9488",
+  misconception: "#dc2626",
+  unprobed: "#71717a",
+  bridge: "#7c3aed",
 } as const;
 
 function getNodeColor(node: GraphNode): string {
@@ -40,9 +40,9 @@ function getNodeRadius(node: GraphNode): number {
 function getEdgeColor(edgeType: string): { color: string; opacity: number } {
   switch (edgeType) {
     case "bridge":
-      return { color: "var(--color-bridge, #a78bfa)", opacity: 0.5 };
+      return { color: "var(--color-bridge, #7c3aed)", opacity: 0.5 };
     case "misconception_cluster":
-      return { color: "var(--color-misconception, #f87171)", opacity: 0.4 };
+      return { color: "var(--color-misconception, #dc2626)", opacity: 0.4 };
     case "curiosity_link":
     default:
       return { color: "#18181b", opacity: 0.25 };
@@ -296,9 +296,9 @@ export function KnowledgeGraph({ nodes, edges, onNodeClick, highlightNodeId }: K
     <div className="relative w-full" style={{ height: "calc(100vh - 120px)" }}>
       <style>{`
         @keyframes bridge-pulse {
-          0%   { filter: drop-shadow(0 0 0px #a78bfa); }
-          50%  { filter: drop-shadow(0 0 8px #a78bfa); }
-          100% { filter: drop-shadow(0 0 0px #a78bfa); }
+          0%   { filter: drop-shadow(0 0 0px #7c3aed); }
+          50%  { filter: drop-shadow(0 0 8px #7c3aed); }
+          100% { filter: drop-shadow(0 0 0px #7c3aed); }
         }
         .animate-bridge-pulse {
           animation: bridge-pulse 500ms ease-in-out 3;

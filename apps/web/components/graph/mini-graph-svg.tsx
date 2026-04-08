@@ -2,9 +2,9 @@
 // No "use client", no hooks, no D3. Pure function of props.
 
 const NODE_COLORS = {
-  healthy: "#14b8a6",
-  misconception: "#f87171",
-  unprobed: "#a1a1aa",
+  healthy: "#0d9488",
+  misconception: "#dc2626",
+  unprobed: "#71717a",
 } as const;
 
 interface MiniGraphSvgProps {
@@ -44,7 +44,7 @@ export function MiniGraphSvg({
           textAnchor="middle"
           dominantBaseline="middle"
           fontSize="10"
-          fill="#a1a1aa"
+          fill="#71717a"
           fontFamily="Inter, ui-sans-serif, system-ui, sans-serif"
         >
           No data
