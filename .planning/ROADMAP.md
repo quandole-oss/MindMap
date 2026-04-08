@@ -48,7 +48,12 @@ Plans:
   3. Student can view their complete question history with timestamps and the AI response for each entry
   4. Student's daily streak counter increments correctly and is visible on their profile
   5. After submitting a question, new concept nodes appear in the student's knowledge graph, and the routing engine logs whether enrich or diagnose mode was selected for each concept
-**Plans**: TBD
+**Plans**: 4 plans
+Plans:
+- [ ] 02-01-PLAN.md — LLM adapter (Anthropic Claude via AI SDK v6) + routing engine with tests
+- [ ] 02-02-PLAN.md — Database schema (questions, concepts, concept_questions) + drizzle-kit push
+- [ ] 02-03-PLAN.md — Streaming API route + question form UI + concept extraction pipeline
+- [ ] 02-04-PLAN.md — Question history page + streak tracking + sidebar navigation update
 **UI hint**: yes
 
 ### Phase 3: Knowledge Graph
@@ -109,7 +114,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 4/4 | Complete   | 2026-04-08 |
-| 2. Curiosity Engine | 0/? | Not started | - |
+| 2. Curiosity Engine | 0/4 | Planning complete | - |
 | 3. Knowledge Graph | 0/? | Not started | - |
 | 4. Misconception Diagnostics | 0/? | Not started | - |
 | 5. Teacher Dashboard | 0/? | Not started | - |
