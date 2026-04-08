@@ -37,7 +37,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **GRPH-05**: Node size scales with number of visits to that concept
 - [x] **GRPH-06**: Node color encodes health state: teal (healthy), coral (misconception), gray (unprobed), purple (bridge)
 - [x] **GRPH-07**: Student can click any node to see the original questions and AI exchanges that created it
-- [ ] **GRPH-08**: Weekly "surprise connection" notification surfaces a cross-subject bridge the student may not have noticed
+- [x] **GRPH-08**: Weekly "surprise connection" notification surfaces a cross-subject bridge the student may not have noticed
 
 ### Misconception System
 
@@ -165,7 +165,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | GRPH-05 | Phase 3 | Complete |
 | GRPH-06 | Phase 3 | Complete |
 | GRPH-07 | Phase 3 | Complete |
-| GRPH-08 | Phase 3 | Pending |
+| GRPH-08 | Phase 3 | Complete |
 | MISC-06 | Phase 4 | Pending |
 | MISC-07 | Phase 4 | Pending |
 | MISC-08 | Phase 4 | Pending |

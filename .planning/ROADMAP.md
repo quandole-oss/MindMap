@@ -11,7 +11,7 @@
 
 - [x] **Phase 1: Foundation** - Monorepo scaffold, database schema, misconception library package, and authentication (completed 2026-04-08)
 - [x] **Phase 2: Curiosity Engine** - Daily question submission, AI-powered answers, concept extraction, and routing logic (completed 2026-04-08)
-- [ ] **Phase 3: Knowledge Graph** - pgvector concept deduplication, graph storage, and D3.js force-directed visualization
+- [x] **Phase 3: Knowledge Graph** - pgvector concept deduplication, graph storage, and D3.js force-directed visualization (completed 2026-04-08)
 - [ ] **Phase 4: Misconception Diagnostics** - Full probe/classify/confront/resolve diagnostic flow with node state management
 - [ ] **Phase 5: Teacher Dashboard** - Class management, misconception heatmap, engagement analytics, and curiosity metrics
 - [ ] **Phase 6: Demo & Deployment** - Seed data generation, Docker Compose, Vercel deployment, privacy hardening, and polish
@@ -71,7 +71,7 @@ Plans:
 - [x] 03-01-PLAN.md — Schema migration (vector column, concept_edges table, HNSW index) + embedding infrastructure
 - [x] 03-02-PLAN.md — Two-stage dedup pipeline (pgvector ANN + LLM disambiguation) + edge creation in onFinish
 - [x] 03-03-PLAN.md — D3.js force-directed graph page, node detail side panel, health legend, sidebar link
-- [ ] 03-04-PLAN.md — Bridge node detection (betweenness centrality) + weekly surprise connection toast
+- [x] 03-04-PLAN.md — Bridge node detection (betweenness centrality) + weekly surprise connection toast
 **UI hint**: yes
 
 ### Phase 4: Misconception Diagnostics
@@ -120,7 +120,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1. Foundation | 4/4 | Complete   | 2026-04-08 |
 | 2. Curiosity Engine | 4/4 | Complete   | 2026-04-08 |
-| 3. Knowledge Graph | 3/4 | In Progress|  |
+| 3. Knowledge Graph | 4/4 | Complete   | 2026-04-08 |
 | 4. Misconception Diagnostics | 0/? | Not started | - |
 | 5. Teacher Dashboard | 0/? | Not started | - |
 | 6. Demo & Deployment | 0/? | Not started | - |

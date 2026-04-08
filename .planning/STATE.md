@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-04-08T21:34:36.718Z"
+last_updated: "2026-04-08T21:40:51.574Z"
 progress:
   total_phases: 6
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 12
-  completed_plans: 11
-  percent: 92
+  completed_plans: 12
+  percent: 100
 ---
 
 # State: MindMap
@@ -30,19 +30,19 @@ progress:
 
 ## Current Position
 
-Phase: 03 (Knowledge Graph) — EXECUTING
+Phase: 03 (Knowledge Graph) — COMPLETE
 Plan: 4 of 4
 **Milestone**: v1 — Initial Release
-**Current Phase**: 3 (Knowledge Graph)
-**Current Plan**: 4 (03-04) — NEXT
-**Phase Status**: In Progress
+**Current Phase**: 4 (Misconception Diagnostics) — NEXT
+**Current Plan**: 1 (04-01) — NEXT
+**Phase Status**: Phase 3 complete; Phase 4 not started
 
 ```
-Progress: [█████████░] 92%
+Progress: [██████████] 100%
 
 Phase 1: Foundation          [ COMPLETE — 4/4 plans done ]
 Phase 2: Curiosity Engine    [ COMPLETE — 4/4 plans done ]
-Phase 3: Knowledge Graph     [ IN PROGRESS — 3/4 plans done ]
+Phase 3: Knowledge Graph     [ COMPLETE — 4/4 plans done ]
 Phase 4: Misconception Diag  [ Not started ]
 Phase 5: Teacher Dashboard   [ Not started ]
 Phase 6: Demo & Deployment   [ Not started ]
@@ -54,9 +54,9 @@ Phase 6: Demo & Deployment   [ Not started ]
 
 | Metric | Value |
 |--------|-------|
-| Plans completed | 11 |
-| Plans attempted | 11 |
-| Phases completed | 2 |
+| Plans completed | 12 |
+| Plans attempted | 12 |
+| Phases completed | 3 |
 | Requirements mapped | 49/49 |
 | Node repairs used | 0 |
 
@@ -72,6 +72,7 @@ Phase 6: Demo & Deployment   [ Not started ]
 | Phase 03-knowledge-graph P01 | 225 | 2 tasks | 9 files |
 | Phase 03-knowledge-graph P02 | — | 1 task | 3 files |
 | Phase 03-knowledge-graph P03 | 279 | 2 tasks | 7 files |
+| Phase 03-knowledge-graph P04 | 480 | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -104,12 +105,15 @@ Phase 6: Demo & Deployment   [ Not started ]
 | GraphPageClient in separate file (graph-page-client.tsx) | Cleaner than inlining in page.tsx; NodeDetailPanel created in Task 1 since GraphPageClient imports it |
 | D3 deep-clone nodes+links before forceSimulation | D3 mutates objects passed to simulation; cloning prevents React prop mutation bugs |
 | D3 cleanup: simulation.stop() + svg.selectAll("*").remove() | Prevents memory leaks and React Strict Mode double-mount artifacts in useEffect |
+| Bridge defined as highest-centrality node with neighbors in 2+ domains | Brandes BFS algorithm; pure centrality alone doesn't guarantee cross-domain bridge |
+| localStorage timestamp set before toast fires | Prevents React Strict Mode double-mount from showing toast twice on dev |
+| data-node-id on SVG g elements | Enables external querySelector for pulse animation without D3 selection context |
+| getBridgeConnection() fetches independently of getGraphData() | Called in parallel via Promise.all; avoids recomputing bridge in two server actions |
 
 ### Open Questions
 
 - What grade-band boundaries should the router use? (K-2, 3-5, 6-8, 9-12 suggested)
 - Should the D3 graph have a node limit before pagination/clustering kicks in, or graceful degradation only?
-- Weekly "surprise connection" (GRPH-08) — cron job or triggered on session end?
 
 ### Blockers
 
@@ -124,8 +128,8 @@ None.
 ## Session Continuity
 
 **Last updated**: 2026-04-08
-**Last action**: Completed 03-03 — D3 force-directed graph at /student/graph, getGraphData()/getNodeDetails() server actions, KnowledgeGraph SVG component, NodeDetailPanel Sheet, HealthLegend, sidebar "My Graph" link; awaiting human-verify checkpoint
-**Next action**: Human verifies /student/graph visual interactions; then execute 03-04 (bridge detection)
+**Last action**: Completed 03-04 — Brandes betweenness centrality in centrality.ts, bridge node marked isBridge=true in getGraphData(), getBridgeConnection() server action, BridgeToast component with 7-day localStorage cooldown, bridge pulse animation on KnowledgeGraph; Phase 3 complete
+**Next action**: Begin Phase 4 (Misconception Diagnostics) — execute 04-01
 
 **Stack snapshot**:
 
