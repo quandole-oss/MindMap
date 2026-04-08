@@ -70,7 +70,7 @@ Plans:
 Plans:
 - [x] 03-01-PLAN.md — Schema migration (vector column, concept_edges table, HNSW index) + embedding infrastructure
 - [x] 03-02-PLAN.md — Two-stage dedup pipeline (pgvector ANN + LLM disambiguation) + edge creation in onFinish
-- [ ] 03-03-PLAN.md — D3.js force-directed graph page, node detail side panel, health legend, sidebar link
+- [x] 03-03-PLAN.md — D3.js force-directed graph page, node detail side panel, health legend, sidebar link
 - [ ] 03-04-PLAN.md — Bridge node detection (betweenness centrality) + weekly surprise connection toast
 **UI hint**: yes
 
@@ -120,7 +120,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1. Foundation | 4/4 | Complete   | 2026-04-08 |
 | 2. Curiosity Engine | 4/4 | Complete   | 2026-04-08 |
-| 3. Knowledge Graph | 1/4 | In Progress|  |
+| 3. Knowledge Graph | 3/4 | In Progress|  |
 | 4. Misconception Diagnostics | 0/? | Not started | - |
 | 5. Teacher Dashboard | 0/? | Not started | - |
 | 6. Demo & Deployment | 0/? | Not started | - |

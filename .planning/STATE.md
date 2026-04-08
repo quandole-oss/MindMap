@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-04-08T21:24:41.685Z"
+last_updated: "2026-04-08T21:34:36.718Z"
 progress:
   total_phases: 6
   completed_phases: 2
   total_plans: 12
-  completed_plans: 9
-  percent: 75
+  completed_plans: 11
+  percent: 92
 ---
 
 # State: MindMap
@@ -31,18 +31,18 @@ progress:
 ## Current Position
 
 Phase: 03 (Knowledge Graph) — EXECUTING
-Plan: 2 of 4
+Plan: 4 of 4
 **Milestone**: v1 — Initial Release
 **Current Phase**: 3 (Knowledge Graph)
-**Current Plan**: 1 (03-01) — COMPLETE
+**Current Plan**: 4 (03-04) — NEXT
 **Phase Status**: In Progress
 
 ```
-Progress: [████████░░] 75%
+Progress: [█████████░] 92%
 
 Phase 1: Foundation          [ COMPLETE — 4/4 plans done ]
 Phase 2: Curiosity Engine    [ COMPLETE — 4/4 plans done ]
-Phase 3: Knowledge Graph     [ IN PROGRESS — 1/4 plans done ]
+Phase 3: Knowledge Graph     [ IN PROGRESS — 3/4 plans done ]
 Phase 4: Misconception Diag  [ Not started ]
 Phase 5: Teacher Dashboard   [ Not started ]
 Phase 6: Demo & Deployment   [ Not started ]
@@ -54,8 +54,8 @@ Phase 6: Demo & Deployment   [ Not started ]
 
 | Metric | Value |
 |--------|-------|
-| Plans completed | 9 |
-| Plans attempted | 9 |
+| Plans completed | 11 |
+| Plans attempted | 11 |
 | Phases completed | 2 |
 | Requirements mapped | 49/49 |
 | Node repairs used | 0 |
@@ -70,6 +70,8 @@ Phase 6: Demo & Deployment   [ Not started ]
 | Phase 02-curiosity-engine P03 | 494 | 2 tasks | 11 files |
 | Phase 02-curiosity-engine P04 | 137 | 3 tasks | 7 files |
 | Phase 03-knowledge-graph P01 | 225 | 2 tasks | 9 files |
+| Phase 03-knowledge-graph P02 | — | 1 task | 3 files |
+| Phase 03-knowledge-graph P03 | 279 | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -99,6 +101,9 @@ Phase 6: Demo & Deployment   [ Not started ]
 | StreakBadge student-only in sidebar | Streak is a student feature; conditional on role === "student" to avoid showing in teacher sidebar |
 | Sheet/Tooltip use @base-ui/react Drawer+Tooltip primitives | npx shadcn add unavailable in execution environment; components written manually matching existing alert-dialog.tsx pattern |
 | visitCount defaults to 0 on concepts table | 0 is semantically correct for an unvisited concept; increments on first question link |
+| GraphPageClient in separate file (graph-page-client.tsx) | Cleaner than inlining in page.tsx; NodeDetailPanel created in Task 1 since GraphPageClient imports it |
+| D3 deep-clone nodes+links before forceSimulation | D3 mutates objects passed to simulation; cloning prevents React prop mutation bugs |
+| D3 cleanup: simulation.stop() + svg.selectAll("*").remove() | Prevents memory leaks and React Strict Mode double-mount artifacts in useEffect |
 
 ### Open Questions
 
@@ -119,8 +124,8 @@ None.
 ## Session Continuity
 
 **Last updated**: 2026-04-08
-**Last action**: Completed 03-knowledge-graph-03-01 — pgvector schema (embedding vector(1536), visitCount, HNSW index), concept_edges table, generateEmbedding() in @mindmap/llm, D3 + shadcn Sheet/Tooltip installed
-**Next action**: Execute 03-02 — concept deduplication pipeline
+**Last action**: Completed 03-03 — D3 force-directed graph at /student/graph, getGraphData()/getNodeDetails() server actions, KnowledgeGraph SVG component, NodeDetailPanel Sheet, HealthLegend, sidebar "My Graph" link; awaiting human-verify checkpoint
+**Next action**: Human verifies /student/graph visual interactions; then execute 03-04 (bridge detection)
 
 **Stack snapshot**:
 

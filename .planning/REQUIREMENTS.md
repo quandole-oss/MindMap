@@ -33,10 +33,10 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **GRPH-01**: Concepts are stored as nodes with embedding vectors in PostgreSQL + pgvector
 - [ ] **GRPH-02**: New concepts are deduplicated via two-stage process: pgvector ANN similarity search + LLM disambiguation for ambiguous matches
 - [ ] **GRPH-03**: Concept edges are created between related concepts (curiosity link, bridge, misconception cluster)
-- [ ] **GRPH-04**: Force-directed D3.js graph visualization renders the student's personal knowledge graph
-- [ ] **GRPH-05**: Node size scales with number of visits to that concept
-- [ ] **GRPH-06**: Node color encodes health state: teal (healthy), coral (misconception), gray (unprobed), purple (bridge)
-- [ ] **GRPH-07**: Student can click any node to see the original questions and AI exchanges that created it
+- [x] **GRPH-04**: Force-directed D3.js graph visualization renders the student's personal knowledge graph
+- [x] **GRPH-05**: Node size scales with number of visits to that concept
+- [x] **GRPH-06**: Node color encodes health state: teal (healthy), coral (misconception), gray (unprobed), purple (bridge)
+- [x] **GRPH-07**: Student can click any node to see the original questions and AI exchanges that created it
 - [ ] **GRPH-08**: Weekly "surprise connection" notification surfaces a cross-subject bridge the student may not have noticed
 
 ### Misconception System
@@ -161,10 +161,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | GRPH-01 | Phase 3 | Complete |
 | GRPH-02 | Phase 3 | Pending |
 | GRPH-03 | Phase 3 | Pending |
-| GRPH-04 | Phase 3 | Pending |
-| GRPH-05 | Phase 3 | Pending |
-| GRPH-06 | Phase 3 | Pending |
-| GRPH-07 | Phase 3 | Pending |
+| GRPH-04 | Phase 3 | Complete |
+| GRPH-05 | Phase 3 | Complete |
+| GRPH-06 | Phase 3 | Complete |
+| GRPH-07 | Phase 3 | Complete |
 | GRPH-08 | Phase 3 | Pending |
 | MISC-06 | Phase 4 | Pending |
 | MISC-07 | Phase 4 | Pending |
