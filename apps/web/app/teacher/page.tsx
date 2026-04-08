@@ -48,13 +48,15 @@ export default async function TeacherDashboard() {
       ) : (
         <div className="grid gap-4">
           {classes.map((cls) => (
-            <Link
+            <div
               key={cls.id}
-              href={`/teacher/classes/${cls.id}/roster`}
-              className="bg-white border border-[#e4e4e7] rounded-xl p-5 hover:border-[#a1a1aa] transition-colors block"
+              className="bg-white border border-[#e4e4e7] rounded-xl p-5 hover:border-[#a1a1aa] transition-colors"
             >
               <div className="flex items-center justify-between gap-4">
-                <div className="flex flex-col gap-1.5">
+                <Link
+                  href={`/teacher/classes/${cls.id}/dashboard`}
+                  className="flex flex-col gap-1.5 flex-1 min-w-0"
+                >
                   <p className="text-[20px] font-semibold text-[#18181b]">
                     {cls.name}
                   </p>
@@ -69,12 +71,16 @@ export default async function TeacherDashboard() {
                       Grade {formatGrade(cls.gradeLevel)}
                     </Badge>
                   </div>
-                </div>
-                <span className="text-[14px] text-[#71717a] shrink-0">
+                  <span className="text-[12px] text-[#71717a]">Open dashboard</span>
+                </Link>
+                <Link
+                  href={`/teacher/classes/${cls.id}/roster`}
+                  className="text-[14px] text-[#71717a] shrink-0 hover:text-[#18181b] transition-colors"
+                >
                   View roster →
-                </span>
+                </Link>
               </div>
-            </Link>
+            </div>
           ))}
         </div>
       )}

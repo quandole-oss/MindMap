@@ -12,6 +12,7 @@ interface SidebarProps {
   role: "student" | "teacher";
   userName?: string | null;
   streak?: number;
+  classes?: Array<{ id: string; name: string }>;
 }
 
 const studentNavItems = [
@@ -26,7 +27,7 @@ const teacherNavItems = [
   { href: "/teacher/classes/new", label: "Create a Class", icon: BookOpen },
 ];
 
-export function Sidebar({ role, userName, streak }: SidebarProps) {
+export function Sidebar({ role, userName, streak, classes = [] }: SidebarProps) {
   const pathname = usePathname();
   const navItems = role === "teacher" ? teacherNavItems : studentNavItems;
 
@@ -38,7 +39,7 @@ export function Sidebar({ role, userName, streak }: SidebarProps) {
       </div>
 
       {/* Nav items */}
-      <nav className="flex-1 px-2 py-3 flex flex-col gap-1">
+      <nav className="flex-1 px-2 py-3 flex flex-col gap-1 overflow-y-auto">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
@@ -58,6 +59,34 @@ export function Sidebar({ role, userName, streak }: SidebarProps) {
             </Link>
           );
         })}
+
+        {/* Class dashboard links (teacher only) */}
+        {role === "teacher" && classes.length > 0 && (
+          <>
+            <p className="px-4 pt-4 pb-1 text-[11px] font-medium uppercase tracking-wider text-[#a1a1aa]">
+              Classes
+            </p>
+            {classes.map((cls) => {
+              const href = `/teacher/classes/${cls.id}/dashboard`;
+              const isActive = pathname === href || pathname.startsWith(href);
+              return (
+                <Link
+                  key={cls.id}
+                  href={href}
+                  className={cn(
+                    "flex items-center gap-3 h-10 px-4 rounded-lg text-[14px] font-normal transition-colors",
+                    isActive
+                      ? "bg-[#18181b] text-white"
+                      : "text-[#52525b] hover:bg-[#e4e4e7] hover:text-[#18181b]"
+                  )}
+                >
+                  <BookOpen className="size-4 shrink-0" />
+                  {cls.name}
+                </Link>
+              );
+            })}
+          </>
+        )}
       </nav>
 
       {/* Logout button */}
