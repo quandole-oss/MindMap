@@ -1,0 +1,129 @@
+- id: math-001
+  name: "Multiplication always makes numbers bigger"
+  domain: math
+  grade_band: "K-5"
+  description: "Students generalize from whole number experience that multiplying always increases a number, which fails when multiplying by fractions less than 1, decimals, or negative numbers."
+  citation: "Fischbein, E., Deri, M., Nello, M. S., & Marino, M. S. (1985). The role of implicit models in solving verbal problems in multiplication and division. Journal for Research in Mathematics Education, 16(1), 3-17."
+  probe_questions:
+    - "Does multiplying always make a number bigger? Give me an example."
+    - "What is 10 multiplied by one-half? Is that bigger or smaller than 10?"
+    - "Can you think of a number you could multiply 100 by to get something smaller than 100?"
+  confrontation_scenarios:
+    - "10 × (1/2) = 5. Ten was multiplied by one-half, and the result is smaller than 10. Similarly, 100 × 0.1 = 10 — much smaller. Multiplication means 'scaled by'; scaling by less than 1 shrinks the number. Does this change your rule about multiplication?"
+
+- id: math-002
+  name: "Division always makes numbers smaller"
+  domain: math
+  grade_band: "K-5"
+  description: "Students assume division always produces a smaller result based on whole number experience, but dividing by a fraction less than 1 produces a result larger than the original number."
+  citation: "Tirosh, D. (2000). Enhancing prospective teachers' knowledge of children's conceptions: The case of division of fractions. Journal for Research in Mathematics Education, 31(1), 5-25."
+  probe_questions:
+    - "Does dividing always make a number smaller?"
+    - "What is 1 divided by one-half? Is that bigger or smaller than 1?"
+    - "If you divide 10 cookies equally among half a person (as a fraction), what does that even mean?"
+  confrontation_scenarios:
+    - "1 ÷ (1/2) = 2. One divided by one-half equals two — larger than one. Think of it this way: 'How many halves fit inside 1?' Two halves fit in 1 whole. Division asks how many groups fit; if the groups are tiny, many of them fit. Does this break your rule about division making things smaller?"
+
+- id: math-003
+  name: "A square is not a rectangle"
+  domain: math
+  grade_band: "K-5"
+  description: "Students view geometric shapes as discrete, non-overlapping categories rather than understanding hierarchical relationships. A square meets every criterion to be a rectangle — it is a special case of rectangle."
+  citation: "Clements, D. H., & Sarama, J. (2000). Young children's ideas about geometric shapes. Teaching Children Mathematics, 6(8), 482-488."
+  probe_questions:
+    - "Can a shape be both a square and a rectangle at the same time? Why or why not?"
+    - "What is the definition of a rectangle? Does a square fit that definition?"
+    - "Is a poodle a dog? Is a square a rectangle?"
+  confrontation_scenarios:
+    - "A rectangle is defined as a quadrilateral (4 sides) with four right angles. A square has four sides and four right angles. Therefore, a square satisfies every requirement to be called a rectangle — it is a rectangle with the extra property that all sides are equal. In mathematics, shapes can belong to multiple categories based on their properties. Does thinking about definitions (rather than pictures) change your view?"
+
+- id: math-004
+  name: "Larger denominators mean larger fractions"
+  domain: math
+  grade_band: "K-5"
+  description: "Students apply whole-number intuition to fractions, believing 1/8 is bigger than 1/4 because 8 is bigger than 4. The larger the denominator, the smaller the pieces — so larger denominators mean smaller fractions (for unit fractions)."
+  citation: "Stafylidou, S., & Vosniadou, S. (2004). The development of students' understanding of the numerical value of fractions. Learning and Instruction, 14(5), 503-518."
+  probe_questions:
+    - "Which is bigger: 1/4 or 1/8? How do you know?"
+    - "If you cut a pizza into 8 slices, are the slices bigger or smaller than if you cut it into 4 slices?"
+    - "What does the bottom number (denominator) of a fraction tell you?"
+  confrontation_scenarios:
+    - "Cut a piece of paper into 4 equal pieces and 8 equal pieces. Hold up one piece from each. The piece from the 4-slice set (1/4) is clearly larger. A larger denominator means you divided into more parts — so each part is smaller. 8 slices means smaller slices; 8 alone is a larger number, but 1/8 is a smaller fraction than 1/4."
+
+- id: math-005
+  name: "The equals sign means 'compute the answer'"
+  domain: math
+  grade_band: "K-5"
+  description: "Students interpret the equals sign operationally (as a command to write the answer) rather than relationally (as an expression of equivalence between two quantities). This causes errors with equations like 4 + _ = 9."
+  citation: "Knuth, E. J., Stephens, A. C., McNeil, N. M., & Alibali, M. W. (2006). Does understanding the equal sign matter? Evidence from solving equations. Journal for Research in Mathematics Education, 37(4), 297-312."
+  probe_questions:
+    - "What does the equals sign mean?"
+    - "Is this true: 7 = 3 + 4? Is this different from 3 + 4 = 7?"
+    - "Solve this: 4 + __ = 3 + 5. What goes in the blank?"
+  confrontation_scenarios:
+    - "3 + 4 = 7 and 7 = 3 + 4 are both true, and they mean exactly the same thing. The equals sign doesn't say 'write the answer on the right' — it says 'both sides have the same value.' This is why 4 + __ = 3 + 5 makes sense: you need something that makes the left side equal 8. The blank is 4. Does thinking of = as a balance scale help?"
+
+- id: math-006
+  name: "Negative numbers do not represent real quantities"
+  domain: math
+  grade_band: "6-8"
+  description: "Students view negative numbers as abstract mathematical artifacts with no real-world meaning, because their physical intuition only includes amounts that can be counted or measured positively."
+  citation: "Vlassis, J. (2004). Making sense of the minus sign or becoming flexible in 'negativity'. Learning and Instruction, 14(5), 469-484."
+  probe_questions:
+    - "Can a negative number represent something real? Give me an example."
+    - "What does -5 degrees Celsius mean in the real world?"
+    - "If you owe someone $10, how might you represent that with a number?"
+  confrontation_scenarios:
+    - "Negative numbers appear constantly in the real world: -15°C is 15 degrees below zero (real cold); a bank balance of -$50 means real debt; sea level is 0 feet, so Death Valley at -282 feet is a real, physical location. Negative numbers aren't imaginary — they represent quantities below a reference point. What reference point makes sense for each example?"
+
+- id: math-007
+  name: "Probability of 50% means something will happen half the time in small samples"
+  domain: math
+  grade_band: "6-8"
+  description: "Students expect probability to manifest precisely in small samples — believing that if a coin has 50% probability of heads, exactly 5 heads must appear in 10 flips. This confuses theoretical probability with expected frequency in small samples."
+  citation: "Kahneman, D., & Tversky, A. (1972). Subjective probability: A judgment of representativeness. Cognitive Psychology, 3(3), 430-454."
+  probe_questions:
+    - "If you flip a fair coin 10 times, how many heads do you expect to get? What if you got 7 heads — does that mean the coin is unfair?"
+    - "If you flip a coin and get 5 heads in a row, is the next flip more likely to be tails?"
+    - "How many coin flips would you need to reliably see close to 50% heads?"
+  confrontation_scenarios:
+    - "A fair coin flipped 10 times might show 3 heads, 7 heads, or even 10 heads — all without the coin being unfair. The Law of Large Numbers says that over thousands of flips, heads will approach 50%. But in small samples, wide variation is normal. In a study of U.S. counties with the highest kidney cancer rates, many were small rural counties — not because rural life causes cancer, but because small samples have more variable rates. What does this say about interpreting statistics from small groups?"
+
+- id: math-008
+  name: "Zero is not a real number"
+  domain: math
+  grade_band: "K-5"
+  description: "Students view zero as the absence of number rather than a number in its own right, leading to confusion about arithmetic with zero and the number line."
+  citation: "Wheeler, M. M., & Feghali, I. (1983). Much ado about nothing: Preservice elementary school teachers' concept of zero. Journal for Research in Mathematics Education, 14(3), 147-155."
+  probe_questions:
+    - "Is zero a number? What makes you say that?"
+    - "What is 5 + 0? What is 5 × 0? Does zero behave like other numbers?"
+    - "Where does zero fit on the number line?"
+  confrontation_scenarios:
+    - "Zero is one of the most important numbers in mathematics. It is the additive identity: any number plus zero equals that number. It is neither positive nor negative. It appears on the number line between the positives and negatives. The invention of zero as a placeholder and a number in its own right was a revolutionary mathematical breakthrough (Indian mathematicians, ~5th century CE). Without zero, we cannot write the number 10, 100, or 1000 in our number system."
+
+- id: math-009
+  name: "You cannot take the square root of a negative number"
+  domain: math
+  grade_band: "9-12"
+  description: "Students believe square roots of negative numbers are impossible or undefined, not knowing that imaginary numbers (i = sqrt(-1)) extend the number system to make this possible, with applications in physics and engineering."
+  citation: "Sfard, A. (1991). On the dual nature of mathematical conceptions: Reflections on processes and objects as different sides of the same coin. Educational Studies in Mathematics, 22(1), 1-36."
+  probe_questions:
+    - "What is the square root of negative one? Is there an answer?"
+    - "In what situations might you need to take the square root of a negative number?"
+    - "Can you extend the rules of mathematics to allow operations that seem impossible?"
+  confrontation_scenarios:
+    - "Mathematicians defined i = sqrt(-1), calling it the imaginary unit. This created the complex numbers (a + bi), which turned out to describe electrical circuits, quantum mechanics, and signal processing — all real-world applications. The number seemed 'impossible' until the rules were extended. Many 'impossible' operations in mathematics led to new number systems: negative numbers, fractions, and complex numbers all started as extensions. What does this tell you about mathematical impossibility?"
+
+- id: math-010
+  name: "Graphs are pictures of physical situations"
+  domain: math
+  grade_band: "6-8"
+  description: "Students interpret line graphs as literal pictures of events (e.g., a hill-shaped graph means something moved up and then came down in space), rather than as abstract representations of how one variable changes with respect to another."
+  citation: "Clement, J. (1985). Misconceptions in graphing. Proceedings of the Ninth International Conference for the Psychology of Mathematics Education, 1, 369-375."
+  probe_questions:
+    - "Look at this graph of a runner's speed over time. The line goes up and then comes back down. Did the runner go uphill and then downhill?"
+    - "What does the y-axis represent? What does the x-axis represent?"
+    - "How is a graph different from a photograph of an event?"
+  confrontation_scenarios:
+    - "A graph showing temperature rising, peaking, then falling looks like a mountain. But it means the temperature increased over time, reached a maximum, then decreased — the temperature did not travel up a hill. The shape of a graph reflects the mathematical relationship between variables, not the physical shape of the motion. A horizontal line on a distance-time graph means constant speed, not standing still. Does separating 'graph shape' from 'physical shape' change how you read graphs?"

@@ -1,0 +1,162 @@
+- id: phys-001
+  name: "Heavier objects fall faster"
+  domain: physics
+  grade_band: "K-5"
+  description: "Students believe that heavier objects fall faster than lighter ones, contrary to Galileo's findings about free fall in a vacuum."
+  citation: "Vosniadou, S. (1994). Capturing and modeling the process of conceptual change. Learning and Instruction, 4(1), 45-69."
+  probe_questions:
+    - "If I drop a bowling ball and a tennis ball from the same height at the same time, which one hits the ground first?"
+    - "Why do you think heavier things might fall faster?"
+    - "What would happen if you dropped a rock and a feather in a place with no air?"
+  confrontation_scenarios:
+    - "In 1971, astronaut David Scott dropped a hammer and a feather on the Moon where there is no air. They hit the ground at exactly the same time. How does this change your thinking about falling objects?"
+    - "A skydiver and a lead ball are dropped from the same height in a sealed vacuum chamber. Without air resistance, which hits the floor first?"
+
+- id: phys-002
+  name: "An object at rest has no forces acting on it"
+  domain: physics
+  grade_band: "6-8"
+  description: "Students think a stationary object has no forces acting on it, when in fact balanced forces (like gravity and normal force) are always present and sum to zero."
+  citation: "Clement, J. (1982). Students' preconceptions in introductory mechanics. American Journal of Physics, 50(1), 66-71."
+  probe_questions:
+    - "A book is sitting still on a table. Are any forces acting on it? How do you know?"
+    - "What would have to change for the book to start moving?"
+    - "If gravity is pulling the book down, why doesn't it fall through the table?"
+  confrontation_scenarios:
+    - "Place a heavy book on a spring scale. The scale reads a non-zero weight even though the book is perfectly still. What does this tell us about forces on objects at rest?"
+    - "A bridge holds up thousands of pounds of cars without moving. Draw all the forces acting on a car sitting on the bridge. Can you have zero motion but non-zero forces?"
+
+- id: phys-003
+  name: "Heat and temperature are the same thing"
+  domain: physics
+  grade_band: "6-8"
+  description: "Students conflate heat (thermal energy transfer) with temperature (average kinetic energy of particles), leading to errors like believing a large cold object has less thermal energy than a small warm object."
+  citation: "Erickson, G. L. (1979). Children's conceptions of heat and temperature. Science Education, 63(2), 221-230."
+  probe_questions:
+    - "Which has more heat: a bathtub of warm water or a cup of boiling water?"
+    - "If you have a hot pan and a warm ocean, which one has more thermal energy? Which has a higher temperature?"
+    - "Is it possible for something to gain heat energy but not change temperature? When might that happen?"
+  confrontation_scenarios:
+    - "An iceberg at 0°C and a cup of boiling water at 100°C — the cup has higher temperature, but the iceberg contains vastly more total thermal energy. Does this surprise you? Why?"
+    - "When water boils on a stove, it stays at 100°C even as you keep adding heat. How can heat be added without a temperature change?"
+
+- id: phys-004
+  name: "Electric current is used up in a circuit"
+  domain: physics
+  grade_band: "6-8"
+  description: "Students believe electric current decreases as it flows through a circuit, imagining current as a substance that gets consumed by bulbs. In reality, current is the same throughout a series circuit."
+  citation: "Osborne, R. J. (1983). Towards modifying children's ideas about electric current. Research in Science and Technological Education, 1(1), 73-82."
+  probe_questions:
+    - "In a series circuit with two identical light bulbs, does the second bulb get less current than the first? Why or why not?"
+    - "If current were 'used up,' what would happen to the wire between the last bulb and the battery?"
+    - "Where does the electricity go after it passes through a light bulb?"
+  confrontation_scenarios:
+    - "Use an ammeter to measure current before and after a light bulb in a series circuit. The readings are identical. How does this challenge the idea that current is used up?"
+    - "A 9-volt battery connected to a single bulb and a 9-volt battery connected to ten bulbs in series — the current is smaller in the second circuit, but it is equal at every point in each circuit. What does this tell you?"
+
+- id: phys-005
+  name: "Seasons are caused by Earth's distance from the Sun"
+  domain: physics
+  grade_band: "K-5"
+  description: "Students believe Earth is closer to the Sun in summer and farther away in winter. In fact, seasons are caused by Earth's axial tilt, and Earth is actually slightly closer to the Sun during the Northern Hemisphere's winter."
+  citation: "Nussbaum, J., & Sharoni-Dagan, N. (1983). Changes in second grade children's preconceptions about the earth as a cosmic body resulting from a short series of audio-tutorial lessons. Science Education, 67(1), 99-114."
+  probe_questions:
+    - "Why is it hot in summer and cold in winter?"
+    - "If Earth moves around the Sun, is it closer to the Sun in summer or winter?"
+    - "How do you explain that when it is summer in the United States, it is winter in Australia?"
+  confrontation_scenarios:
+    - "Earth is actually about 3 million miles closer to the Sun in January (Northern Hemisphere winter) than in July. If distance caused seasons, the whole Earth would be warm at the same time. But Australia has summer in December. What must be causing seasons instead?"
+    - "Using a globe and a flashlight, tilt the globe and notice how the light hits more directly at the tilted-toward side. This concentration of sunlight — not distance — is what creates summer."
+
+- id: phys-006
+  name: "In space there is no gravity"
+  domain: physics
+  grade_band: "K-5"
+  description: "Students believe astronauts float in space because there is no gravity. In fact, gravity extends throughout the universe; astronauts float because they are in continuous free fall around Earth (orbital motion)."
+  citation: "Baxter, J. (1989). Children's understanding of familiar astronomical events. International Journal of Science Education, 11(5), 502-513."
+  probe_questions:
+    - "Why do astronauts float inside the International Space Station?"
+    - "Does gravity exist on the Moon? How do you know?"
+    - "If there were no gravity in space, how would the Moon stay in orbit around Earth?"
+  confrontation_scenarios:
+    - "The International Space Station is only about 250 miles above Earth. At that altitude, gravity is about 90% as strong as on Earth's surface. Yet astronauts float. This is because the station and everything inside it are falling around Earth together — a condition called free fall. Does this change your idea about gravity in space?"
+    - "Black holes have gravity so powerful that not even light can escape. They exist in deep space. How can space have 'no gravity' if black holes are giant gravity sources?"
+
+- id: phys-007
+  name: "A force is always needed to keep an object moving"
+  domain: physics
+  grade_band: "6-8"
+  description: "Students believe a continuous force is needed to maintain constant velocity. This contradicts Newton's first law: in the absence of net forces, an object moves at constant velocity indefinitely."
+  citation: "McCloskey, M. (1983). Intuitive physics. Scientific American, 248(4), 122-130."
+  probe_questions:
+    - "If you slide a hockey puck on ice and no one pushes it anymore, why does it eventually slow down?"
+    - "If you could somehow eliminate all friction and air resistance, what would happen to a rolling ball?"
+    - "In space, if a spacecraft turns off its engines, what happens to its speed?"
+  confrontation_scenarios:
+    - "The Voyager 1 spacecraft was launched in 1977 and its engines have been off for decades. It is still moving at about 38,000 mph. No force keeps it going — Newton's first law explains this. How does this challenge the idea that force is needed to maintain motion?"
+    - "An air hockey table creates a thin cushion of air that nearly eliminates friction. A puck struck on a level air hockey table continues moving at nearly constant speed indefinitely. What does this reveal?"
+
+- id: phys-008
+  name: "Sound travels faster in air than in solids"
+  domain: physics
+  grade_band: "6-8"
+  description: "Students assume sound travels faster through air because air is less dense, when in fact sound travels faster through denser, stiffer materials like solids and liquids because the particles are closer together and transmit vibrations more quickly."
+  citation: "Hrepic, Z., Zollman, D. A., & Rebello, N. S. (2010). Identifying students' mental models of sound propagation. Physical Review Special Topics — Physics Education Research, 6(2), 020114."
+  probe_questions:
+    - "Does sound travel faster through air or through steel? What makes you think so?"
+    - "When you put your ear to a railroad track, why can you hear a distant train before you hear it through the air?"
+    - "Why do whales communicate across thousands of miles of ocean?"
+  confrontation_scenarios:
+    - "Sound travels at about 340 m/s in air, 1,480 m/s in water, and 5,100 m/s in steel. Steel is denser, yet sound is 15 times faster in it. The stiffness of the material — how tightly particles are bound — matters more than density. Does this change how you think about sound?"
+
+- id: phys-009
+  name: "Atoms can be seen with a sufficiently powerful optical microscope"
+  domain: physics
+  grade_band: "6-8"
+  description: "Students believe that with a powerful enough optical microscope, individual atoms could be seen. In reality, atoms are smaller than the wavelength of visible light, making optical microscopy fundamentally unable to resolve them."
+  citation: "Harrison, A. G., & Treagust, D. F. (2002). The particulate nature of matter: Challenges in understanding the submicroscopic world. In J. Gilbert et al. (Eds.), Chemical Education: Towards Research-based Practice (pp. 189-212)."
+  probe_questions:
+    - "If we had a really powerful optical microscope, could we see individual atoms?"
+    - "What limits what we can see with a regular light microscope?"
+    - "How do scientists know atoms exist if we can't see them with normal light?"
+  confrontation_scenarios:
+    - "Visible light has wavelengths between 400-700 nanometers. A hydrogen atom is about 0.1 nanometers across — 4,000 times smaller than a wavelength of violet light. A light microscope literally cannot 'see' anything smaller than its wavelength. Scientists use electron microscopes or scanning tunneling microscopes to image atoms. What does this tell you about the limits of our tools?"
+
+- id: phys-010
+  name: "Light travels instantaneously"
+  domain: physics
+  grade_band: "6-8"
+  description: "Students believe light travels so fast it is effectively instant, not understanding that light has a finite speed that matters at astronomical scales — and even at everyday scales in some technologies."
+  citation: "Reiner, M., Slotta, J. D., Chi, M. T. H., & Resnick, L. B. (2000). Naive physics reasoning: A commitment to substance-based conceptions. Cognition and Instruction, 18(1), 1-34."
+  probe_questions:
+    - "When you turn on a flashlight, does the light reach the wall instantly?"
+    - "When you look at the Sun, are you seeing the Sun as it is right now?"
+    - "How long do you think it takes for light from the Sun to reach Earth?"
+  confrontation_scenarios:
+    - "Light from the Sun takes about 8 minutes to reach Earth. If the Sun disappeared right now, we would not know for 8 minutes. The light you see from distant stars left thousands or millions of years ago — some of those stars may no longer exist. Does thinking about light's travel time change how you understand what you see in the night sky?"
+
+- id: phys-011
+  name: "Cold air sinks because cold is heavy"
+  domain: physics
+  grade_band: "K-5"
+  description: "Students attribute the sinking of cold air to 'cold being heavy' rather than understanding that cold air is denser (same mass in less volume) and thus sinks due to buoyancy effects driven by temperature differences."
+  citation: "Bar, V., & Travis, A. S. (1991). Children's views concerning phase changes. Journal of Research in Science Teaching, 28(4), 363-382."
+  probe_questions:
+    - "Why does cold air sink and warm air rise?"
+    - "Is cold actually heavy? Can you think of a way to test this?"
+    - "Why do hot air balloons rise when the air inside is heated?"
+  confrontation_scenarios:
+    - "Equal volumes of hot and cold air — which is heavier? The cold air has more mass in the same volume because it is denser. But 'cold' itself has no weight. It is the density difference that drives the movement: denser cold air sinks, less dense warm air rises — the same principle that makes a balloon float. Does 'cold being dense' feel different from 'cold being heavy'?"
+
+- id: phys-012
+  name: "Energy is a substance or fluid that flows"
+  domain: physics
+  grade_band: "9-12"
+  description: "Students conceptualize energy as a substance that can be stored, transferred, and used up like a liquid, leading to misconceptions about energy conservation and transformation."
+  citation: "Lancor, R. (2014). Using student-generated analogies to investigate conceptions of energy: A multidisciplinary study. International Journal of Science Education, 36(1), 1-23."
+  probe_questions:
+    - "Where does the energy in a battery 'go' when it runs out?"
+    - "Can you ever destroy energy, or does it just change form?"
+    - "If energy can't be created or destroyed, why do we worry about running out of it?"
+  confrontation_scenarios:
+    - "When a car brakes, kinetic energy is converted to thermal energy (heat) in the brake pads. The total energy is conserved — none disappears. Yet the energy is no longer useful for moving the car. We run out of useful, concentrated energy — not energy itself. How does this distinction change how you think about the energy crisis?"

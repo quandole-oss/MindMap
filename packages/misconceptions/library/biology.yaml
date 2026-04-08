@@ -1,0 +1,129 @@
+- id: bio-001
+  name: "Plants get their food from the soil"
+  domain: biology
+  grade_band: "K-5"
+  description: "Students believe plants absorb pre-made food through their roots from the soil, rather than understanding that plants manufacture their own food through photosynthesis using sunlight, water, and carbon dioxide."
+  citation: "Barker, M., & Carr, M. (1989). Teaching and learning about photosynthesis: Part 2. A generative learning strategy. International Journal of Science Education, 11(2), 141-152."
+  probe_questions:
+    - "Where does a plant get the food it needs to grow?"
+    - "If a plant grows in a pot of soil, where does all the extra mass in the plant come from?"
+    - "What would happen to a plant that got plenty of water and nutrients from soil but was kept in a completely dark room?"
+  confrontation_scenarios:
+    - "A scientist named Jan Baptist van Helmont grew a willow tree from a 5-pound sapling in a pot of 200 pounds of soil. After 5 years, the tree weighed 169 pounds, but the soil lost only 2 ounces. The tree's mass had to come from somewhere other than the soil — mostly from carbon dioxide in the air. How does this change your idea of plant food?"
+
+- id: bio-002
+  name: "All bacteria are harmful germs"
+  domain: biology
+  grade_band: "K-5"
+  description: "Students believe all bacteria cause disease and should be eliminated. In reality, the vast majority of bacteria are beneficial or neutral, playing essential roles in human health, ecosystems, and food production."
+  citation: "Byrne, J. (2011). Models of micro-organisms: Children's knowledge and understanding of micro-organisms from 7 to 14 years old. International Journal of Science Education, 33(14), 1927-1961."
+  probe_questions:
+    - "Are all bacteria dangerous? Can you think of any bacteria that might be helpful?"
+    - "Where do you think bacteria live? Only in sick people, or other places too?"
+    - "What would happen to the world if all bacteria disappeared overnight?"
+  confrontation_scenarios:
+    - "Your gut contains about 38 trillion bacteria — more bacterial cells than human cells in your body. These bacteria help you digest food, make vitamins, and train your immune system. Without them, you would be seriously ill. Does this change how you think about bacteria?"
+
+- id: bio-003
+  name: "Humans evolved from modern apes"
+  domain: biology
+  grade_band: "6-8"
+  description: "Students believe humans descended from chimpanzees or gorillas alive today. In fact, humans and modern apes share common ancestors that no longer exist — we are evolutionary cousins, not descendants, of modern apes."
+  citation: "Bishop, B. A., & Anderson, C. W. (1990). Student conceptions of natural selection and its role in evolution. Journal of Research in Science Teaching, 27(5), 415-427."
+  probe_questions:
+    - "Did humans evolve from chimpanzees? What makes you think so?"
+    - "If humans and chimps share a common ancestor, why are there still chimpanzees?"
+    - "What would it mean to say two species are 'related' in evolutionary terms?"
+  confrontation_scenarios:
+    - "Imagine two cousins who share the same grandparents. Neither cousin descended from the other — they share ancestors. Humans and chimpanzees are like those cousins: we share common ancestors that lived 6-7 million years ago, but those ancestors are extinct. Modern chimps evolved along their own branch, as did humans. Does this family-tree model change how you think about human evolution?"
+
+- id: bio-004
+  name: "Blood in veins is blue"
+  domain: biology
+  grade_band: "K-5"
+  description: "Students believe deoxygenated blood is blue because veins appear blue through the skin. In reality, blood is always red — bright red when oxygenated, dark red when deoxygenated. Veins appear bluish because of how skin absorbs and scatters different wavelengths of light."
+  citation: "Kutner, L. (1988). Veins: Why they look blue. Journal of Chemical Education, 65(12), 1021."
+  probe_questions:
+    - "What color is blood inside your veins? What makes you think so?"
+    - "Have you ever noticed that your veins look blue under your skin? What do you think causes that?"
+    - "When you get a cut, does the blood look blue or red?"
+  confrontation_scenarios:
+    - "Blood drawn from a vein for a blood test is always dark red — never blue. The blue color you see through your skin is an optical illusion created by how skin absorbs light: red and orange wavelengths are absorbed more than blue, so the reflected light appears bluish even though the blood beneath is dark red. Have you ever seen blue blood come out of a wound?"
+
+- id: bio-005
+  name: "Evolution means organisms try to adapt"
+  domain: biology
+  grade_band: "9-12"
+  description: "Students believe individual organisms intentionally or consciously adapt to their environment, when evolution by natural selection operates on populations over generations — individual organisms do not change their genetics in response to need."
+  citation: "Settlage, J. (1994). Conceptions of natural selection: A snapshot of the sense-making process. Journal of Research in Science Teaching, 31(5), 449-457."
+  probe_questions:
+    - "If giraffes needed longer necks to reach leaves, how did their necks get longer over time?"
+    - "Can a single organism evolve during its lifetime? What about a population?"
+    - "Does an organism 'try' to evolve to survive, or does something else happen?"
+  confrontation_scenarios:
+    - "A bacterium cannot 'decide' to become antibiotic-resistant. Instead, among millions of bacteria, a few happen to have random mutations that make them resistant. When antibiotics kill the non-resistant bacteria, the resistant ones survive and reproduce — passing resistance to offspring. No individual changed; the population shifted. How does this mechanism differ from organisms 'trying to adapt'?"
+
+- id: bio-006
+  name: "The brain is the only organ that thinks"
+  domain: biology
+  grade_band: "6-8"
+  description: "Students believe thinking, decision-making, and intelligence reside exclusively in the brain. In reality, the enteric nervous system in the gut contains about 100 million neurons and processes information independently; the immune system also has memory and decision-making properties."
+  citation: "Gershon, M. D. (1998). The Second Brain: A Groundbreaking New Understanding of Nervous Disorders of the Stomach and Intestine. HarperCollins."
+  probe_questions:
+    - "Does thinking happen only in your brain, or could other parts of your body be involved?"
+    - "Have you ever had a 'gut feeling'? Where do you think that comes from biologically?"
+    - "What does the nervous system do, and where does it exist in the body?"
+  confrontation_scenarios:
+    - "Your gut contains about 100 million neurons — more than your spinal cord. Scientists call it the 'second brain.' It regulates digestion largely independently of the brain above, and communicates with it via the vagus nerve. Feeling anxious in your stomach is a real neurological event, not just a metaphor. Does this change how you think about where 'thinking' happens?"
+
+- id: bio-007
+  name: "Cells are so small they do nothing interesting"
+  domain: biology
+  grade_band: "6-8"
+  description: "Students view cells as simple, static structural units rather than dynamic, complex systems performing thousands of simultaneous chemical reactions, information processing, and communication activities every second."
+  citation: "Dreyfus, A., & Jungwirth, E. (1989). The pupil and the living cell: A taxonomy of dysfunctional ideas about an abstract idea. Journal of Biological Education, 23(1), 49-55."
+  probe_questions:
+    - "What does a cell actually do all day?"
+    - "How does a single fertilized egg cell give rise to 37 trillion specialized cells that form a whole human body?"
+    - "Do cells communicate with each other? How might they do that?"
+  confrontation_scenarios:
+    - "A single cell contains roughly 42 million protein molecules. Each second, a cell makes about 2,000 proteins, repairs DNA errors, processes signals from neighboring cells, and manages its own energy supply — all simultaneously, without a brain or nervous system. A typical human liver cell performs over 500 distinct chemical functions. Does this change how you picture what a cell is?"
+
+- id: bio-008
+  name: "Photosynthesis and respiration are opposites that cancel out"
+  domain: biology
+  grade_band: "9-12"
+  description: "Students believe that photosynthesis in plants is completely cancelled by cellular respiration, meaning plants produce no net oxygen. In reality, plants photosynthesize more than they respire in daylight, producing net oxygen; respiration continues at night without photosynthesis."
+  citation: "Canal, P. (1999). Photosynthesis and 'inverse respiration' in plants: An inevitable misconception? International Journal of Science Education, 21(4), 363-371."
+  probe_questions:
+    - "Do plants breathe oxygen like animals do? What happens to the oxygen they produce?"
+    - "If plants both produce and consume oxygen, why do we say plants give us oxygen?"
+    - "What happens to a plant's gas exchange at night when there is no light?"
+  confrontation_scenarios:
+    - "During daylight, a healthy plant may photosynthesize at a rate 10 times faster than it respires. It produces far more oxygen than it uses — the excess is released into the atmosphere. At night, photosynthesis stops but respiration continues, consuming oxygen. The net result over a full day is a large surplus of oxygen released. Rainforests are net oxygen producers for the planet. Does this change your understanding of plant breathing?"
+
+- id: bio-009
+  name: "Vaccines give you the disease they protect against"
+  domain: biology
+  grade_band: "6-8"
+  description: "Students believe vaccines cause the disease they are designed to prevent, confusing the immune stimulation (and possible mild side effects) with actual infection. Modern vaccines use inactivated pathogens, subunits, or mRNA — not live infectious agents."
+  citation: "Leask, J., Kinnersley, P., Jackson, C., Cheater, F., Harrison, L., & Rowles, G. (2012). Communicating with parents about vaccination: A framework for health professionals. BMC Pediatrics, 12, 154."
+  probe_questions:
+    - "How do vaccines work to protect you from disease?"
+    - "Can a flu vaccine give you the flu? Why or why not?"
+    - "What is the difference between your immune system responding to a vaccine and actually being infected?"
+  confrontation_scenarios:
+    - "The flu vaccine contains either killed flu viruses or small pieces of flu proteins — not live, infectious viruses. Your immune system mounts a response (which can cause temporary tiredness or soreness), but you are never infected. Some people confuse this immune response with the actual disease. What is the key difference between 'immune system practice' and a real infection?"
+
+- id: bio-010
+  name: "Larger organisms are always more evolved than smaller ones"
+  domain: biology
+  grade_band: "6-8"
+  description: "Students equate evolutionary progress with size, complexity, or intelligence, believing that larger or more complex organisms are more evolved. Evolution has no direction or goal — bacteria that have survived for 3.5 billion years are just as evolutionarily successful as humans."
+  citation: "Gould, S. J. (1996). Full House: The Spread of Excellence from Plato to Darwin. Harmony Books."
+  probe_questions:
+    - "Which organism is more evolved: a bacterium or a human? What makes you say that?"
+    - "What does 'evolved' actually mean?"
+    - "Could a single-celled organism be considered more successful than a complex animal?"
+  confrontation_scenarios:
+    - "Bacteria have existed for about 3.5 billion years — far longer than complex animals. They inhabit boiling hot springs, solid rock, and the vacuum of space. They have survived all five mass extinctions. In terms of surviving and reproducing across diverse environments, bacteria are extraordinarily successful. 'More evolved' has no scientific meaning — evolution is not a ladder with humans at the top."
