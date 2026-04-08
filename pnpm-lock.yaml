@@ -134,6 +134,9 @@ importers:
         specifier: ^3.25.76
         version: 3.25.76
     devDependencies:
+      '@types/node':
+        specifier: ^25.5.2
+        version: 25.5.2
       typescript:
         specifier: ^5.5
         version: 5.9.3
@@ -169,6 +172,9 @@ importers:
         specifier: workspace:*
         version: link:../misconceptions
     devDependencies:
+      '@types/node':
+        specifier: ^25.5.2
+        version: 25.5.2
       typescript:
         specifier: ^5.5
         version: 5.9.3

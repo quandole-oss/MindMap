@@ -9,6 +9,7 @@
     "test": "vitest"
   },
   "devDependencies": {
+    "@types/node": "^25.5.2",
     "typescript": "^5.5",
     "vitest": "^4.1.3"
   },
