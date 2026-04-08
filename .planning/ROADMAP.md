@@ -69,7 +69,7 @@ Plans:
 **Plans**: 4 plans
 Plans:
 - [x] 03-01-PLAN.md — Schema migration (vector column, concept_edges table, HNSW index) + embedding infrastructure
-- [ ] 03-02-PLAN.md — Two-stage dedup pipeline (pgvector ANN + LLM disambiguation) + edge creation in onFinish
+- [x] 03-02-PLAN.md — Two-stage dedup pipeline (pgvector ANN + LLM disambiguation) + edge creation in onFinish
 - [ ] 03-03-PLAN.md — D3.js force-directed graph page, node detail side panel, health legend, sidebar link
 - [ ] 03-04-PLAN.md — Bridge node detection (betweenness centrality) + weekly surprise connection toast
 **UI hint**: yes
