@@ -1,0 +1,75 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { BookOpen, Users, LogOut, User } from "lucide-react";
+
+import { signOutAction } from "@/actions/auth";
+import { cn } from "@/lib/utils";
+
+interface SidebarProps {
+  role: "student" | "teacher";
+  userName?: string | null;
+}
+
+const studentNavItems = [
+  { href: "/student", label: "My Profile", icon: User },
+  { href: "/student/join", label: "Join a Class", icon: BookOpen },
+];
+
+const teacherNavItems = [
+  { href: "/teacher", label: "My Classes", icon: Users },
+];
+
+export function Sidebar({ role, userName }: SidebarProps) {
+  const pathname = usePathname();
+  const navItems = role === "teacher" ? teacherNavItems : studentNavItems;
+
+  return (
+    <aside className="w-[240px] shrink-0 bg-[#f4f4f5] flex flex-col h-screen fixed left-0 top-0">
+      {/* Wordmark */}
+      <div className="px-4 py-5 border-b border-[#e4e4e7]">
+        <span className="text-[20px] font-semibold text-[#18181b]">MindMap</span>
+      </div>
+
+      {/* Nav items */}
+      <nav className="flex-1 px-2 py-3 flex flex-col gap-1">
+        {navItems.map((item) => {
+          const Icon = item.icon;
+          const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                "flex items-center gap-3 h-10 px-4 rounded-lg text-[14px] font-normal transition-colors",
+                isActive
+                  ? "bg-[#18181b] text-white"
+                  : "text-[#52525b] hover:bg-[#e4e4e7] hover:text-[#18181b]"
+              )}
+            >
+              <Icon className="size-4 shrink-0" />
+              {item.label}
+            </Link>
+          );
+        })}
+      </nav>
+
+      {/* Logout button */}
+      <div className="px-2 py-3 border-t border-[#e4e4e7]">
+        {userName && (
+          <p className="px-4 pb-2 text-[12px] text-[#71717a] truncate">{userName}</p>
+        )}
+        <form action={signOutAction}>
+          <button
+            type="submit"
+            className="flex items-center gap-3 h-10 px-4 w-full rounded-lg text-[14px] text-[#52525b] hover:bg-[#e4e4e7] hover:text-[#18181b] transition-colors text-left"
+          >
+            <LogOut className="size-4 shrink-0" />
+            Log out
+          </button>
+        </form>
+      </div>
+    </aside>
+  );
+}
