@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-04-08T20:43:24.179Z"
+last_updated: "2026-04-08T20:48:29.842Z"
 progress:
   total_phases: 6
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 8
-  completed_plans: 7
-  percent: 88
+  completed_plans: 8
+  percent: 100
 ---
 
 # State: MindMap
@@ -30,18 +30,18 @@ progress:
 
 ## Current Position
 
-Phase: 02 (Curiosity Engine) — EXECUTING
-Plan: 3 of 4
+Phase: 02 (Curiosity Engine) — COMPLETE
+Plan: 4 of 4
 **Milestone**: v1 — Initial Release
-**Current Phase**: 1 (Foundation)
-**Current Plan**: 4 (01-04) — COMPLETE
+**Current Phase**: 2 (Curiosity Engine)
+**Current Plan**: 4 (02-04) — COMPLETE
 **Phase Status**: Complete
 
 ```
-Progress: [█████████░] 88%
+Progress: [██████████] 100%
 
 Phase 1: Foundation          [ COMPLETE — 4/4 plans done ]
-Phase 2: Curiosity Engine    [ EXECUTING — 3/4 plans done ]
+Phase 2: Curiosity Engine    [ COMPLETE — 4/4 plans done ]
 Phase 3: Knowledge Graph     [ Not started ]
 Phase 4: Misconception Diag  [ Not started ]
 Phase 5: Teacher Dashboard   [ Not started ]
@@ -54,9 +54,9 @@ Phase 6: Demo & Deployment   [ Not started ]
 
 | Metric | Value |
 |--------|-------|
-| Plans completed | 7 |
-| Plans attempted | 7 |
-| Phases completed | 1 |
+| Plans completed | 8 |
+| Plans attempted | 8 |
+| Phases completed | 2 |
 | Requirements mapped | 49/49 |
 | Node repairs used | 0 |
 
@@ -68,6 +68,7 @@ Phase 6: Demo & Deployment   [ Not started ]
 | Phase 01-foundation P01-04 | 900 | 2 tasks | 13 files |
 | Phase 02-curiosity-engine P01 | 215 | 2 tasks | 15 files |
 | Phase 02-curiosity-engine P03 | 494 | 2 tasks | 11 files |
+| Phase 02-curiosity-engine P04 | 137 | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -93,6 +94,8 @@ Phase 6: Demo & Deployment   [ Not started ]
 | toTextStreamResponse() for useCompletion | toUIMessageStreamResponse() is for useChat; useCompletion expects text stream protocol |
 | Peer deps unified in apps/web for drizzle-orm | @neondatabase/serverless + pg + @opentelemetry/api + @types/pg added to apps/web so drizzle-orm resolves to single instance matching @mindmap/db |
 | createLLMAdapter().getModel() in API route | Avoids adding @ai-sdk/anthropic as apps/web direct dep; keeps adapter factory pattern consistent |
+| getStreak() allows yesterday as streak start | Streak doesn't break until the day passes without a question; if today has no question yet, yesterday is a valid streak start |
+| StreakBadge student-only in sidebar | Streak is a student feature; conditional on role === "student" to avoid showing in teacher sidebar |
 
 ### Open Questions
 
@@ -113,8 +116,8 @@ None.
 ## Session Continuity
 
 **Last updated**: 2026-04-08
-**Last action**: Completed 02-curiosity-engine-02-03 — streaming /api/ask route, QuestionForm + AnswerDisplay components, student dashboard updated with question panel as primary CTA
-**Next action**: Execute 02-04-PLAN.md (final plan in Phase 2 Curiosity Engine)
+**Last action**: Completed 02-curiosity-engine-02-04 — question history page at /student/questions, StreakBadge in sidebar, "My Questions" nav link, streak logic fix
+**Next action**: Transition to Phase 3 (Knowledge Graph) — run /gsd-plan-phase 3
 
 **Stack snapshot**:
 

@@ -23,8 +23,8 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **CURI-01**: Student can submit one curiosity question per day via text input
 - [x] **CURI-02**: AI responds with a rich, age-appropriate answer based on student grade level
 - [x] **CURI-03**: AI asks one Socratic follow-up question after each answer to deepen engagement
-- [ ] **CURI-04**: Student can view their full question history with timestamps
-- [ ] **CURI-05**: Daily streak tracking visible to the student (days-in-a-row)
+- [x] **CURI-04**: Student can view their full question history with timestamps
+- [x] **CURI-05**: Daily streak tracking visible to the student (days-in-a-row)
 - [x] **CURI-06**: AI extracts underlying concepts from each question/answer exchange
 - [x] **CURI-07**: Extracted concepts are added as nodes to the student's knowledge graph
 
@@ -149,8 +149,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CURI-01 | Phase 2 | Complete |
 | CURI-02 | Phase 2 | Complete |
 | CURI-03 | Phase 2 | Complete |
-| CURI-04 | Phase 2 | Pending |
-| CURI-05 | Phase 2 | Pending |
+| CURI-04 | Phase 2 | Complete |
+| CURI-05 | Phase 2 | Complete |
 | CURI-06 | Phase 2 | Complete |
 | CURI-07 | Phase 2 | Complete |
 | MISC-04 | Phase 2 | Complete |
