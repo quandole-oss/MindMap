@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-04-08T20:54:52.562Z"
+last_updated: "2026-04-08T21:24:41.685Z"
 progress:
   total_phases: 6
   completed_phases: 2
-  total_plans: 8
-  completed_plans: 8
-  percent: 100
+  total_plans: 12
+  completed_plans: 9
+  percent: 75
 ---
 
 # State: MindMap
@@ -22,7 +22,7 @@ progress:
 
 **Core Value**: Show what students actually believe, why they believe it, and how it connects to everything else they think they know.
 
-**Current Focus**: Phase 2 — Curiosity Engine
+**Current Focus**: Phase 3 — Knowledge Graph
 
 **One-liner**: AI-powered K-12 curiosity engine with personal knowledge graph and misconception diagnostics.
 
@@ -30,19 +30,19 @@ progress:
 
 ## Current Position
 
-Phase: 3
-Plan: Not started
+Phase: 03 (Knowledge Graph) — EXECUTING
+Plan: 2 of 4
 **Milestone**: v1 — Initial Release
-**Current Phase**: 2 (Curiosity Engine)
-**Current Plan**: 4 (02-04) — COMPLETE
-**Phase Status**: Complete
+**Current Phase**: 3 (Knowledge Graph)
+**Current Plan**: 1 (03-01) — COMPLETE
+**Phase Status**: In Progress
 
 ```
-Progress: [██████████] 100%
+Progress: [████████░░] 75%
 
 Phase 1: Foundation          [ COMPLETE — 4/4 plans done ]
 Phase 2: Curiosity Engine    [ COMPLETE — 4/4 plans done ]
-Phase 3: Knowledge Graph     [ Not started ]
+Phase 3: Knowledge Graph     [ IN PROGRESS — 1/4 plans done ]
 Phase 4: Misconception Diag  [ Not started ]
 Phase 5: Teacher Dashboard   [ Not started ]
 Phase 6: Demo & Deployment   [ Not started ]
@@ -54,8 +54,8 @@ Phase 6: Demo & Deployment   [ Not started ]
 
 | Metric | Value |
 |--------|-------|
-| Plans completed | 8 |
-| Plans attempted | 8 |
+| Plans completed | 9 |
+| Plans attempted | 9 |
 | Phases completed | 2 |
 | Requirements mapped | 49/49 |
 | Node repairs used | 0 |
@@ -69,6 +69,7 @@ Phase 6: Demo & Deployment   [ Not started ]
 | Phase 02-curiosity-engine P01 | 215 | 2 tasks | 15 files |
 | Phase 02-curiosity-engine P03 | 494 | 2 tasks | 11 files |
 | Phase 02-curiosity-engine P04 | 137 | 3 tasks | 7 files |
+| Phase 03-knowledge-graph P01 | 225 | 2 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -96,6 +97,8 @@ Phase 6: Demo & Deployment   [ Not started ]
 | createLLMAdapter().getModel() in API route | Avoids adding @ai-sdk/anthropic as apps/web direct dep; keeps adapter factory pattern consistent |
 | getStreak() allows yesterday as streak start | Streak doesn't break until the day passes without a question; if today has no question yet, yesterday is a valid streak start |
 | StreakBadge student-only in sidebar | Streak is a student feature; conditional on role === "student" to avoid showing in teacher sidebar |
+| Sheet/Tooltip use @base-ui/react Drawer+Tooltip primitives | npx shadcn add unavailable in execution environment; components written manually matching existing alert-dialog.tsx pattern |
+| visitCount defaults to 0 on concepts table | 0 is semantically correct for an unvisited concept; increments on first question link |
 
 ### Open Questions
 
@@ -116,15 +119,15 @@ None.
 ## Session Continuity
 
 **Last updated**: 2026-04-08
-**Last action**: Completed 02-curiosity-engine-02-04 — question history page at /student/questions, StreakBadge in sidebar, "My Questions" nav link, streak logic fix
-**Next action**: Transition to Phase 3 (Knowledge Graph) — run /gsd-plan-phase 3
+**Last action**: Completed 03-knowledge-graph-03-01 — pgvector schema (embedding vector(1536), visitCount, HNSW index), concept_edges table, generateEmbedding() in @mindmap/llm, D3 + shadcn Sheet/Tooltip installed
+**Next action**: Execute 03-02 — concept deduplication pipeline
 
 **Stack snapshot**:
 
 - Monorepo: Turborepo + pnpm (DONE — all 5 packages scaffolded)
 - Packages: `@mindmap/db`, `@mindmap/misconceptions`, `@mindmap/llm`, `@mindmap/router`, `apps/web`
-- DB: PostgreSQL 16 + pgvector running in Docker, Drizzle ORM schema pushed (6 tables)
-- Frontend: Next.js 15.5.14, D3.js v7 (Phase 3)
+- DB: PostgreSQL 16 + pgvector running in Docker, Drizzle ORM schema pushed (8 tables — concepts now has embedding vector(1536) + visitCount; concept_edges added)
+- Frontend: Next.js 15.5.14, D3.js v7 installed, Sheet + Tooltip shadcn components added
 - LLM: Vercel AI SDK, Anthropic Claude primary (Phase 2)
 - Deployment: Docker Compose + Vercel/Neon
 

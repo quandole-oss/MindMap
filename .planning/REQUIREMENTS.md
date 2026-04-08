@@ -30,7 +30,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Knowledge Graph
 
-- [ ] **GRPH-01**: Concepts are stored as nodes with embedding vectors in PostgreSQL + pgvector
+- [x] **GRPH-01**: Concepts are stored as nodes with embedding vectors in PostgreSQL + pgvector
 - [ ] **GRPH-02**: New concepts are deduplicated via two-stage process: pgvector ANN similarity search + LLM disambiguation for ambiguous matches
 - [ ] **GRPH-03**: Concept edges are created between related concepts (curiosity link, bridge, misconception cluster)
 - [ ] **GRPH-04**: Force-directed D3.js graph visualization renders the student's personal knowledge graph
@@ -158,7 +158,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | INFR-03 | Phase 2 | Complete |
 | INFR-04 | Phase 2 | Complete |
 | PRIV-01 | Phase 2 | Complete |
-| GRPH-01 | Phase 3 | Pending |
+| GRPH-01 | Phase 3 | Complete |
 | GRPH-02 | Phase 3 | Pending |
 | GRPH-03 | Phase 3 | Pending |
 | GRPH-04 | Phase 3 | Pending |
