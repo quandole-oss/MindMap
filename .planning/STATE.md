@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-04-08T22:55:06.277Z"
+last_updated: "2026-04-08T23:29:25.808Z"
 progress:
   total_phases: 6
   completed_phases: 5
   total_plans: 21
-  completed_plans: 17
-  percent: 81
+  completed_plans: 19
+  percent: 90
 ---
 
 # State: MindMap
@@ -31,7 +31,7 @@ progress:
 ## Current Position
 
 Phase: 06 (Demo & Deployment) — EXECUTING
-Plan: 1 of 4
+Plan: 2 of 4
 **Milestone**: v1 — Initial Release
 **Current Phase**: 5 (Teacher Dashboard) — COMPLETE
 **Current Plan**: 3 (05-03) — DONE
@@ -62,6 +62,7 @@ Phase 6: Demo & Deployment   [ Not started ]
 | Phase 05 P01 | 130 | 2 tasks | 3 files |
 | Phase 05 P02 | 480 | 2 tasks | 8 files |
 | Phase 05 P03 | 240 | 2 tasks | 3 files |
+| Phase 06 P02 | 300 | 2 tasks | 6 files |
 
 ### Execution History
 
@@ -128,6 +129,9 @@ Phase 6: Demo & Deployment   [ Not started ]
 | Nested anchor fix in teacher class list (05-02) | Outer Link changed to div; dashboard link wraps content area, roster link is sibling — valid HTML, no onClick stopPropagation hacks |
 | ConceptsTab is RSC-compatible (no use client) (05-03) | Only receives props, no interaction needed; MisconceptionsTab uses use client for drill-down toggle via useState |
 | Heatmap and progress bar widths use inline styles for dynamic values (05-03) | Tailwind cannot express arbitrary runtime percentages/opacities; rgba opacity and percentage widths must be inline |
+| pnpm@10.30.3 pinned in Dockerfile corepack (06-02) | Matches root packageManager field; mismatched version would cause build failures |
+| Non-root nextjs user in Docker runner stage (06-02) | T-06-06 threat mitigation — elevation of privilege; addgroup/adduser + USER nextjs before CMD |
+| next/font/google self-hosts fonts at build time (06-02) | No external tracking despite import name; Next.js downloads and serves font files statically |
 
 ### Open Questions
 
@@ -147,8 +151,8 @@ None.
 ## Session Continuity
 
 **Last updated**: 2026-04-08
-**Last action**: Completed 05-03 — Concepts heatmap tab (color-intensity table) and Misconceptions cluster tab (progress bars + student drill-down); all 4 dashboard tabs now render real data
-**Next action**: Begin Phase 6 — Demo & Deployment
+**Last action**: Completed 06-02 — Multi-stage Dockerfile with turbo prune, docker-compose web service with healthcheck, vercel.json, .env.example, and INFR-05 telemetry audit (clean)
+**Next action**: Continue Phase 6 — Plan 03
 
 **Stack snapshot**:
 

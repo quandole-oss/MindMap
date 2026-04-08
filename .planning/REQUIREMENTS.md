@@ -63,11 +63,11 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Deployment & Infrastructure
 
-- [ ] **INFR-01**: Application deploys via Docker Compose with a single command
-- [ ] **INFR-02**: Application deploys to Vercel + Neon for cloud hosting
+- [x] **INFR-01**: Application deploys via Docker Compose with a single command
+- [x] **INFR-02**: Application deploys to Vercel + Neon for cloud hosting
 - [x] **INFR-03**: LLM layer uses Anthropic Claude API as primary provider via Vercel AI SDK
 - [x] **INFR-04**: LLM adapter pattern supports swapping providers via environment variable
-- [ ] **INFR-05**: No telemetry or third-party data sharing — all student data stays on deployer's server
+- [x] **INFR-05**: No telemetry or third-party data sharing — all student data stays on deployer's server
 - [x] **INFR-06**: Data model includes COPPA-compliant TTL fields for student data retention
 
 ### Data Privacy & Compliance
@@ -177,9 +177,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DASH-04 | Phase 5 | Complete |
 | DASH-05 | Phase 5 | Complete |
 | DASH-06 | Phase 5 | Complete |
-| INFR-01 | Phase 6 | Pending |
-| INFR-02 | Phase 6 | Pending |
-| INFR-05 | Phase 6 | Pending |
+| INFR-01 | Phase 6 | Complete |
+| INFR-02 | Phase 6 | Complete |
+| INFR-05 | Phase 6 | Complete |
 | PRIV-03 | Phase 6 | Pending |
 | DEMO-01 | Phase 6 | Pending |
 | DEMO-02 | Phase 6 | Pending |

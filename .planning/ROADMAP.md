@@ -120,7 +120,7 @@ Plans:
 **Plans**: 4 plans
 Plans:
 - [x] 06-01-PLAN.md — Seed data scripts (30-day, 60-day students + 20-student class)
-- [ ] 06-02-PLAN.md — Docker Compose full-stack + Vercel deployment config + telemetry audit
+- [x] 06-02-PLAN.md — Docker Compose full-stack + Vercel deployment config + telemetry audit
 - [ ] 06-03-PLAN.md — COPPA TTL cleanup endpoint + PRIV-01 audit
 - [ ] 06-04-PLAN.md — WCAG AA color fixes + responsive design + graceful LLM error handling
 **UI hint**: yes
@@ -136,7 +136,7 @@ Plans:
 | 3. Knowledge Graph | 4/4 | Complete   | 2026-04-08 |
 | 4. Misconception Diagnostics | 2/2 | Complete   | 2026-04-08 |
 | 5. Teacher Dashboard | 3/3 | Complete   | 2026-04-08 |
-| 6. Demo & Deployment | 0/4 | In Progress | - |
+| 6. Demo & Deployment | 2/4 | In Progress|  |
 
 ---
 
