@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-04-08T18:50:30.484Z"
+last_updated: "2026-04-08T20:19:36.291Z"
 progress:
   total_phases: 6
   completed_phases: 1
-  total_plans: 4
-  completed_plans: 4
-  percent: 100
+  total_plans: 8
+  completed_plans: 5
+  percent: 63
 ---
 
 # State: MindMap
@@ -22,7 +22,7 @@ progress:
 
 **Core Value**: Show what students actually believe, why they believe it, and how it connects to everything else they think they know.
 
-**Current Focus**: Phase 1 — Foundation
+**Current Focus**: Phase 2 — Curiosity Engine
 
 **One-liner**: AI-powered K-12 curiosity engine with personal knowledge graph and misconception diagnostics.
 
@@ -30,18 +30,18 @@ progress:
 
 ## Current Position
 
-Phase: 2
-Plan: Not started
+Phase: 02 (Curiosity Engine) — EXECUTING
+Plan: 2 of 4
 **Milestone**: v1 — Initial Release
 **Current Phase**: 1 (Foundation)
 **Current Plan**: 4 (01-04) — COMPLETE
 **Phase Status**: Complete
 
 ```
-Progress: [██████████] 100%
+Progress: [██████░░░░] 63%
 
 Phase 1: Foundation          [ COMPLETE — 4/4 plans done ]
-Phase 2: Curiosity Engine    [ Not started ]
+Phase 2: Curiosity Engine    [ EXECUTING — 1/4 plans done ]
 Phase 3: Knowledge Graph     [ Not started ]
 Phase 4: Misconception Diag  [ Not started ]
 Phase 5: Teacher Dashboard   [ Not started ]
@@ -54,8 +54,8 @@ Phase 6: Demo & Deployment   [ Not started ]
 
 | Metric | Value |
 |--------|-------|
-| Plans completed | 4 |
-| Plans attempted | 4 |
+| Plans completed | 5 |
+| Plans attempted | 5 |
 | Phases completed | 1 |
 | Requirements mapped | 49/49 |
 | Node repairs used | 0 |
@@ -66,6 +66,7 @@ Phase 6: Demo & Deployment   [ Not started ]
 |------|-------------|-------|-------|
 | Phase 01-foundation P01 | 220 | 2 tasks | 29 files |
 | Phase 01-foundation P01-04 | 900 | 2 tasks | 13 files |
+| Phase 02-curiosity-engine P01 | 215 | 2 tasks | 15 files |
 
 ## Accumulated Context
 
@@ -85,6 +86,9 @@ Phase 6: Demo & Deployment   [ Not started ]
 | Two-query pattern in removeStudentAction | Fetch enrollment then verify class ownership — avoids needing Drizzle relation config |
 | @base-ui/react AlertDialogTrigger has no asChild | Apply button styles directly via className — base-ui Trigger does not support asChild like Radix UI |
 | Join code charset excludes 0,O,1,I | ABCDEFGHJKLMNPQRSTUVWXYZ23456789 for classroom dictation readability (AUTH-05) |
+| Grade band inlined in enrich.ts | Avoided circular dep: @mindmap/llm importing @mindmap/router which imports @mindmap/misconceptions |
+| Single-word concept matching is one-directional | Bidirectional substring match caused false positives (e.g. "gravity" matching "In space there is no gravity") |
+| extractConcepts uses experimental_output + Output.object | AI SDK v6 pattern for Zod-validated structured LLM output |
 
 ### Open Questions
 
@@ -105,8 +109,8 @@ None.
 ## Session Continuity
 
 **Last updated**: 2026-04-08
-**Last action**: Completed 01-foundation-01-04 — class management server actions, UI pages, join code flow, roster with AlertDialog
-**Next action**: Phase 1 complete — run /gsd-transition to move to Phase 2 (Curiosity Engine)
+**Last action**: Completed 02-curiosity-engine-02-01 — LLM adapter (Anthropic), prompt builders (enrich + extract), router engine (39 tests passing)
+**Next action**: Execute 02-02-PLAN.md (next plan in Phase 2 Curiosity Engine)
 
 **Stack snapshot**:
 

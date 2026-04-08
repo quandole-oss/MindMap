@@ -21,11 +21,11 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Curiosity Engine
 
 - [ ] **CURI-01**: Student can submit one curiosity question per day via text input
-- [ ] **CURI-02**: AI responds with a rich, age-appropriate answer based on student grade level
-- [ ] **CURI-03**: AI asks one Socratic follow-up question after each answer to deepen engagement
+- [x] **CURI-02**: AI responds with a rich, age-appropriate answer based on student grade level
+- [x] **CURI-03**: AI asks one Socratic follow-up question after each answer to deepen engagement
 - [ ] **CURI-04**: Student can view their full question history with timestamps
 - [ ] **CURI-05**: Daily streak tracking visible to the student (days-in-a-row)
-- [ ] **CURI-06**: AI extracts underlying concepts from each question/answer exchange
+- [x] **CURI-06**: AI extracts underlying concepts from each question/answer exchange
 - [ ] **CURI-07**: Extracted concepts are added as nodes to the student's knowledge graph
 
 ### Knowledge Graph
@@ -44,8 +44,8 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **MISC-01**: YAML misconception library with 35+ entries across 4 domains (physics, biology, math, history/social studies)
 - [ ] **MISC-02**: Each library entry includes: id, name, domain, grade_band, description, citation, probe_questions, confrontation scenarios
 - [ ] **MISC-03**: Misconception library is validated via CI (schema validation on entries)
-- [ ] **MISC-04**: Routing engine determines enrich vs. diagnose mode based on extracted concept + grade band + misconception library lookup
-- [ ] **MISC-05**: Enrich mode: AI gives rich answer, asks Socratic follow-up, adds concept as unprobed node
+- [x] **MISC-04**: Routing engine determines enrich vs. diagnose mode based on extracted concept + grade band + misconception library lookup
+- [x] **MISC-05**: Enrich mode: AI gives rich answer, asks Socratic follow-up, adds concept as unprobed node
 - [ ] **MISC-06**: Diagnose mode: AI opens with open-ended probe ("Tell me what you think happens when...")
 - [ ] **MISC-07**: Diagnose mode: AI classifies student's mental model against misconception library
 - [ ] **MISC-08**: Diagnose mode: AI generates targeted confrontation scenario to create cognitive conflict
@@ -65,14 +65,14 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [ ] **INFR-01**: Application deploys via Docker Compose with a single command
 - [ ] **INFR-02**: Application deploys to Vercel + Neon for cloud hosting
-- [ ] **INFR-03**: LLM layer uses Anthropic Claude API as primary provider via Vercel AI SDK
-- [ ] **INFR-04**: LLM adapter pattern supports swapping providers via environment variable
+- [x] **INFR-03**: LLM layer uses Anthropic Claude API as primary provider via Vercel AI SDK
+- [x] **INFR-04**: LLM adapter pattern supports swapping providers via environment variable
 - [ ] **INFR-05**: No telemetry or third-party data sharing — all student data stays on deployer's server
 - [x] **INFR-06**: Data model includes COPPA-compliant TTL fields for student data retention
 
 ### Data Privacy & Compliance
 
-- [ ] **PRIV-01**: No student PII is sent to LLM providers in prompts (anonymized context only)
+- [x] **PRIV-01**: No student PII is sent to LLM providers in prompts (anonymized context only)
 - [x] **PRIV-02**: Student data is scoped to the deploying instance — no cross-instance data sharing
 - [ ] **PRIV-03**: Data retention TTL fields enforce automatic cleanup of expired student data
 
@@ -147,17 +147,17 @@ Which phases cover which requirements. Updated during roadmap creation.
 | INFR-06 | Phase 1 | Complete |
 | PRIV-02 | Phase 1 | Complete |
 | CURI-01 | Phase 2 | Pending |
-| CURI-02 | Phase 2 | Pending |
-| CURI-03 | Phase 2 | Pending |
+| CURI-02 | Phase 2 | Complete |
+| CURI-03 | Phase 2 | Complete |
 | CURI-04 | Phase 2 | Pending |
 | CURI-05 | Phase 2 | Pending |
-| CURI-06 | Phase 2 | Pending |
+| CURI-06 | Phase 2 | Complete |
 | CURI-07 | Phase 2 | Pending |
-| MISC-04 | Phase 2 | Pending |
-| MISC-05 | Phase 2 | Pending |
-| INFR-03 | Phase 2 | Pending |
-| INFR-04 | Phase 2 | Pending |
-| PRIV-01 | Phase 2 | Pending |
+| MISC-04 | Phase 2 | Complete |
+| MISC-05 | Phase 2 | Complete |
+| INFR-03 | Phase 2 | Complete |
+| INFR-04 | Phase 2 | Complete |
+| PRIV-01 | Phase 2 | Complete |
 | GRPH-01 | Phase 3 | Pending |
 | GRPH-02 | Phase 3 | Pending |
 | GRPH-03 | Phase 3 | Pending |
