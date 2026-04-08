@@ -32,7 +32,7 @@
   5. Running `pnpm build` from the repo root completes without errors across all packages in dependency order
 **Plans**: 4 plans
 Plans:
-- [ ] 01-01-PLAN.md — Monorepo scaffold, Docker Compose, Drizzle schema with COPPA TTL
+- [x] 01-01-PLAN.md — Monorepo scaffold, Docker Compose, Drizzle schema with COPPA TTL
 - [ ] 01-02-PLAN.md — Misconception library package (YAML + Zod + Vitest)
 - [ ] 01-03-PLAN.md — Auth.js v5 authentication, landing page, app shell UI
 - [ ] 01-04-PLAN.md — Class management (create, join, roster, grade levels)
@@ -108,7 +108,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 0/4 | Planning complete | - |
+| 1. Foundation | 1/4 | In Progress|  |
 | 2. Curiosity Engine | 0/? | Not started | - |
 | 3. Knowledge Graph | 0/? | Not started | - |
 | 4. Misconception Diagnostics | 0/? | Not started | - |

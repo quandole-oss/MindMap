@@ -68,12 +68,12 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **INFR-03**: LLM layer uses Anthropic Claude API as primary provider via Vercel AI SDK
 - [ ] **INFR-04**: LLM adapter pattern supports swapping providers via environment variable
 - [ ] **INFR-05**: No telemetry or third-party data sharing — all student data stays on deployer's server
-- [ ] **INFR-06**: Data model includes COPPA-compliant TTL fields for student data retention
+- [x] **INFR-06**: Data model includes COPPA-compliant TTL fields for student data retention
 
 ### Data Privacy & Compliance
 
 - [ ] **PRIV-01**: No student PII is sent to LLM providers in prompts (anonymized context only)
-- [ ] **PRIV-02**: Student data is scoped to the deploying instance — no cross-instance data sharing
+- [x] **PRIV-02**: Student data is scoped to the deploying instance — no cross-instance data sharing
 - [ ] **PRIV-03**: Data retention TTL fields enforce automatic cleanup of expired student data
 
 ### Demo & Polish
@@ -144,8 +144,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | MISC-01 | Phase 1 | Pending |
 | MISC-02 | Phase 1 | Pending |
 | MISC-03 | Phase 1 | Pending |
-| INFR-06 | Phase 1 | Pending |
-| PRIV-02 | Phase 1 | Pending |
+| INFR-06 | Phase 1 | Complete |
+| PRIV-02 | Phase 1 | Complete |
 | CURI-01 | Phase 2 | Pending |
 | CURI-02 | Phase 2 | Pending |
 | CURI-03 | Phase 2 | Pending |
