@@ -119,7 +119,7 @@ Plans:
   5. When the LLM API is unavailable, the application shows a graceful error state rather than crashing, and normal LLM calls never transmit student PII in prompts
 **Plans**: 4 plans
 Plans:
-- [ ] 06-01-PLAN.md — Seed data scripts (30-day, 60-day students + 20-student class)
+- [x] 06-01-PLAN.md — Seed data scripts (30-day, 60-day students + 20-student class)
 - [ ] 06-02-PLAN.md — Docker Compose full-stack + Vercel deployment config + telemetry audit
 - [ ] 06-03-PLAN.md — COPPA TTL cleanup endpoint + PRIV-01 audit
 - [ ] 06-04-PLAN.md — WCAG AA color fixes + responsive design + graceful LLM error handling
