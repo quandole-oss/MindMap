@@ -33,7 +33,7 @@
 **Plans**: 4 plans
 Plans:
 - [x] 01-01-PLAN.md — Monorepo scaffold, Docker Compose, Drizzle schema with COPPA TTL
-- [ ] 01-02-PLAN.md — Misconception library package (YAML + Zod + Vitest)
+- [x] 01-02-PLAN.md — Misconception library package (YAML + Zod + Vitest)
 - [ ] 01-03-PLAN.md — Auth.js v5 authentication, landing page, app shell UI
 - [ ] 01-04-PLAN.md — Class management (create, join, roster, grade levels)
 **UI hint**: yes
