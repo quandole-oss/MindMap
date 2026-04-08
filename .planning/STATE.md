@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-04-08T17:56:18.275Z"
+last_updated: "2026-04-08T18:33:54.485Z"
 progress:
   total_phases: 6
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 4
-  completed_plans: 1
-  percent: 25
+  completed_plans: 4
+  percent: 100
 ---
 
 # State: MindMap
@@ -30,17 +30,17 @@ progress:
 
 ## Current Position
 
-Phase: 01 (Foundation) — EXECUTING
-Plan: 2 of 4
+Phase: 01 (Foundation) — COMPLETE
+Plan: 4 of 4 (all plans done)
 **Milestone**: v1 — Initial Release
 **Current Phase**: 1 (Foundation)
-**Current Plan**: 2 (01-02)
-**Phase Status**: In progress
+**Current Plan**: 4 (01-04) — COMPLETE
+**Phase Status**: Complete
 
 ```
-Progress: [███░░░░░░░] 25%
+Progress: [██████████] 100%
 
-Phase 1: Foundation          [ In progress — 1/4 plans done ]
+Phase 1: Foundation          [ COMPLETE — 4/4 plans done ]
 Phase 2: Curiosity Engine    [ Not started ]
 Phase 3: Knowledge Graph     [ Not started ]
 Phase 4: Misconception Diag  [ Not started ]
@@ -54,9 +54,9 @@ Phase 6: Demo & Deployment   [ Not started ]
 
 | Metric | Value |
 |--------|-------|
-| Plans completed | 1 |
-| Plans attempted | 1 |
-| Phases completed | 0 |
+| Plans completed | 4 |
+| Plans attempted | 4 |
+| Phases completed | 1 |
 | Requirements mapped | 49/49 |
 | Node repairs used | 0 |
 
@@ -65,6 +65,7 @@ Phase 6: Demo & Deployment   [ Not started ]
 | Plan | Duration (s) | Tasks | Files |
 |------|-------------|-------|-------|
 | Phase 01-foundation P01 | 220 | 2 tasks | 29 files |
+| Phase 01-foundation P01-04 | 900 | 2 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -81,6 +82,9 @@ Phase 6: Demo & Deployment   [ Not started ]
 | pgvector/pgvector:pg16 Docker image | pgvector pre-installed; avoids manual extension init vs postgres:16-alpine |
 | Packages export TypeScript source directly | Next.js transpiles workspace packages; no compile step needed in packages |
 | pgvector extension deferred to Phase 3 | No vector columns in Phase 1; premature init causes confusion |
+| Two-query pattern in removeStudentAction | Fetch enrollment then verify class ownership — avoids needing Drizzle relation config |
+| @base-ui/react AlertDialogTrigger has no asChild | Apply button styles directly via className — base-ui Trigger does not support asChild like Radix UI |
+| Join code charset excludes 0,O,1,I | ABCDEFGHJKLMNPQRSTUVWXYZ23456789 for classroom dictation readability (AUTH-05) |
 
 ### Open Questions
 
@@ -101,8 +105,8 @@ None.
 ## Session Continuity
 
 **Last updated**: 2026-04-08
-**Last action**: Completed 01-foundation-01-01 — monorepo scaffold + Drizzle schema pushed to DB
-**Next action**: Execute 01-foundation-01-02 (misconception library YAML + Zod validation)
+**Last action**: Completed 01-foundation-01-04 — class management server actions, UI pages, join code flow, roster with AlertDialog
+**Next action**: Phase 1 complete — run /gsd-transition to move to Phase 2 (Curiosity Engine)
 
 **Stack snapshot**:
 

@@ -9,7 +9,7 @@
 
 ## Phases
 
-- [ ] **Phase 1: Foundation** - Monorepo scaffold, database schema, misconception library package, and authentication
+- [x] **Phase 1: Foundation** - Monorepo scaffold, database schema, misconception library package, and authentication (completed 2026-04-08)
 - [ ] **Phase 2: Curiosity Engine** - Daily question submission, AI-powered answers, concept extraction, and routing logic
 - [ ] **Phase 3: Knowledge Graph** - pgvector concept deduplication, graph storage, and D3.js force-directed visualization
 - [ ] **Phase 4: Misconception Diagnostics** - Full probe/classify/confront/resolve diagnostic flow with node state management
@@ -35,7 +35,7 @@ Plans:
 - [x] 01-01-PLAN.md — Monorepo scaffold, Docker Compose, Drizzle schema with COPPA TTL
 - [x] 01-02-PLAN.md — Misconception library package (YAML + Zod + Vitest)
 - [x] 01-03-PLAN.md — Auth.js v5 authentication, landing page, app shell UI
-- [ ] 01-04-PLAN.md — Class management (create, join, roster, grade levels)
+- [x] 01-04-PLAN.md — Class management (create, join, roster, grade levels)
 **UI hint**: yes
 
 ### Phase 2: Curiosity Engine
@@ -108,7 +108,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 1/4 | In Progress|  |
+| 1. Foundation | 4/4 | Complete   | 2026-04-08 |
 | 2. Curiosity Engine | 0/? | Not started | - |
 | 3. Knowledge Graph | 0/? | Not started | - |
 | 4. Misconception Diagnostics | 0/? | Not started | - |

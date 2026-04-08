@@ -13,10 +13,10 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **AUTH-02**: Teacher can sign up with email and password with teacher role
 - [ ] **AUTH-03**: User can log in and stay logged in across browser refresh
 - [ ] **AUTH-04**: User can log out from any page
-- [ ] **AUTH-05**: Teacher can create a class and receive a join code
-- [ ] **AUTH-06**: Student can join a class using a join code
-- [ ] **AUTH-07**: Teacher can view and manage class roster
-- [ ] **AUTH-08**: Student profile includes grade level (set by teacher or self-reported)
+- [x] **AUTH-05**: Teacher can create a class and receive a join code
+- [x] **AUTH-06**: Student can join a class using a join code
+- [x] **AUTH-07**: Teacher can view and manage class roster
+- [x] **AUTH-08**: Student profile includes grade level (set by teacher or self-reported)
 
 ### Curiosity Engine
 
@@ -137,10 +137,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | AUTH-02 | Phase 1 | Pending |
 | AUTH-03 | Phase 1 | Pending |
 | AUTH-04 | Phase 1 | Pending |
-| AUTH-05 | Phase 1 | Pending |
-| AUTH-06 | Phase 1 | Pending |
-| AUTH-07 | Phase 1 | Pending |
-| AUTH-08 | Phase 1 | Pending |
+| AUTH-05 | Phase 1 | Complete |
+| AUTH-06 | Phase 1 | Complete |
+| AUTH-07 | Phase 1 | Complete |
+| AUTH-08 | Phase 1 | Complete |
 | MISC-01 | Phase 1 | Pending |
 | MISC-02 | Phase 1 | Pending |
 | MISC-03 | Phase 1 | Pending |
