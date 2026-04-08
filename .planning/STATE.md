@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-04-08T20:19:36.291Z"
+last_updated: "2026-04-08T20:43:24.179Z"
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 8
-  completed_plans: 5
-  percent: 63
+  completed_plans: 7
+  percent: 88
 ---
 
 # State: MindMap
@@ -31,17 +31,17 @@ progress:
 ## Current Position
 
 Phase: 02 (Curiosity Engine) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 **Milestone**: v1 — Initial Release
 **Current Phase**: 1 (Foundation)
 **Current Plan**: 4 (01-04) — COMPLETE
 **Phase Status**: Complete
 
 ```
-Progress: [██████░░░░] 63%
+Progress: [█████████░] 88%
 
 Phase 1: Foundation          [ COMPLETE — 4/4 plans done ]
-Phase 2: Curiosity Engine    [ EXECUTING — 1/4 plans done ]
+Phase 2: Curiosity Engine    [ EXECUTING — 3/4 plans done ]
 Phase 3: Knowledge Graph     [ Not started ]
 Phase 4: Misconception Diag  [ Not started ]
 Phase 5: Teacher Dashboard   [ Not started ]
@@ -54,8 +54,8 @@ Phase 6: Demo & Deployment   [ Not started ]
 
 | Metric | Value |
 |--------|-------|
-| Plans completed | 5 |
-| Plans attempted | 5 |
+| Plans completed | 7 |
+| Plans attempted | 7 |
 | Phases completed | 1 |
 | Requirements mapped | 49/49 |
 | Node repairs used | 0 |
@@ -67,6 +67,7 @@ Phase 6: Demo & Deployment   [ Not started ]
 | Phase 01-foundation P01 | 220 | 2 tasks | 29 files |
 | Phase 01-foundation P01-04 | 900 | 2 tasks | 13 files |
 | Phase 02-curiosity-engine P01 | 215 | 2 tasks | 15 files |
+| Phase 02-curiosity-engine P03 | 494 | 2 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -89,6 +90,9 @@ Phase 6: Demo & Deployment   [ Not started ]
 | Grade band inlined in enrich.ts | Avoided circular dep: @mindmap/llm importing @mindmap/router which imports @mindmap/misconceptions |
 | Single-word concept matching is one-directional | Bidirectional substring match caused false positives (e.g. "gravity" matching "In space there is no gravity") |
 | extractConcepts uses experimental_output + Output.object | AI SDK v6 pattern for Zod-validated structured LLM output |
+| toTextStreamResponse() for useCompletion | toUIMessageStreamResponse() is for useChat; useCompletion expects text stream protocol |
+| Peer deps unified in apps/web for drizzle-orm | @neondatabase/serverless + pg + @opentelemetry/api + @types/pg added to apps/web so drizzle-orm resolves to single instance matching @mindmap/db |
+| createLLMAdapter().getModel() in API route | Avoids adding @ai-sdk/anthropic as apps/web direct dep; keeps adapter factory pattern consistent |
 
 ### Open Questions
 
@@ -109,8 +113,8 @@ None.
 ## Session Continuity
 
 **Last updated**: 2026-04-08
-**Last action**: Completed 02-curiosity-engine-02-01 — LLM adapter (Anthropic), prompt builders (enrich + extract), router engine (39 tests passing)
-**Next action**: Execute 02-02-PLAN.md (next plan in Phase 2 Curiosity Engine)
+**Last action**: Completed 02-curiosity-engine-02-03 — streaming /api/ask route, QuestionForm + AnswerDisplay components, student dashboard updated with question panel as primary CTA
+**Next action**: Execute 02-04-PLAN.md (final plan in Phase 2 Curiosity Engine)
 
 **Stack snapshot**:
 
