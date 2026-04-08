@@ -51,6 +51,7 @@ export async function getQuestionHistory() {
   return db.query.questions.findMany({
     where: eq(schema.questions.userId, session.user.id),
     orderBy: (t, { desc }) => [desc(t.createdAt)],
+    limit: 30,
   });
 }
 
@@ -58,27 +59,49 @@ export async function getStreak(): Promise<number> {
   const session = await auth();
   if (!session?.user?.id) return 0;
 
-  const questions = await db.query.questions.findMany({
+  const rows = await db.query.questions.findMany({
     where: eq(schema.questions.userId, session.user.id),
     orderBy: (t, { desc }) => [desc(t.createdAt)],
+    limit: 365,
   });
 
-  if (questions.length === 0) return 0;
+  if (rows.length === 0) return 0;
 
-  let streak = 0;
+  // Deduplicate to unique UTC dates (one question per day max anyway, but be safe)
+  const uniqueDates: Date[] = [];
+  const seenDates = new Set<string>();
+  for (const row of rows) {
+    const d = new Date(row.createdAt!);
+    d.setUTCHours(0, 0, 0, 0);
+    const key = d.toISOString();
+    if (!seenDates.has(key)) {
+      seenDates.add(key);
+      uniqueDates.push(d);
+    }
+  }
+
+  // Start from today; if today has no question, allow starting from yesterday
+  // (streak doesn't break until the day passes without a question)
   const today = new Date();
   today.setUTCHours(0, 0, 0, 0);
+  const yesterday = new Date(today.getTime() - 86_400_000);
 
-  let checkDate = new Date(today);
+  const mostRecentDate = uniqueDates[0];
+  if (
+    mostRecentDate.getTime() !== today.getTime() &&
+    mostRecentDate.getTime() !== yesterday.getTime()
+  ) {
+    return 0;
+  }
 
-  for (const question of questions) {
-    const questionDate = new Date(question.createdAt!);
-    questionDate.setUTCHours(0, 0, 0, 0);
-
-    if (questionDate.getTime() === checkDate.getTime()) {
+  // Count consecutive days backward from the most recent question date
+  let streak = 0;
+  let checkDate = new Date(mostRecentDate);
+  for (const date of uniqueDates) {
+    if (date.getTime() === checkDate.getTime()) {
       streak++;
       checkDate.setUTCDate(checkDate.getUTCDate() - 1);
-    } else if (questionDate.getTime() < checkDate.getTime()) {
+    } else {
       break;
     }
   }
