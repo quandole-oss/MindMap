@@ -8,17 +8,21 @@
     "build": "tsc --noEmit",
     "db:push": "drizzle-kit push",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate"
+    "db:migrate": "drizzle-kit migrate",
+    "seed": "tsx src/seed.ts"
   },
   "dependencies": {
     "drizzle-orm": "^0.45.2",
     "pg": "^8.13.3",
     "@neondatabase/serverless": "^1.0.2",
-    "pgvector": "^0.2.1"
+    "pgvector": "^0.2.1",
+    "bcryptjs": "^2.4.3"
   },
   "devDependencies": {
     "drizzle-kit": "^0.31.10",
     "@types/pg": "^8.11.6",
+    "@types/bcryptjs": "^2.4.6",
+    "tsx": "^4.19.2",
     "typescript": "^5.5"
   }
 }
