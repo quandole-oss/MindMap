@@ -5,6 +5,8 @@ import { useState } from "react";
 import type { ClassDashboardData } from "@/lib/dashboard-types";
 import { OverviewTab } from "@/components/dashboard/overview-tab";
 import { StudentsTab } from "@/components/dashboard/students-tab";
+import { ConceptsTab } from "./concepts-tab";
+import { MisconceptionsTab } from "./misconceptions-tab";
 
 interface DashboardTabsProps {
   data: ClassDashboardData;
@@ -44,10 +46,10 @@ export function DashboardTabs({ data }: DashboardTabsProps) {
       {/* Tab content */}
       {activeTab === "overview" && <OverviewTab totals={data.totals} />}
       {activeTab === "concepts" && (
-        <p className="text-[14px] text-[#71717a] py-8">Coming soon</p>
+        <ConceptsTab heatmap={data.conceptHeatmap} />
       )}
       {activeTab === "misconceptions" && (
-        <p className="text-[14px] text-[#71717a] py-8">Coming soon</p>
+        <MisconceptionsTab clusters={data.misconceptionClusters} />
       )}
       {activeTab === "students" && <StudentsTab students={data.students} />}
     </div>
