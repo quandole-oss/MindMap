@@ -13,12 +13,13 @@ interface SidebarProps {
 }
 
 const studentNavItems = [
-  { href: "/student", label: "My Profile", icon: User },
+  { href: "/student", label: "Dashboard", icon: User },
   { href: "/student/join", label: "Join a Class", icon: BookOpen },
 ];
 
 const teacherNavItems = [
   { href: "/teacher", label: "My Classes", icon: Users },
+  { href: "/teacher/classes/new", label: "Create a Class", icon: BookOpen },
 ];
 
 export function Sidebar({ role, userName }: SidebarProps) {
