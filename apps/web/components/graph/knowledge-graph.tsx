@@ -53,9 +53,11 @@ interface KnowledgeGraphProps {
   nodes: GraphNode[];
   edges: GraphEdge[];
   onNodeClick: (nodeId: string) => void;
+  /** Node ID to pulse with a purple glow animation (3 cycles, ~1.5s). Null to clear. */
+  highlightNodeId?: string | null;
 }
 
-export function KnowledgeGraph({ nodes, edges, onNodeClick }: KnowledgeGraphProps) {
+export function KnowledgeGraph({ nodes, edges, onNodeClick, highlightNodeId }: KnowledgeGraphProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
   const zoomRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null);
@@ -183,6 +185,7 @@ export function KnowledgeGraph({ nodes, edges, onNodeClick }: KnowledgeGraphProp
       .join("g")
       .attr("role", "button")
       .attr("tabindex", "0")
+      .attr("data-node-id", (d) => d.id)
       .attr(
         "aria-label",
         (d) =>
@@ -267,6 +270,20 @@ export function KnowledgeGraph({ nodes, edges, onNodeClick }: KnowledgeGraphProp
     };
   }, [nodes, edges]);
 
+  // Apply/remove bridge pulse animation when highlightNodeId changes
+  useEffect(() => {
+    if (!svgRef.current || !highlightNodeId) return;
+    const nodeGroup = svgRef.current.querySelector(
+      `g.nodes g[data-node-id="${highlightNodeId}"]`
+    );
+    if (!nodeGroup) return;
+    nodeGroup.classList.add("animate-bridge-pulse");
+    const timer = setTimeout(() => {
+      nodeGroup.classList.remove("animate-bridge-pulse");
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [highlightNodeId]);
+
   function resetZoom() {
     if (!svgRef.current || !zoomRef.current) return;
     d3.select(svgRef.current)
@@ -277,6 +294,16 @@ export function KnowledgeGraph({ nodes, edges, onNodeClick }: KnowledgeGraphProp
 
   return (
     <div className="relative w-full" style={{ height: "calc(100vh - 120px)" }}>
+      <style>{`
+        @keyframes bridge-pulse {
+          0%   { filter: drop-shadow(0 0 0px #a78bfa); }
+          50%  { filter: drop-shadow(0 0 8px #a78bfa); }
+          100% { filter: drop-shadow(0 0 0px #a78bfa); }
+        }
+        .animate-bridge-pulse {
+          animation: bridge-pulse 500ms ease-in-out 3;
+        }
+      `}</style>
       <svg
         ref={svgRef}
         className="w-full h-full"

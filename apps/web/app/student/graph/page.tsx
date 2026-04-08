@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
-import { getGraphData } from "@/actions/graph";
+import { getGraphData, getBridgeConnection } from "@/actions/graph";
 import { HealthLegend } from "@/components/graph/health-legend";
 import { GraphPageClient } from "./graph-page-client";
 
@@ -12,7 +12,11 @@ export default async function GraphPage() {
     redirect("/auth/signin");
   }
 
-  const graphData = await getGraphData();
+  // Fetch graph data and bridge connection in parallel
+  const [graphData, bridgeData] = await Promise.all([
+    getGraphData(),
+    getBridgeConnection(),
+  ]);
 
   return (
     <div className="pt-6 pb-8">
@@ -37,7 +41,11 @@ export default async function GraphPage() {
           </p>
         </div>
       ) : (
-        <GraphPageClient nodes={graphData.nodes} edges={graphData.edges} />
+        <GraphPageClient
+          nodes={graphData.nodes}
+          edges={graphData.edges}
+          bridgeData={bridgeData}
+        />
       )}
     </div>
   );
