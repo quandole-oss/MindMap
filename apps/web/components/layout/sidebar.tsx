@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, Users, LogOut, User, MessageSquare } from "lucide-react";
+import { BookOpen, Users, LogOut, User, MessageSquare, Network } from "lucide-react";
 
 import { signOutAction } from "@/actions/auth";
 import { cn } from "@/lib/utils";
@@ -16,6 +16,7 @@ interface SidebarProps {
 
 const studentNavItems = [
   { href: "/student", label: "Dashboard", icon: User },
+  { href: "/student/graph", label: "My Graph", icon: Network },
   { href: "/student/questions", label: "My Questions", icon: MessageSquare },
   { href: "/student/join", label: "Join a Class", icon: BookOpen },
 ];
