@@ -54,12 +54,12 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Teacher Dashboard
 
-- [ ] **DASH-01**: Teacher can view individual student graph thumbnails for each student in their class
-- [ ] **DASH-02**: Teacher can view class-wide concept heatmap showing which topics appear across many students
-- [ ] **DASH-03**: Teacher can view misconception cluster view showing which misconceptions are widespread
-- [ ] **DASH-04**: Teacher can track misconception repair progress (resolved vs. persistent across sessions)
-- [ ] **DASH-05**: Teacher can view engagement metrics: streak data, recent inactivity alerts
-- [ ] **DASH-06**: Teacher can view curiosity breadth score per student (ranging widely vs. clustering in one domain)
+- [x] **DASH-01**: Teacher can view individual student graph thumbnails for each student in their class
+- [x] **DASH-02**: Teacher can view class-wide concept heatmap showing which topics appear across many students
+- [x] **DASH-03**: Teacher can view misconception cluster view showing which misconceptions are widespread
+- [x] **DASH-04**: Teacher can track misconception repair progress (resolved vs. persistent across sessions)
+- [x] **DASH-05**: Teacher can view engagement metrics: streak data, recent inactivity alerts
+- [x] **DASH-06**: Teacher can view curiosity breadth score per student (ranging widely vs. clustering in one domain)
 
 ### Deployment & Infrastructure
 
@@ -171,12 +171,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | MISC-08 | Phase 4 | Complete |
 | MISC-09 | Phase 4 | Complete |
 | MISC-10 | Phase 4 | Pending |
-| DASH-01 | Phase 5 | Pending |
-| DASH-02 | Phase 5 | Pending |
-| DASH-03 | Phase 5 | Pending |
-| DASH-04 | Phase 5 | Pending |
-| DASH-05 | Phase 5 | Pending |
-| DASH-06 | Phase 5 | Pending |
+| DASH-01 | Phase 5 | Complete |
+| DASH-02 | Phase 5 | Complete |
+| DASH-03 | Phase 5 | Complete |
+| DASH-04 | Phase 5 | Complete |
+| DASH-05 | Phase 5 | Complete |
+| DASH-06 | Phase 5 | Complete |
 | INFR-01 | Phase 6 | Pending |
 | INFR-02 | Phase 6 | Pending |
 | INFR-05 | Phase 6 | Pending |

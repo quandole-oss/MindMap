@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-04-08T22:23:50.370Z"
+last_updated: "2026-04-08T22:36:17.666Z"
 progress:
   total_phases: 6
   completed_phases: 4
-  total_plans: 14
-  completed_plans: 14
-  percent: 100
+  total_plans: 17
+  completed_plans: 15
+  percent: 88
 ---
 
 # State: MindMap
@@ -30,21 +30,21 @@ progress:
 
 ## Current Position
 
-Phase: 5
-Plan: Not started
+Phase: 05 (Teacher Dashboard) — EXECUTING
+Plan: 2 of 3
 **Milestone**: v1 — Initial Release
-**Current Phase**: 5 (Teacher Dashboard) — NEXT
-**Current Plan**: 1 (05-01) — NEXT
-**Phase Status**: Phase 4 complete; all 2/2 plans done
+**Current Phase**: 5 (Teacher Dashboard) — IN PROGRESS
+**Current Plan**: 2 (05-02) — NEXT
+**Phase Status**: Phase 5 in progress; 1/3 plans done
 
 ```
-Progress: [█████████░] 96%
+Progress: [█████████░] 88%
 
 Phase 1: Foundation          [ COMPLETE — 4/4 plans done ]
 Phase 2: Curiosity Engine    [ COMPLETE — 4/4 plans done ]
 Phase 3: Knowledge Graph     [ COMPLETE — 4/4 plans done ]
 Phase 4: Misconception Diag  [ COMPLETE — 2/2 plans done ]
-Phase 5: Teacher Dashboard   [ Not started ]
+Phase 5: Teacher Dashboard   [ In Progress — 1/3 plans done ]
 Phase 6: Demo & Deployment   [ Not started ]
 ```
 
@@ -59,6 +59,7 @@ Phase 6: Demo & Deployment   [ Not started ]
 | Phases completed | 4 |
 | Requirements mapped | 49/49 |
 | Node repairs used | 0 |
+| Phase 05 P01 | 130 | 2 tasks | 3 files |
 
 ### Execution History
 
@@ -117,6 +118,9 @@ Phase 6: Demo & Deployment   [ Not started ]
 | onFinish on toUIMessageStreamResponse not streamText | UIMessageStreamOnFinishCallback receives { messages: UI_MESSAGE[] } for persistence; StreamTextOnFinishCallback receives OnFinishEvent (token/step data) — wrong callback for saving updated conversation |
 | Auto-init probe via sendMessage({ text: '__init__' }) | Reuses useChat transport for probe generation; __init__ sentinel filtered from display; probeInitiated ref prevents Strict Mode double-send |
 | Client stage tracking uses initialStage prop only | Stage advances server-side; client trusts server props for terminal detection to avoid client-server drift |
+| Batch all per-student queries via inArray (05-01) | 5 total DB queries regardless of class size; concepts/edges/questions/sessions all fetched in single batch then partitioned in JS |
+| Breadth score denominator = unique domains across all class students (05-01) | Measures how much of the class's collective knowledge space each student has explored |
+| Circular SVG layout for MiniGraphSvg (05-01) | Deterministic, server-renderable, no JS runtime needed; avoids D3 force simulation in RSC context |
 
 ### Open Questions
 
@@ -136,8 +140,8 @@ None.
 ## Session Continuity
 
 **Last updated**: 2026-04-08
-**Last action**: Completed 04-02 — /api/diagnose multi-turn endpoint (stage-gated probe/confront/resolve, evaluateResolution, concept status update), DiagnosticChat (useChat + DefaultChatTransport), DiagnosticBubble, MisconceptionReveal, student dashboard session detection
-**Next action**: Begin Phase 5 — Teacher Dashboard (05-01)
+**Last action**: Completed 05-01 — getClassDashboardData server action (batch queries, student summaries, concept heatmap, misconception clusters), dashboard-types.ts, MiniGraphSvg RSC component
+**Next action**: Execute Phase 5 Plan 02 — Teacher Dashboard UI
 
 **Stack snapshot**:
 
@@ -147,7 +151,8 @@ None.
 - Frontend: Next.js 15.5.14, D3.js v7 installed, Sheet + Tooltip shadcn components added
 - LLM: Vercel AI SDK, Anthropic Claude primary (Phase 2); diagnose-probe/confront/resolve prompt builders added
 - Deployment: Docker Compose + Vercel/Neon
+- Dashboard: getClassDashboardData() + all TypeScript types + MiniGraphSvg added (05-01)
 
 ---
 *State initialized: 2026-04-08*
-*Last updated: 2026-04-08 after 04-02 plan completion*
+*Last updated: 2026-04-08 after 05-01 plan completion*

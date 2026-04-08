@@ -102,7 +102,7 @@ Plans:
   5. Teacher can see each student's curiosity breadth score and identify students who have been inactive recently via engagement alerts
 **Plans**: 3 plans
 Plans:
-- [ ] 05-01-PLAN.md — Dashboard server actions, TypeScript types, and mini graph SVG component
+- [x] 05-01-PLAN.md — Dashboard server actions, TypeScript types, and mini graph SVG component
 - [ ] 05-02-PLAN.md — Dashboard page, tab navigation, Overview tab, Students tab, sidebar updates
 - [ ] 05-03-PLAN.md — Concepts heatmap tab and Misconceptions cluster tab with repair progress
 **UI hint**: yes
@@ -130,7 +130,7 @@ Plans:
 | 2. Curiosity Engine | 4/4 | Complete   | 2026-04-08 |
 | 3. Knowledge Graph | 4/4 | Complete   | 2026-04-08 |
 | 4. Misconception Diagnostics | 2/2 | Complete   | 2026-04-08 |
-| 5. Teacher Dashboard | 0/3 | In Progress | - |
+| 5. Teacher Dashboard | 1/3 | In Progress|  |
 | 6. Demo & Deployment | 0/? | Not started | - |
 
 ---
