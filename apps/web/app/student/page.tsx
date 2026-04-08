@@ -4,8 +4,10 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { getStudentEnrollments } from "@/actions/class";
 import { hasAskedToday, getTodayQuestion, getStudentGradeLevel } from "@/actions/questions";
+import { getActiveSession } from "@/actions/diagnostic";
 import { Badge } from "@/components/ui/badge";
 import { QuestionForm } from "@/components/questions/question-form";
+import { DiagnosticChat } from "@/components/diagnostic/diagnostic-chat";
 
 function formatGrade(gradeLevel: number): string {
   return gradeLevel === 0 ? "K" : String(gradeLevel);
@@ -18,16 +20,38 @@ export default async function StudentDashboard() {
     redirect("/login");
   }
 
-  // Load question state in parallel with enrollments
-  const [enrollments, askedToday, todayQuestion, gradeLevel] = await Promise.all([
+  // Load question state, enrollments, and active diagnostic session in parallel
+  const [enrollments, askedToday, todayQuestion, gradeLevel, activeSession] = await Promise.all([
     getStudentEnrollments(),
     hasAskedToday(),
     getTodayQuestion(),
     getStudentGradeLevel(),
+    getActiveSession(),
   ]);
 
   return (
     <div className="pt-8 pb-8">
+      {/* Active diagnostic session — shown above the question panel when one exists */}
+      {activeSession && (
+        <div className="max-w-[680px] mx-auto mb-10">
+          <div className="mb-4">
+            <h2 className="text-[20px] font-semibold text-[#18181b]">
+              Active Diagnostic Session
+            </h2>
+            <p className="text-[14px] text-[#71717a] mt-1">
+              Let&apos;s explore what you understand about this topic through conversation.
+            </p>
+          </div>
+          <DiagnosticChat
+            sessionId={activeSession.id}
+            initialMessages={activeSession.messages ?? []}
+            stage={activeSession.stage}
+            outcome={activeSession.outcome}
+            misconceptionName={activeSession.misconceptionName}
+          />
+        </div>
+      )}
+
       {/* Question panel — primary CTA, centered at max-w-[680px] */}
       <div className="max-w-[680px] mx-auto mb-10">
         <h2 className="text-[20px] font-semibold text-[#18181b] mb-4">

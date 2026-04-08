@@ -6,7 +6,6 @@ import {
   jsonb,
   index,
 } from "drizzle-orm/pg-core";
-import type { UIMessage } from "ai";
 import { users } from "./auth";
 import { concepts, questions } from "./questions";
 
@@ -48,7 +47,8 @@ export const diagnosticSessions = pgTable(
     outcome: diagnosticOutcomeEnum("outcome"),
     // Pitfall 6 workaround: use $defaultFn instead of .default([]) to avoid jsonb array default bug
     messages: jsonb("messages")
-      .$type<UIMessage[]>()
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .$type<any[]>()
       .notNull()
       .$defaultFn(() => []),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
