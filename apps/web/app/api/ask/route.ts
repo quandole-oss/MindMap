@@ -1,8 +1,8 @@
 import { streamText } from "ai";
 import { auth } from "@/lib/auth";
-import { db, schema } from "@mindmap/db";
-import { and, eq, gte, lt } from "drizzle-orm";
-import { createLLMAdapter, buildEnrichSystemPrompt, extractConcepts } from "@mindmap/llm";
+import { db, schema, findSimilarConcepts, createConceptEdges } from "@mindmap/db";
+import { and, eq, gte, lt, sql } from "drizzle-orm";
+import { createLLMAdapter, buildEnrichSystemPrompt, extractConcepts, generateEmbedding, disambiguateConcept } from "@mindmap/llm";
 import { routeQuestion } from "@mindmap/router";
 import { z } from "zod";
 
@@ -122,7 +122,12 @@ export async function POST(req: Request) {
           })
           .where(eq(schema.questions.id, savedQuestion.id));
 
-        // Insert each concept and create join records
+        // Deduplicate concepts using two-stage pipeline (GRPH-02):
+        // 1. Generate embedding for each concept
+        // 2. pgvector ANN search for similar existing concepts
+        // 3. Auto-merge (>0.92), LLM disambiguate (0.85-0.92), or create new (<0.85)
+        const resolvedConceptIds: string[] = [];
+
         for (const { concept, decision } of routingDecisions) {
           if (decision.mode === "diagnose") {
             console.log(
@@ -130,21 +135,105 @@ export async function POST(req: Request) {
             );
           }
 
-          const [savedConcept] = await db
-            .insert(schema.concepts)
-            .values({
-              userId,
-              name: concept.name,
-              domain: concept.domain,
-              status: "unprobed",
-            })
-            .returning();
+          let resolvedConceptId: string;
 
+          try {
+            // Generate embedding for the concept name
+            const embedding = await generateEmbedding(concept.name);
+
+            // Search for similar existing concepts via pgvector HNSW
+            const similar = await findSimilarConcepts(userId, embedding, 0.85, 5);
+
+            if (similar.length > 0) {
+              const topMatch = similar[0];
+              const similarity = 1 - topMatch.distance;
+
+              if (similarity > 0.92) {
+                // Auto-merge: increment visitCount on existing concept
+                await db
+                  .update(schema.concepts)
+                  .set({ visitCount: sql`${schema.concepts.visitCount} + 1` })
+                  .where(eq(schema.concepts.id, topMatch.id));
+                resolvedConceptId = topMatch.id;
+                console.log(`[dedup] auto-merge: "${concept.name}" -> "${topMatch.name}" (similarity: ${similarity.toFixed(3)})`);
+              } else {
+                // Ambiguous band (0.85-0.92): LLM disambiguation
+                const disambigResult = await disambiguateConcept(
+                  concept.name,
+                  concept.domain,
+                  similar,
+                  question
+                );
+
+                if (disambigResult.match && disambigResult.matchIndex < similar.length) {
+                  // LLM says merge
+                  const matchedConcept = similar[disambigResult.matchIndex];
+                  await db
+                    .update(schema.concepts)
+                    .set({ visitCount: sql`${schema.concepts.visitCount} + 1` })
+                    .where(eq(schema.concepts.id, matchedConcept.id));
+                  resolvedConceptId = matchedConcept.id;
+                  console.log(`[dedup] llm-merge: "${concept.name}" -> "${matchedConcept.name}"`);
+                } else {
+                  // LLM says different concept — create new with embedding
+                  const [newConcept] = await db
+                    .insert(schema.concepts)
+                    .values({
+                      userId,
+                      name: concept.name,
+                      domain: concept.domain,
+                      status: "unprobed",
+                      embedding,
+                      visitCount: 1,
+                    })
+                    .returning();
+                  resolvedConceptId = newConcept.id;
+                  console.log(`[dedup] llm-new: "${concept.name}" (disambiguated from "${similar[0].name}")`);
+                }
+              }
+            } else {
+              // No similar concepts found — create new with embedding
+              const [newConcept] = await db
+                .insert(schema.concepts)
+                .values({
+                  userId,
+                  name: concept.name,
+                  domain: concept.domain,
+                  status: "unprobed",
+                  embedding,
+                  visitCount: 1,
+                })
+                .returning();
+              resolvedConceptId = newConcept.id;
+              console.log(`[dedup] new: "${concept.name}" (no similar concepts)`);
+            }
+          } catch (embeddingErr) {
+            // Fallback: if embedding fails (no OPENAI_API_KEY, etc.), insert without embedding
+            console.error(`[dedup] embedding failed for "${concept.name}", inserting without:`, embeddingErr);
+            const [newConcept] = await db
+              .insert(schema.concepts)
+              .values({
+                userId,
+                name: concept.name,
+                domain: concept.domain,
+                status: "unprobed",
+                visitCount: 1,
+              })
+              .returning();
+            resolvedConceptId = newConcept.id;
+          }
+
+          // Create join record linking concept to question
           await db.insert(schema.conceptQuestions).values({
-            conceptId: savedConcept.id,
+            conceptId: resolvedConceptId,
             questionId: savedQuestion.id,
           });
+
+          resolvedConceptIds.push(resolvedConceptId);
         }
+
+        // Create curiosity_link edges between all concepts from this question (GRPH-03)
+        await createConceptEdges(resolvedConceptIds, "curiosity_link");
       } catch (err) {
         console.error("[onFinish] concept extraction failed:", err);
       }
