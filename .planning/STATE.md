@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-04-08T22:36:17.666Z"
+last_updated: "2026-04-08T22:41:31.400Z"
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 17
-  completed_plans: 15
-  percent: 88
+  completed_plans: 16
+  percent: 94
 ---
 
 # State: MindMap
@@ -31,20 +31,20 @@ progress:
 ## Current Position
 
 Phase: 05 (Teacher Dashboard) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 **Milestone**: v1 — Initial Release
 **Current Phase**: 5 (Teacher Dashboard) — IN PROGRESS
-**Current Plan**: 2 (05-02) — NEXT
-**Phase Status**: Phase 5 in progress; 1/3 plans done
+**Current Plan**: 3 (05-03) — NEXT
+**Phase Status**: Phase 5 in progress; 2/3 plans done
 
 ```
-Progress: [█████████░] 88%
+Progress: [█████████░] 94%
 
 Phase 1: Foundation          [ COMPLETE — 4/4 plans done ]
 Phase 2: Curiosity Engine    [ COMPLETE — 4/4 plans done ]
 Phase 3: Knowledge Graph     [ COMPLETE — 4/4 plans done ]
 Phase 4: Misconception Diag  [ COMPLETE — 2/2 plans done ]
-Phase 5: Teacher Dashboard   [ In Progress — 1/3 plans done ]
+Phase 5: Teacher Dashboard   [ In Progress — 2/3 plans done ]
 Phase 6: Demo & Deployment   [ Not started ]
 ```
 
@@ -60,6 +60,7 @@ Phase 6: Demo & Deployment   [ Not started ]
 | Requirements mapped | 49/49 |
 | Node repairs used | 0 |
 | Phase 05 P01 | 130 | 2 tasks | 3 files |
+| Phase 05 P02 | 480 | 2 tasks | 8 files |
 
 ### Execution History
 
@@ -121,6 +122,9 @@ Phase 6: Demo & Deployment   [ Not started ]
 | Batch all per-student queries via inArray (05-01) | 5 total DB queries regardless of class size; concepts/edges/questions/sessions all fetched in single batch then partitioned in JS |
 | Breadth score denominator = unique domains across all class students (05-01) | Measures how much of the class's collective knowledge space each student has explored |
 | Circular SVG layout for MiniGraphSvg (05-01) | Deterministic, server-renderable, no JS runtime needed; avoids D3 force simulation in RSC context |
+| Custom tab bar with useState instead of shadcn Tabs (05-02) | Plan specifies this explicitly to avoid extra dependency; matches existing sidebar active/inactive styling |
+| Teacher layout fetches getTeacherClasses server-side for sidebar (05-02) | Single fetch point for all teacher routes; no client-side data fetching needed for nav |
+| Nested anchor fix in teacher class list (05-02) | Outer Link changed to div; dashboard link wraps content area, roster link is sibling — valid HTML, no onClick stopPropagation hacks |
 
 ### Open Questions
 
@@ -140,8 +144,8 @@ None.
 ## Session Continuity
 
 **Last updated**: 2026-04-08
-**Last action**: Completed 05-01 — getClassDashboardData server action (batch queries, student summaries, concept heatmap, misconception clusters), dashboard-types.ts, MiniGraphSvg RSC component
-**Next action**: Execute Phase 5 Plan 02 — Teacher Dashboard UI
+**Last action**: Completed 05-02 — Dashboard UI (tab navigation, OverviewTab stats cards, StudentsTab with MiniGraphSvg thumbnails + inactivity badges, sidebar class links, teacher page dashboard navigation)
+**Next action**: Execute Phase 5 Plan 03 — Concepts and Misconceptions tabs
 
 **Stack snapshot**:
 
@@ -151,7 +155,7 @@ None.
 - Frontend: Next.js 15.5.14, D3.js v7 installed, Sheet + Tooltip shadcn components added
 - LLM: Vercel AI SDK, Anthropic Claude primary (Phase 2); diagnose-probe/confront/resolve prompt builders added
 - Deployment: Docker Compose + Vercel/Neon
-- Dashboard: getClassDashboardData() + all TypeScript types + MiniGraphSvg added (05-01)
+- Dashboard: getClassDashboardData() + all types + MiniGraphSvg (05-01); dashboard page + DashboardTabs + OverviewTab + StudentsTab + sidebar nav (05-02)
 
 ---
 *State initialized: 2026-04-08*
