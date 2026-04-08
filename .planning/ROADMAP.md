@@ -86,7 +86,7 @@ Plans:
   5. After a diagnostic session the student can see the named misconception they held (e.g., "You were thinking about heat flow as a fluid — this is called the Caloric Theory misconception")
 **Plans**: 2 plans
 Plans:
-- [ ] 04-01-PLAN.md — Diagnostic sessions schema, LLM prompt builders, /api/ask diagnose branch, server actions
+- [x] 04-01-PLAN.md — Diagnostic sessions schema, LLM prompt builders, /api/ask diagnose branch, server actions
 - [ ] 04-02-PLAN.md — Multi-turn /api/diagnose route, diagnostic chat UI, misconception reveal, student page integration
 **UI hint**: yes
 
@@ -125,7 +125,7 @@ Plans:
 | 1. Foundation | 4/4 | Complete   | 2026-04-08 |
 | 2. Curiosity Engine | 4/4 | Complete   | 2026-04-08 |
 | 3. Knowledge Graph | 4/4 | Complete   | 2026-04-08 |
-| 4. Misconception Diagnostics | 0/2 | In progress | - |
+| 4. Misconception Diagnostics | 1/2 | In Progress|  |
 | 5. Teacher Dashboard | 0/? | Not started | - |
 | 6. Demo & Deployment | 0/? | Not started | - |
 

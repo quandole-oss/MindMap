@@ -46,10 +46,10 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **MISC-03**: Misconception library is validated via CI (schema validation on entries)
 - [x] **MISC-04**: Routing engine determines enrich vs. diagnose mode based on extracted concept + grade band + misconception library lookup
 - [x] **MISC-05**: Enrich mode: AI gives rich answer, asks Socratic follow-up, adds concept as unprobed node
-- [ ] **MISC-06**: Diagnose mode: AI opens with open-ended probe ("Tell me what you think happens when...")
-- [ ] **MISC-07**: Diagnose mode: AI classifies student's mental model against misconception library
-- [ ] **MISC-08**: Diagnose mode: AI generates targeted confrontation scenario to create cognitive conflict
-- [ ] **MISC-09**: Diagnose mode: AI resolves session — node turns from coral to teal after successful repair, stays coral if unresolved
+- [x] **MISC-06**: Diagnose mode: AI opens with open-ended probe ("Tell me what you think happens when...")
+- [x] **MISC-07**: Diagnose mode: AI classifies student's mental model against misconception library
+- [x] **MISC-08**: Diagnose mode: AI generates targeted confrontation scenario to create cognitive conflict
+- [x] **MISC-09**: Diagnose mode: AI resolves session — node turns from coral to teal after successful repair, stays coral if unresolved
 - [ ] **MISC-10**: Student can see the named misconception they held after a diagnostic session
 
 ### Teacher Dashboard
@@ -166,10 +166,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | GRPH-06 | Phase 3 | Complete |
 | GRPH-07 | Phase 3 | Complete |
 | GRPH-08 | Phase 3 | Complete |
-| MISC-06 | Phase 4 | Pending |
-| MISC-07 | Phase 4 | Pending |
-| MISC-08 | Phase 4 | Pending |
-| MISC-09 | Phase 4 | Pending |
+| MISC-06 | Phase 4 | Complete |
+| MISC-07 | Phase 4 | Complete |
+| MISC-08 | Phase 4 | Complete |
+| MISC-09 | Phase 4 | Complete |
 | MISC-10 | Phase 4 | Pending |
 | DASH-01 | Phase 5 | Pending |
 | DASH-02 | Phase 5 | Pending |

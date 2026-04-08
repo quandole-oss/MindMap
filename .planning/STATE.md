@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-04-08T21:48:09.062Z"
+last_updated: "2026-04-08T22:11:27.052Z"
 progress:
   total_phases: 6
   completed_phases: 3
-  total_plans: 12
-  completed_plans: 12
-  percent: 100
+  total_plans: 14
+  completed_plans: 13
+  percent: 93
 ---
 
 # State: MindMap
@@ -30,20 +30,20 @@ progress:
 
 ## Current Position
 
-Phase: 4
-Plan: Not started
+Phase: 04 (Misconception Diagnostics) — EXECUTING
+Plan: 2 of 2
 **Milestone**: v1 — Initial Release
-**Current Phase**: 4 (Misconception Diagnostics) — NEXT
-**Current Plan**: 1 (04-01) — NEXT
-**Phase Status**: Phase 3 complete; Phase 4 not started
+**Current Phase**: 4 (Misconception Diagnostics) — IN PROGRESS
+**Current Plan**: 2 (04-02) — NEXT
+**Phase Status**: Phase 4 in progress; 04-01 complete
 
 ```
-Progress: [██████████] 100%
+Progress: [█████████░] 93%
 
 Phase 1: Foundation          [ COMPLETE — 4/4 plans done ]
 Phase 2: Curiosity Engine    [ COMPLETE — 4/4 plans done ]
 Phase 3: Knowledge Graph     [ COMPLETE — 4/4 plans done ]
-Phase 4: Misconception Diag  [ Not started ]
+Phase 4: Misconception Diag  [ IN PROGRESS — 1/2 plans done ]
 Phase 5: Teacher Dashboard   [ Not started ]
 Phase 6: Demo & Deployment   [ Not started ]
 ```
@@ -54,8 +54,8 @@ Phase 6: Demo & Deployment   [ Not started ]
 
 | Metric | Value |
 |--------|-------|
-| Plans completed | 12 |
-| Plans attempted | 12 |
+| Plans completed | 13 |
+| Plans attempted | 13 |
 | Phases completed | 3 |
 | Requirements mapped | 49/49 |
 | Node repairs used | 0 |
@@ -73,6 +73,7 @@ Phase 6: Demo & Deployment   [ Not started ]
 | Phase 03-knowledge-graph P02 | — | 1 task | 3 files |
 | Phase 03-knowledge-graph P03 | 279 | 2 tasks | 7 files |
 | Phase 03-knowledge-graph P04 | 480 | 2 tasks | 6 files |
+| Phase 04-misconception-diagnostics P01 | 480 | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -109,6 +110,9 @@ Phase 6: Demo & Deployment   [ Not started ]
 | localStorage timestamp set before toast fires | Prevents React Strict Mode double-mount from showing toast twice on dev |
 | data-node-id on SVG g elements | Enables external querySelector for pulse animation without D3 selection context |
 | getBridgeConnection() fetches independently of getGraphData() | Called in parallel via Promise.all; avoids recomputing bridge in two server actions |
+| questionId FK in diagnostic_sessions uses onDelete:set null | Preserves diagnostic session history when original question is deleted |
+| jsonb messages uses $defaultFn(() => []) | Avoids Drizzle jsonb array default bug; application-level default only |
+| diagnose branch in onFinish runs after createConceptEdges | All resolvedConceptIds available before session insert; first concept gets the session |
 
 ### Open Questions
 
@@ -128,16 +132,16 @@ None.
 ## Session Continuity
 
 **Last updated**: 2026-04-08
-**Last action**: Completed 03-04 — Brandes betweenness centrality in centrality.ts, bridge node marked isBridge=true in getGraphData(), getBridgeConnection() server action, BridgeToast component with 7-day localStorage cooldown, bridge pulse animation on KnowledgeGraph; Phase 3 complete
-**Next action**: Begin Phase 4 (Misconception Diagnostics) — execute 04-01
+**Last action**: Completed 04-01 — diagnostic_sessions table (stage/outcome enums, jsonb messages), probe/confront/resolve prompt builders in @mindmap/llm, /api/ask diagnose branch creating sessions + setting concept status to misconception, getActiveSession/getSessionById/getSessionsForUser server actions
+**Next action**: Execute 04-02 — multi-turn diagnostic chat API route
 
 **Stack snapshot**:
 
 - Monorepo: Turborepo + pnpm (DONE — all 5 packages scaffolded)
 - Packages: `@mindmap/db`, `@mindmap/misconceptions`, `@mindmap/llm`, `@mindmap/router`, `apps/web`
-- DB: PostgreSQL 16 + pgvector running in Docker, Drizzle ORM schema pushed (8 tables — concepts now has embedding vector(1536) + visitCount; concept_edges added)
+- DB: PostgreSQL 16 + pgvector running in Docker, Drizzle ORM schema pushed (9 tables — diagnostic_sessions added with stage enum, outcome enum, jsonb messages)
 - Frontend: Next.js 15.5.14, D3.js v7 installed, Sheet + Tooltip shadcn components added
-- LLM: Vercel AI SDK, Anthropic Claude primary (Phase 2)
+- LLM: Vercel AI SDK, Anthropic Claude primary (Phase 2); diagnose-probe/confront/resolve prompt builders added
 - Deployment: Docker Compose + Vercel/Neon
 
 ---
