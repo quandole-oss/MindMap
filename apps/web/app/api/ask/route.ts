@@ -66,6 +66,14 @@ export async function POST(req: Request) {
     });
   }
 
+  // T-06-12: Return 503 immediately when ANTHROPIC_API_KEY is not configured
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return new Response(
+      JSON.stringify({ error: "AI features require ANTHROPIC_API_KEY to be configured" }),
+      { status: 503, headers: { "Content-Type": "application/json" } }
+    );
+  }
+
   // Get student's grade level from most recent enrollment
   const enrollment = await db.query.classEnrollments.findFirst({
     where: eq(schema.classEnrollments.studentId, userId),

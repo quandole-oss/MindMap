@@ -50,7 +50,7 @@ export default async function TeacherDashboard() {
           {classes.map((cls) => (
             <div
               key={cls.id}
-              className="bg-white border border-[#e4e4e7] rounded-xl p-5 hover:border-[#a1a1aa] transition-colors"
+              className="bg-white border border-[#e4e4e7] rounded-xl p-5 hover:border-[#71717a] transition-colors"
             >
               <div className="flex items-center justify-between gap-4">
                 <Link

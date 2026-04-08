@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
-import { Loader2, Send } from "lucide-react";
+import { Loader2, Send, RefreshCw, AlertCircle } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { DiagnosticBubble } from "./diagnostic-bubble";
@@ -28,7 +28,7 @@ export function DiagnosticChat({
   // Track whether probe has been initiated (to avoid double-init on Strict Mode)
   const probeInitiated = useRef(false);
 
-  const { messages, sendMessage, status } = useChat({
+  const { messages, sendMessage, status, error, reload } = useChat({
     id: sessionId,
     messages: initialMessages,
     transport: new DefaultChatTransport({
@@ -142,6 +142,30 @@ export function DiagnosticChat({
               />
             );
           })}
+
+          {/* Error state with retry — shown when the LLM stream fails */}
+          {error && !isSubmitting && (
+            <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 space-y-3">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="size-4 text-destructive mt-0.5 shrink-0" />
+                <p className="text-[14px] text-destructive">
+                  {error.message?.includes("503") || error.message?.includes("ANTHROPIC_API_KEY")
+                    ? "AI features require an API key. Please configure ANTHROPIC_API_KEY in your environment."
+                    : "Something went wrong with the diagnostic session. Please try again."}
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => reload()}
+                className="flex items-center gap-2 text-[13px]"
+              >
+                <RefreshCw className="size-3.5" />
+                Retry
+              </Button>
+            </div>
+          )}
 
           {/* Show streaming skeleton while waiting for first token from assistant */}
           {isSubmitting &&

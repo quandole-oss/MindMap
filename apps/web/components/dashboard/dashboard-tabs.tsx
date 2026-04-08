@@ -26,8 +26,8 @@ export function DashboardTabs({ data }: DashboardTabsProps) {
 
   return (
     <div>
-      {/* Tab bar */}
-      <div className="flex gap-1 border-b border-[#e4e4e7] mb-6">
+      {/* Tab bar — overflow-x-auto so tabs scroll horizontally at 375px */}
+      <div className="flex gap-1 border-b border-[#e4e4e7] mb-6 overflow-x-auto flex-nowrap">
         {TABS.map((tab) => (
           <button
             key={tab.id}

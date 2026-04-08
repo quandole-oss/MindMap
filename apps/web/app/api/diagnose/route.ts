@@ -46,6 +46,14 @@ export async function POST(req: Request) {
     });
   }
 
+  // T-06-12: Return 503 immediately when ANTHROPIC_API_KEY is not configured
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return new Response(
+      JSON.stringify({ error: "AI features require ANTHROPIC_API_KEY to be configured" }),
+      { status: 503, headers: { "Content-Type": "application/json" } }
+    );
+  }
+
   try {
     // T-04-05: Load session with ownership check — students cannot access other students' sessions
     const diagnosticSession = await db.query.diagnosticSessions.findFirst({

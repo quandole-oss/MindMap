@@ -41,10 +41,10 @@ export function OverviewTab({ totals }: OverviewTabProps) {
         <Card key={label} className="p-5">
           <div className="flex flex-col gap-2">
             <Icon
-              className={`size-4 ${highlight ? "text-[#f87171]" : "text-[#71717a]"}`}
+              className={`size-4 ${highlight ? "text-[#dc2626]" : "text-[#71717a]"}`}
             />
             <p
-              className={`text-[20px] font-semibold ${highlight ? "text-[#f87171]" : "text-[#18181b]"}`}
+              className={`text-[20px] font-semibold ${highlight ? "text-[#dc2626]" : "text-[#18181b]"}`}
             >
               {value}
             </p>

@@ -31,9 +31,9 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  unprobed: "#a1a1aa",
-  healthy: "#14b8a6",
-  misconception: "#f87171",
+  unprobed: "#71717a",
+  healthy: "#0d9488",
+  misconception: "#dc2626",
 };
 
 function formatDate(date: Date | null): string {
@@ -135,7 +135,7 @@ export function NodeDetailPanel({ conceptId, open, onClose }: NodeDetailPanelPro
 
   const status = (details?.concept.status ?? "unprobed") as ConceptStatus;
   const statusLabel = STATUS_LABELS[status] ?? "Not yet explored";
-  const statusColor = STATUS_COLORS[status] ?? "#a1a1aa";
+  const statusColor = STATUS_COLORS[status] ?? "#71717a";
 
   return (
     <Sheet

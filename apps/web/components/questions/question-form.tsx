@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useCompletion } from "@ai-sdk/react";
-import { Loader2 } from "lucide-react";
+import { Loader2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 import { Textarea } from "@/components/ui/textarea";
@@ -20,6 +20,21 @@ interface QuestionFormProps {
   gradeLevel: number;
 }
 
+function getErrorMessage(error: Error | undefined): string {
+  if (!error) return "Something went wrong. Please try again later.";
+  const msg = error.message ?? "";
+  if (msg.includes("503") || msg.includes("ANTHROPIC_API_KEY") || msg.includes("AI features require")) {
+    return "AI features require an API key. Please configure ANTHROPIC_API_KEY in your environment.";
+  }
+  if (msg.includes("504") || msg.includes("timeout") || msg.includes("Timeout")) {
+    return "The AI is taking longer than expected. Please try again.";
+  }
+  if (msg.includes("401") || msg.includes("API key") || msg.includes("Unauthorized")) {
+    return "AI features require an API key. Please configure ANTHROPIC_API_KEY in your environment.";
+  }
+  return "Something went wrong. Please try again later.";
+}
+
 export function QuestionForm({
   hasAskedToday,
   todayQuestion,
@@ -28,6 +43,7 @@ export function QuestionForm({
   const [question, setQuestion] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [localQuestion, setLocalQuestion] = useState<string | null>(null);
+  const [pendingQuestion, setPendingQuestion] = useState<string | null>(null);
 
   const { completion, complete, isLoading, error } = useCompletion({
     api: "/api/ask",
@@ -35,11 +51,11 @@ export function QuestionForm({
     onFinish: () => {
       toast("New concepts added to your graph");
       setSubmitted(true);
+      setPendingQuestion(null);
     },
     onError: () => {
-      toast.error(
-        "We couldn't get an answer right now. Your question was saved — we'll try again shortly.",
-      );
+      // Toast is secondary — the inline error UI is the primary feedback
+      toast.error("Couldn't get an answer right now. Please try again.");
     },
   });
 
@@ -49,8 +65,17 @@ export function QuestionForm({
     if (!trimmed || isLoading) return;
 
     setLocalQuestion(trimmed);
+    setPendingQuestion(trimmed);
     setQuestion("");
 
+    await complete(trimmed, {
+      body: { question: trimmed },
+    });
+  };
+
+  const handleRetry = async () => {
+    const trimmed = pendingQuestion ?? localQuestion;
+    if (!trimmed || isLoading) return;
     await complete(trimmed, {
       body: { question: trimmed },
     });
@@ -157,13 +182,24 @@ export function QuestionForm({
         </div>
       )}
 
-      {/* Network/unknown error state */}
+      {/* Error state with specific message and retry button */}
       {error && !isLoading && (
-        <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4">
+        <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 space-y-3">
           <p className="text-[14px] text-destructive">
-            We couldn&apos;t get an answer right now. Your question was saved
-            &mdash; we&apos;ll try again shortly.
+            {getErrorMessage(error)}
           </p>
+          {pendingQuestion && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleRetry}
+              className="flex items-center gap-2 text-[13px]"
+            >
+              <RefreshCw className="size-3.5" />
+              Try again
+            </Button>
+          )}
         </div>
       )}
     </div>

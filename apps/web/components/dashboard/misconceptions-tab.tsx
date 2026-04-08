@@ -59,7 +59,7 @@ export function MisconceptionsTab({ clusters }: MisconceptionsTabProps) {
                 <span className="text-[#52525b]">
                   {cluster.totalAffected} students affected
                 </span>
-                <span className="text-[#14b8a6] font-medium">
+                <span className="text-[#0d9488] font-medium">
                   {cluster.resolvedCount} resolved
                 </span>
                 <span className="text-[#f97316] font-medium">
@@ -71,7 +71,7 @@ export function MisconceptionsTab({ clusters }: MisconceptionsTabProps) {
               <div>
                 <div className="h-2 w-full bg-[#f4f4f5] rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-[#14b8a6] rounded-full"
+                    className="h-full bg-[#0d9488] rounded-full"
                     style={{ width: progressWidth }}
                   />
                 </div>
@@ -86,7 +86,7 @@ export function MisconceptionsTab({ clusters }: MisconceptionsTabProps) {
                   onClick={() =>
                     setExpandedId(isExpanded ? null : cluster.misconceptionId)
                   }
-                  className="text-[13px] text-[#14b8a6] hover:underline focus:outline-none"
+                  className="text-[13px] text-[#0d9488] hover:underline focus:outline-none"
                 >
                   {isExpanded ? "Hide" : "Show affected students"}
                 </button>

@@ -46,7 +46,7 @@ export function StudentsTab({ students }: StudentsTabProps) {
   });
 
   return (
-    <div className="mt-6">
+    <div className="mt-6 overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>
@@ -107,7 +107,7 @@ export function StudentsTab({ students }: StudentsTabProps) {
                     </span>
                     <div className="w-[60px] h-[6px] bg-[#e4e4e7] rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-[#14b8a6] rounded-full"
+                        className="h-full bg-[#0d9488] rounded-full"
                         style={{ width: `${breadthPct}%` }}
                       />
                     </div>

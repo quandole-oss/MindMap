@@ -63,7 +63,7 @@ export function Sidebar({ role, userName, streak, classes = [] }: SidebarProps) 
         {/* Class dashboard links (teacher only) */}
         {role === "teacher" && classes.length > 0 && (
           <>
-            <p className="px-4 pt-4 pb-1 text-[11px] font-medium uppercase tracking-wider text-[#a1a1aa]">
+            <p className="px-4 pt-4 pb-1 text-[11px] font-medium uppercase tracking-wider text-[#71717a]">
               Classes
             </p>
             {classes.map((cls) => {
