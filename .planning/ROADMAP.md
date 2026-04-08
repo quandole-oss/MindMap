@@ -12,7 +12,7 @@
 - [x] **Phase 1: Foundation** - Monorepo scaffold, database schema, misconception library package, and authentication (completed 2026-04-08)
 - [x] **Phase 2: Curiosity Engine** - Daily question submission, AI-powered answers, concept extraction, and routing logic (completed 2026-04-08)
 - [x] **Phase 3: Knowledge Graph** - pgvector concept deduplication, graph storage, and D3.js force-directed visualization (completed 2026-04-08)
-- [ ] **Phase 4: Misconception Diagnostics** - Full probe/classify/confront/resolve diagnostic flow with node state management
+- [x] **Phase 4: Misconception Diagnostics** - Full probe/classify/confront/resolve diagnostic flow with node state management (completed 2026-04-08)
 - [ ] **Phase 5: Teacher Dashboard** - Class management, misconception heatmap, engagement analytics, and curiosity metrics
 - [ ] **Phase 6: Demo & Deployment** - Seed data generation, Docker Compose, Vercel deployment, privacy hardening, and polish
 
@@ -87,7 +87,7 @@ Plans:
 **Plans**: 2 plans
 Plans:
 - [x] 04-01-PLAN.md — Diagnostic sessions schema, LLM prompt builders, /api/ask diagnose branch, server actions
-- [ ] 04-02-PLAN.md — Multi-turn /api/diagnose route, diagnostic chat UI, misconception reveal, student page integration
+- [x] 04-02-PLAN.md — Multi-turn /api/diagnose route, diagnostic chat UI, misconception reveal, student page integration
 **UI hint**: yes
 
 ### Phase 5: Teacher Dashboard
@@ -125,7 +125,7 @@ Plans:
 | 1. Foundation | 4/4 | Complete   | 2026-04-08 |
 | 2. Curiosity Engine | 4/4 | Complete   | 2026-04-08 |
 | 3. Knowledge Graph | 4/4 | Complete   | 2026-04-08 |
-| 4. Misconception Diagnostics | 1/2 | In Progress|  |
+| 4. Misconception Diagnostics | 2/2 | Complete   | 2026-04-08 |
 | 5. Teacher Dashboard | 0/? | Not started | - |
 | 6. Demo & Deployment | 0/? | Not started | - |
 

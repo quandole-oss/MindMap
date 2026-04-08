@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-04-08T22:11:27.052Z"
+last_updated: "2026-04-08T22:23:50.370Z"
 progress:
   total_phases: 6
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 14
-  completed_plans: 13
-  percent: 93
+  completed_plans: 14
+  percent: 100
 ---
 
 # State: MindMap
@@ -30,20 +30,20 @@ progress:
 
 ## Current Position
 
-Phase: 04 (Misconception Diagnostics) — EXECUTING
-Plan: 2 of 2
+Phase: 5
+Plan: Not started
 **Milestone**: v1 — Initial Release
-**Current Phase**: 4 (Misconception Diagnostics) — IN PROGRESS
-**Current Plan**: 2 (04-02) — NEXT
-**Phase Status**: Phase 4 in progress; 04-01 complete
+**Current Phase**: 5 (Teacher Dashboard) — NEXT
+**Current Plan**: 1 (05-01) — NEXT
+**Phase Status**: Phase 4 complete; all 2/2 plans done
 
 ```
-Progress: [█████████░] 93%
+Progress: [█████████░] 96%
 
 Phase 1: Foundation          [ COMPLETE — 4/4 plans done ]
 Phase 2: Curiosity Engine    [ COMPLETE — 4/4 plans done ]
 Phase 3: Knowledge Graph     [ COMPLETE — 4/4 plans done ]
-Phase 4: Misconception Diag  [ IN PROGRESS — 1/2 plans done ]
+Phase 4: Misconception Diag  [ COMPLETE — 2/2 plans done ]
 Phase 5: Teacher Dashboard   [ Not started ]
 Phase 6: Demo & Deployment   [ Not started ]
 ```
@@ -54,9 +54,9 @@ Phase 6: Demo & Deployment   [ Not started ]
 
 | Metric | Value |
 |--------|-------|
-| Plans completed | 13 |
-| Plans attempted | 13 |
-| Phases completed | 3 |
+| Plans completed | 14 |
+| Plans attempted | 14 |
+| Phases completed | 4 |
 | Requirements mapped | 49/49 |
 | Node repairs used | 0 |
 
@@ -74,6 +74,7 @@ Phase 6: Demo & Deployment   [ Not started ]
 | Phase 03-knowledge-graph P03 | 279 | 2 tasks | 7 files |
 | Phase 03-knowledge-graph P04 | 480 | 2 tasks | 6 files |
 | Phase 04-misconception-diagnostics P01 | 480 | 2 tasks | 8 files |
+| Phase 04-misconception-diagnostics P02 | 1800 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -113,6 +114,9 @@ Phase 6: Demo & Deployment   [ Not started ]
 | questionId FK in diagnostic_sessions uses onDelete:set null | Preserves diagnostic session history when original question is deleted |
 | jsonb messages uses $defaultFn(() => []) | Avoids Drizzle jsonb array default bug; application-level default only |
 | diagnose branch in onFinish runs after createConceptEdges | All resolvedConceptIds available before session insert; first concept gets the session |
+| onFinish on toUIMessageStreamResponse not streamText | UIMessageStreamOnFinishCallback receives { messages: UI_MESSAGE[] } for persistence; StreamTextOnFinishCallback receives OnFinishEvent (token/step data) — wrong callback for saving updated conversation |
+| Auto-init probe via sendMessage({ text: '__init__' }) | Reuses useChat transport for probe generation; __init__ sentinel filtered from display; probeInitiated ref prevents Strict Mode double-send |
+| Client stage tracking uses initialStage prop only | Stage advances server-side; client trusts server props for terminal detection to avoid client-server drift |
 
 ### Open Questions
 
@@ -132,8 +136,8 @@ None.
 ## Session Continuity
 
 **Last updated**: 2026-04-08
-**Last action**: Completed 04-01 — diagnostic_sessions table (stage/outcome enums, jsonb messages), probe/confront/resolve prompt builders in @mindmap/llm, /api/ask diagnose branch creating sessions + setting concept status to misconception, getActiveSession/getSessionById/getSessionsForUser server actions
-**Next action**: Execute 04-02 — multi-turn diagnostic chat API route
+**Last action**: Completed 04-02 — /api/diagnose multi-turn endpoint (stage-gated probe/confront/resolve, evaluateResolution, concept status update), DiagnosticChat (useChat + DefaultChatTransport), DiagnosticBubble, MisconceptionReveal, student dashboard session detection
+**Next action**: Begin Phase 5 — Teacher Dashboard (05-01)
 
 **Stack snapshot**:
 
@@ -146,4 +150,4 @@ None.
 
 ---
 *State initialized: 2026-04-08*
-*Last updated: 2026-04-08 after 01-01 plan completion*
+*Last updated: 2026-04-08 after 04-02 plan completion*
