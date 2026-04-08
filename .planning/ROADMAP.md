@@ -84,7 +84,11 @@ Plans:
   3. The AI generates a targeted confrontation scenario presenting a counterexample that creates cognitive conflict for the specific classified misconception
   4. After a successful repair exchange the concept node turns from coral to teal; if the session ends unresolved the node remains coral
   5. After a diagnostic session the student can see the named misconception they held (e.g., "You were thinking about heat flow as a fluid — this is called the Caloric Theory misconception")
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 04-01-PLAN.md — Diagnostic sessions schema, LLM prompt builders, /api/ask diagnose branch, server actions
+- [ ] 04-02-PLAN.md — Multi-turn /api/diagnose route, diagnostic chat UI, misconception reveal, student page integration
+**UI hint**: yes
 
 ### Phase 5: Teacher Dashboard
 **Goal**: A teacher can open their class dashboard and immediately see which concepts are widespread across students, which misconceptions are persistent, which students are disengaging, and each student's individual curiosity breadth — all derived from live student data
@@ -121,7 +125,7 @@ Plans:
 | 1. Foundation | 4/4 | Complete   | 2026-04-08 |
 | 2. Curiosity Engine | 4/4 | Complete   | 2026-04-08 |
 | 3. Knowledge Graph | 4/4 | Complete   | 2026-04-08 |
-| 4. Misconception Diagnostics | 0/? | Not started | - |
+| 4. Misconception Diagnostics | 0/2 | In progress | - |
 | 5. Teacher Dashboard | 0/? | Not started | - |
 | 6. Demo & Deployment | 0/? | Not started | - |
 
