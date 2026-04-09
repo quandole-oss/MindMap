@@ -145,11 +145,21 @@ Phase 6: Demo & Deployment   [ COMPLETE — 4/4 plans done ]
 | Html hover label rendered only for hovered node (07-02) | Avoids mounting 250 Html portals in DOM; <Html> only rendered when hoveredNode state is non-null |
 | next/dynamic ssr:false in knowledge-graph.tsx (07-02) | Preserves existing import path for graph-page-client.tsx while preventing WebGL SSR crash; loading fallback matches #050510 background |
 | OrbitControls makeDefault in solar-graph.tsx (07-02) | Required for useThree state.controls access in SolarScene camera fly-to useFrame loop |
+| semanticFallback accepts model as parameter (e12) | Keeps @mindmap/router stateless — no circular dep on @mindmap/llm; caller (route.ts) already has the model instance |
+| conceptNameToResolvedId Map in route.ts (e12) | diagnose branch looks up correct concept by name not resolvedConceptIds[0]; safe when best-match concept is not first in array |
+| DOMAINS constant exported from extract.ts (e12) | Reused in semantic-fallback.ts prompt; single source of truth for 15-domain list |
 
 ### Open Questions
 
 - What grade-band boundaries should the router use? (K-2, 3-5, 6-8, 9-12 suggested)
 - Should the D3 graph have a node limit before pagination/clustering kicks in, or graceful degradation only?
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Status | Directory |
+|---|-------------|------|--------|--------|-----------|
+| 260409-cxq | Add spiral animation background to login/signup and student dashboard | 2026-04-09 | 31bcd75 | Done | [260409-cxq](./quick/260409-cxq-add-spiral-animation-background-to-login/) |
+| 260409-e12 | Fix MindMap core AI engine | 2026-04-09 | 4552c79 | Verified | [260409-e12](./quick/260409-e12-fix-mindmap-core-ai-engine/) |
 
 ### Blockers
 
@@ -164,7 +174,8 @@ None.
 ## Session Continuity
 
 **Last updated**: 2026-04-09
-**Last action**: Completed 07-02 — created SolarScene (inner R3F scene with nodes, edges, Stars, hover label, fly-to), SolarGraph (Canvas + OrbitControls + Bloom), replaced 2D KnowledgeGraph with SSR-safe dynamic import; build passes
+Last activity: 2026-04-09 - Completed quick task 260409-e12: Fix MindMap core AI engine
+**Last action**: Completed quick task 260409-e12 — fixed 4 AI pipeline bugs: 15-domain extraction enum with few-shot prompt, batched LLM semantic fallback in @mindmap/router, all-concepts routing with best-match selection, name-keyed concept ID map replacing resolvedConceptIds[0]
 **Next action**: Phase 7 Plan 3 — final plan in phase
 
 **Stack snapshot**:
