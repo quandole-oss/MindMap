@@ -4,15 +4,17 @@ import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { db, schema } from "@mindmap/db";
 import bcrypt from "bcryptjs";
 import { eq } from "drizzle-orm";
+import { authConfig } from "./auth.config";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  ...authConfig,
   adapter: DrizzleAdapter(db, {
     usersTable: schema.users,
     accountsTable: schema.accounts,
     sessionsTable: schema.sessions,
     verificationTokensTable: schema.verificationTokens,
   }),
-  session: { strategy: "database" },
+  session: { strategy: "jwt" },
   providers: [
     Credentials({
       credentials: {
@@ -44,17 +46,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
-    async session({ session, user }) {
-      // Attach role to session so it's available client-side
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id;
+        token.role = (user as any).role;
+      }
+      return token;
+    },
+    async session({ session, token }) {
       if (session.user) {
-        session.user.id = user.id;
-        // Fetch role from DB since Auth.js adapter doesn't pass custom fields
-        const dbUser = await db.query.users.findFirst({
-          where: eq(schema.users.id, user.id),
-        });
-        if (dbUser) {
-          (session.user as any).role = dbUser.role;
-        }
+        session.user.id = token.id as string;
+        (session.user as any).role = token.role as string;
       }
       return session;
     },
