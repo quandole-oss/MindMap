@@ -1,17 +1,25 @@
 import type { ReactNode } from "react";
+import dynamic from "next/dynamic";
 
-export default function AuthLayout({
-  children,
-}: {
-  children: ReactNode;
-}) {
+const SpiralAnimation = dynamic(
+  () => import("@/components/ui/spiral-animation").then((m) => m.SpiralAnimation),
+  { ssr: false }
+);
+
+export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen bg-[#f4f4f5] flex flex-col items-center justify-center px-4 py-12">
-      <div className="mb-6">
-        <span className="text-[20px] font-semibold text-[#18181b]">MindMap</span>
-      </div>
-      <div className="w-full max-w-[400px] bg-white rounded-xl shadow-sm p-6">
-        {children}
+    <div className="relative min-h-screen bg-black flex flex-col items-center justify-center px-4 py-12 overflow-hidden">
+      {/* Spiral background — fills entire viewport */}
+      <SpiralAnimation />
+
+      {/* Content layer — above the canvas */}
+      <div className="relative z-10 flex flex-col items-center w-full">
+        <div className="mb-6">
+          <span className="text-[20px] font-semibold text-white">MindMap</span>
+        </div>
+        <div className="w-full max-w-[400px] bg-black/60 backdrop-blur-md border border-white/10 rounded-xl shadow-xl p-6">
+          {children}
+        </div>
       </div>
     </div>
   );

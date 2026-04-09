@@ -1,4 +1,5 @@
 import Link from "next/link";
+import dynamic from "next/dynamic";
 
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
@@ -8,6 +9,11 @@ import { getActiveSession } from "@/actions/diagnostic";
 import { Badge } from "@/components/ui/badge";
 import { QuestionForm } from "@/components/questions/question-form";
 import { DiagnosticChat } from "@/components/diagnostic/diagnostic-chat";
+
+const SpiralAnimation = dynamic(
+  () => import("@/components/ui/spiral-animation").then((m) => m.SpiralAnimation),
+  { ssr: false }
+);
 
 function formatGrade(gradeLevel: number): string {
   return gradeLevel === 0 ? "K" : String(gradeLevel);
@@ -30,7 +36,20 @@ export default async function StudentDashboard() {
   ]);
 
   return (
-    <div className="pt-8 pb-8">
+    <div className="pb-8">
+      {/* Hero banner — spiral background with greeting */}
+      <div className="relative h-48 -mx-4 sm:-mx-6 lg:-mx-8 mb-10 overflow-hidden">
+        <SpiralAnimation />
+        <div className="relative z-10 h-full flex flex-col items-center justify-center text-center px-4">
+          <h1 className="text-[28px] font-bold text-white leading-tight">
+            What are you curious about today?
+          </h1>
+          <p className="text-[14px] text-white/70 mt-2">
+            Ask your one question and explore your knowledge map.
+          </p>
+        </div>
+      </div>
+
       {/* Active diagnostic session — shown above the question panel when one exists */}
       {activeSession && (
         <div className="max-w-[680px] mx-auto mb-10">
