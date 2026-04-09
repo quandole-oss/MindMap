@@ -14,6 +14,8 @@
     "vitest": "^4.1.3"
   },
   "dependencies": {
-    "@mindmap/misconceptions": "workspace:*"
+    "@mindmap/misconceptions": "workspace:*",
+    "ai": "^6.0.154",
+    "zod": "^3.25.76"
   }
 }

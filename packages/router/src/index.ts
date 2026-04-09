@@ -52,3 +52,5 @@ export function routeQuestion(
 }
 
 export { gradeLevelToGradeBand } from "./utils";
+export { semanticFallback } from "./semantic-fallback";
+export type { SemanticMatch } from "./semantic-fallback";

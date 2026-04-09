@@ -4,7 +4,7 @@ import { db, schema, findSimilarConcepts, createConceptEdges } from "@mindmap/db
 import { and, eq, gte, lt, sql } from "drizzle-orm";
 import { createLLMAdapter, buildEnrichSystemPrompt, extractConcepts, generateEmbedding, disambiguateConcept } from "@mindmap/llm";
 import { getMisconceptionById } from "@mindmap/misconceptions";
-import { routeQuestion } from "@mindmap/router";
+import { routeQuestion, semanticFallback, type RoutingDecision } from "@mindmap/router";
 import { z } from "zod";
 
 export const maxDuration = 60;
@@ -110,14 +110,57 @@ export async function POST(req: Request) {
           return;
         }
 
-        // Route each concept and collect routing decisions
+        // Route each concept via string matching
         const routingDecisions = concepts.map((concept) => ({
           concept,
           decision: routeQuestion(concept.name, gradeLevel, concept.domain),
         }));
 
-        // Determine primary routing mode (first concept's decision)
-        const primaryDecision = routingDecisions[0].decision;
+        // Collect concepts that string matching could not route to a misconception
+        const unmatchedConcepts = routingDecisions
+          .filter((r) => r.decision.mode === "enrich")
+          .map((r) => r.concept);
+
+        // LLM semantic fallback for unmatched concepts (batched, single call)
+        let semanticMatches: Array<{ conceptName: string; misconceptionId: string; confidence: number }> = [];
+        if (unmatchedConcepts.length > 0) {
+          semanticMatches = await semanticFallback(unmatchedConcepts, gradeLevel, model);
+        }
+
+        // Merge: upgrade any enrich decisions to diagnose based on semantic matches
+        const semanticMatchMap = new Map(semanticMatches.map((m) => [m.conceptName, m]));
+        const mergedDecisions = routingDecisions.map(({ concept, decision }) => {
+          if (decision.mode === "enrich") {
+            const semantic = semanticMatchMap.get(concept.name);
+            if (semantic) {
+              return {
+                concept,
+                decision: {
+                  mode: "diagnose" as const,
+                  misconceptionId: semantic.misconceptionId,
+                  probability: semantic.confidence,
+                },
+              };
+            }
+          }
+          return { concept, decision };
+        });
+
+        // Find ALL diagnose decisions, sort by confidence, pick the best
+        const diagnoseDecisions = mergedDecisions
+          .filter((r): r is { concept: typeof r.concept; decision: Extract<RoutingDecision, { mode: "diagnose" }> } =>
+            r.decision.mode === "diagnose"
+          )
+          .sort((a, b) => b.decision.probability - a.decision.probability);
+
+        const primaryDecision = diagnoseDecisions.length > 0
+          ? diagnoseDecisions[0].decision
+          : ({ mode: "enrich" } as const);
+
+        const primaryDiagnoseConcept = diagnoseDecisions.length > 0
+          ? diagnoseDecisions[0].concept
+          : null;
+
         const routingMode = primaryDecision.mode;
         const routingMisconceptionId =
           primaryDecision.mode === "diagnose" ? primaryDecision.misconceptionId : null;
@@ -136,8 +179,9 @@ export async function POST(req: Request) {
         // 2. pgvector ANN search for similar existing concepts
         // 3. Auto-merge (>0.92), LLM disambiguate (0.85-0.92), or create new (<0.85)
         const resolvedConceptIds: string[] = [];
+        const conceptNameToResolvedId = new Map<string, string>();
 
-        for (const { concept, decision } of routingDecisions) {
+        for (const { concept, decision } of mergedDecisions) {
           if (decision.mode === "diagnose") {
             console.log(
               `[router] diagnose: ${concept.name} -> ${decision.misconceptionId}`,
@@ -232,6 +276,9 @@ export async function POST(req: Request) {
             resolvedConceptId = newConcept.id;
           }
 
+          // Track name → resolved ID for accurate diagnose branch lookup
+          conceptNameToResolvedId.set(concept.name, resolvedConceptId);
+
           // Create join record linking concept to question
           await db.insert(schema.conceptQuestions).values({
             conceptId: resolvedConceptId,
@@ -246,35 +293,39 @@ export async function POST(req: Request) {
 
         // Diagnose branch: create a diagnostic session when the router returns diagnose mode
         // T-04-02: This runs server-side in onFinish — student cannot influence session creation
-        if (primaryDecision.mode === "diagnose" && resolvedConceptIds.length > 0) {
-          const misconceptionEntry = getMisconceptionById(primaryDecision.misconceptionId);
-          if (misconceptionEntry) {
-            const diagConceptId = resolvedConceptIds[0];
-
-            // Set concept status to misconception (coral node in graph)
-            await db
-              .update(schema.concepts)
-              .set({ status: "misconception" })
-              .where(eq(schema.concepts.id, diagConceptId));
-
-            // Create a diagnostic session at stage=probe
-            await db.insert(schema.diagnosticSessions).values({
-              userId,
-              conceptId: diagConceptId,
-              questionId: savedQuestion.id,
-              misconceptionId: misconceptionEntry.id,
-              misconceptionName: misconceptionEntry.name,
-              stage: "probe",
-              messages: [],
-            });
-
-            console.log(
-              `[diagnose] created session for misconception "${misconceptionEntry.name}" (concept: ${diagConceptId})`
-            );
+        if (primaryDecision.mode === "diagnose" && primaryDiagnoseConcept) {
+          const diagConceptId = conceptNameToResolvedId.get(primaryDiagnoseConcept.name);
+          if (!diagConceptId) {
+            console.warn(`[diagnose] resolved concept ID not found for "${primaryDiagnoseConcept.name}"`);
           } else {
-            console.warn(
-              `[diagnose] misconception not found in library: ${primaryDecision.misconceptionId}`
-            );
+            // T-e12-01: Validate misconceptionId against library before use (rejects LLM-fabricated IDs)
+            const misconceptionEntry = getMisconceptionById(primaryDecision.misconceptionId);
+            if (misconceptionEntry) {
+              // Set concept status to misconception (coral node in graph)
+              await db
+                .update(schema.concepts)
+                .set({ status: "misconception" })
+                .where(eq(schema.concepts.id, diagConceptId));
+
+              // Create a diagnostic session at stage=probe
+              await db.insert(schema.diagnosticSessions).values({
+                userId,
+                conceptId: diagConceptId,
+                questionId: savedQuestion.id,
+                misconceptionId: misconceptionEntry.id,
+                misconceptionName: misconceptionEntry.name,
+                stage: "probe",
+                messages: [],
+              });
+
+              console.log(
+                `[diagnose] created session for misconception "${misconceptionEntry.name}" (concept: ${diagConceptId})`
+              );
+            } else {
+              console.warn(
+                `[diagnose] misconception not found in library: ${primaryDecision.misconceptionId}`
+              );
+            }
           }
         }
       } catch (err) {

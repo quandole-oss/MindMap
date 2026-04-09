@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { routeQuestion, RoutingDecision } from "../index";
 import { gradeLevelToGradeBand } from "../utils";
+import { semanticFallback } from "../semantic-fallback";
 
 describe("gradeLevelToGradeBand", () => {
   it("maps grade 0 (Kindergarten) to 'K-5'", () => {
@@ -93,5 +94,13 @@ describe("routeQuestion", () => {
     const result = routeQuestion("any concept", 7, "math");
     expect(result).toHaveProperty("mode");
     expect(["enrich", "diagnose"]).toContain(result.mode);
+  });
+});
+
+describe("semanticFallback", () => {
+  it("returns empty array for empty unmatched list without making an LLM call", async () => {
+    // No model needed when unmatched is empty — early return before any LLM call
+    const result = await semanticFallback([], 5, {} as any);
+    expect(result).toEqual([]);
   });
 });
