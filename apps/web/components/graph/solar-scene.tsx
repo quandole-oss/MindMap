@@ -316,9 +316,15 @@ export function SolarScene({
         meshRef={meshRef}
       />
       <SolarEdges layoutNodes={layoutNodes} edges={edges} />
-      {/* Nebula domain labels use nebulae data but no cloud spheres */}
-      {/* Nebula domain labels — shown at cluster centers */}
-      {nebulae.map((neb) => (
+      {/* Nebula domain labels — font scales with cluster size */}
+      {(() => {
+        const maxCount = Math.max(...nebulae.map((n) => n.count), 1);
+        return nebulae.map((neb) => {
+          // Scale font: smallest clusters get 11px, largest get 18px
+          const t = neb.count / maxCount;
+          const fontSize = Math.round(11 + t * 7);
+          const fontWeight = t > 0.5 ? 700 : 600;
+          return (
         <Html
           key={`label-${neb.id}`}
           position={[neb.center[0], neb.center[1] + neb.radius + 12, neb.center[2]]}
@@ -330,9 +336,9 @@ export function SolarScene({
               onClusterClick?.(neb.id);
             }}
             style={{
-              color: "rgba(255,255,255,0.85)",
-              fontSize: "13px",
-              fontWeight: 600,
+              color: "rgba(255,255,255,0.95)",
+              fontSize: `${fontSize}px`,
+              fontWeight,
               letterSpacing: "0.05em",
               textTransform: "capitalize",
               whiteSpace: "nowrap",
@@ -359,7 +365,9 @@ export function SolarScene({
             {neb.label}
           </div>
         </Html>
-      ))}
+          );
+        });
+      })()}
       {/* Proximity labels — visible for nearby nodes (within 100 units) */}
       {nearbyNodes
         .filter((n) => !hoveredNode || n.id !== hoveredNode.id)
@@ -368,12 +376,12 @@ export function SolarScene({
           key={`prox-${node.id}`}
           position={[node.x, node.y + getNodeRadius(node) + 3, node.z]}
           center
-          distanceFactor={40}
+          distanceFactor={80}
         >
           <div
             style={{
               color: "rgba(255,255,255,0.95)",
-              fontSize: "15px",
+              fontSize: "16px",
               fontWeight: 500,
               whiteSpace: "nowrap",
               pointerEvents: "none",
@@ -394,15 +402,15 @@ export function SolarScene({
             hoveredNode.z,
           ]}
           center
-          distanceFactor={80}
+          distanceFactor={120}
         >
           <div
             style={{
               background: "#18181b",
               color: "#fff",
-              padding: "4px 10px",
+              padding: "5px 12px",
               borderRadius: "6px",
-              fontSize: "13px",
+              fontSize: "14px",
               whiteSpace: "nowrap",
               pointerEvents: "none",
             }}

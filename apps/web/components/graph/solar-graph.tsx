@@ -61,7 +61,7 @@ export function SolarGraph({
           />
         </Suspense>
         {/* makeDefault exposes controls to useThree() in child components */}
-        <OrbitControls makeDefault enableDamping dampingFactor={0.05} />
+        <OrbitControls makeDefault enableDamping dampingFactor={0.05} maxDistance={1500} />
         <EffectComposer>
           <Bloom
             luminanceThreshold={0.7}
