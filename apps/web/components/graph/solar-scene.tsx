@@ -13,7 +13,9 @@ interface SolarSceneProps {
   nodes: GraphNode[];
   edges: GraphEdge[];
   onNodeClick: (nodeId: string) => void;
+  onClusterClick?: (clusterId: number) => void;
   highlightNodeId?: string | null;
+  reframeTrigger?: number;
 }
 
 /**
@@ -37,7 +39,9 @@ export function SolarScene({
   nodes,
   edges,
   onNodeClick,
+  onClusterClick,
   highlightNodeId,
+  reframeTrigger,
 }: SolarSceneProps) {
   const layoutNodes = useGraphLayout(nodes, edges);
   const [hoveredNode, setHoveredNode] = useState<LayoutNode | null>(null);
@@ -106,7 +110,7 @@ export function SolarScene({
     // For each component with >= 2 nodes, compute center, radius, and dominant domain
     return components
       .filter((comp) => comp.length >= 2)
-      .map((comp) => {
+      .map((comp, idx) => {
         const nodes = comp.map((i) => layoutNodes[i]);
         const cx = nodes.reduce((s, n) => s + n.x, 0) / nodes.length;
         const cy = nodes.reduce((s, n) => s + n.y, 0) / nodes.length;
@@ -121,7 +125,7 @@ export function SolarScene({
         // Pick up to 2 top concept names for the label
         const topNames = sorted.slice(0, 2).map((n) => n.name);
         const label = topNames.join(" & ");
-        return { label, center: [cx, cy, cz] as [number, number, number], radius: maxDist + 20, count: nodes.length };
+        return { id: idx, label, center: [cx, cy, cz] as [number, number, number], radius: maxDist + 20, count: nodes.length };
       });
   }, [layoutNodes, edges]);
 
@@ -152,6 +156,36 @@ export function SolarScene({
       isFlying.current = true;
     }
   }, [highlightNodeId, layoutNodes]);
+
+  // Camera auto-reframe when filters change
+  useEffect(() => {
+    if (reframeTrigger === undefined || reframeTrigger === 0) return;
+    if (layoutNodes.length === 0) return;
+
+    // Compute bounding sphere center of all visible nodes
+    let cx = 0, cy = 0, cz = 0;
+    for (const n of layoutNodes) {
+      cx += n.x; cy += n.y; cz += n.z;
+    }
+    cx /= layoutNodes.length;
+    cy /= layoutNodes.length;
+    cz /= layoutNodes.length;
+
+    let maxDist = 0;
+    for (const n of layoutNodes) {
+      const d = Math.sqrt((n.x - cx) ** 2 + (n.y - cy) ** 2 + (n.z - cz) ** 2);
+      if (d > maxDist) maxDist = d;
+    }
+
+    // Position camera to encompass all nodes with margin
+    const fov = (camera as THREE.PerspectiveCamera).fov ?? 60;
+    const fovRad = (fov * Math.PI) / 180;
+    const dist = Math.max((maxDist + 40) / Math.tan(fovRad / 2), 80);
+
+    targetPosition.current.set(cx + dist * 0.3, cy + dist * 0.2, cz + dist);
+    targetLookAt.current.set(cx, cy, cz);
+    isFlying.current = true;
+  }, [reframeTrigger, layoutNodes, camera]);
 
   /**
    * Fly camera smoothly to a node. Sets target position and look-at so that
@@ -213,6 +247,11 @@ export function SolarScene({
 
       if (camera.position.distanceTo(targetPosition.current) < 0.5) {
         isFlying.current = false;
+        // Snap controls target so OrbitControls orbits around the correct center
+        if (controls) {
+          controls.target.copy(targetLookAt.current);
+          controls.update();
+        }
       }
     }
 
@@ -279,13 +318,17 @@ export function SolarScene({
       <SolarEdges layoutNodes={layoutNodes} edges={edges} />
       {/* Nebula domain labels use nebulae data but no cloud spheres */}
       {/* Nebula domain labels — shown at cluster centers */}
-      {nebulae.map((neb, i) => (
+      {nebulae.map((neb) => (
         <Html
-          key={`label-${i}`}
+          key={`label-${neb.id}`}
           position={[neb.center[0], neb.center[1] + neb.radius + 12, neb.center[2]]}
           center
         >
           <div
+            onClick={(e) => {
+              e.stopPropagation();
+              onClusterClick?.(neb.id);
+            }}
             style={{
               color: "rgba(255,255,255,0.85)",
               fontSize: "13px",
@@ -293,13 +336,24 @@ export function SolarScene({
               letterSpacing: "0.05em",
               textTransform: "capitalize",
               whiteSpace: "nowrap",
-              pointerEvents: "none",
+              pointerEvents: onClusterClick ? "auto" : "none",
               userSelect: "none",
+              cursor: onClusterClick ? "pointer" : "default",
               textShadow: "0 0 12px rgba(100,100,255,0.5), 0 0 30px rgba(0,0,0,0.9)",
               background: "rgba(0,0,0,0.3)",
               padding: "4px 12px",
               borderRadius: "6px",
               border: "1px solid rgba(255,255,255,0.1)",
+              transition: "background 0.2s, border-color 0.2s",
+            }}
+            onMouseEnter={(e) => {
+              if (!onClusterClick) return;
+              e.currentTarget.style.background = "rgba(99,102,241,0.25)";
+              e.currentTarget.style.borderColor = "rgba(99,102,241,0.4)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "rgba(0,0,0,0.3)";
+              e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)";
             }}
           >
             {neb.label}

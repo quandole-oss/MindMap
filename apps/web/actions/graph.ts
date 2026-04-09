@@ -4,6 +4,9 @@ import { auth } from "@/lib/auth";
 import { db, schema } from "@mindmap/db";
 import { eq, and, inArray, or } from "drizzle-orm";
 import { findTopBridgeNode } from "@/lib/graph/centrality";
+import { generateObject } from "ai";
+import { createLLMAdapter } from "@mindmap/llm";
+import { z } from "zod";
 
 export interface GraphNode {
   id: string;
@@ -211,4 +214,46 @@ export async function getBridgeConnection(): Promise<{
     domainA: bridge.connectedDomains[0],
     domainB: bridge.connectedDomains[1],
   };
+}
+
+/**
+ * Search nodes using natural language via Claude.
+ * Takes a query and the list of concept names, returns matching concept IDs.
+ */
+export async function searchNodes(
+  query: string,
+  nodes: Array<{ id: string; name: string; domain: string }>
+): Promise<string[]> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    throw new Error("Not authenticated");
+  }
+
+  if (nodes.length === 0 || !query.trim()) return [];
+
+  const adapter = createLLMAdapter();
+  const model = adapter.getModel();
+
+  const nodeList = nodes
+    .map((n, i) => `${i}. "${n.name}" (${n.domain})`)
+    .join("\n");
+
+  const { object } = await generateObject({
+    model,
+    schema: z.object({
+      matchingIndices: z.array(z.number()).describe("Indices of concepts that match the search query"),
+    }),
+    prompt: `You are helping a student search their knowledge graph. Given the search query and list of concepts, return the indices of ALL concepts that are relevant to the query. Be inclusive — if a concept is even loosely related, include it.
+
+Search query: "${query}"
+
+Concepts:
+${nodeList}
+
+Return the indices (numbers) of matching concepts.`,
+  });
+
+  return object.matchingIndices
+    .filter((i) => i >= 0 && i < nodes.length)
+    .map((i) => nodes[i].id);
 }

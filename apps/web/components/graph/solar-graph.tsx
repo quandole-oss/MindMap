@@ -11,7 +11,9 @@ interface SolarGraphProps {
   nodes: GraphNode[];
   edges: GraphEdge[];
   onNodeClick: (nodeId: string) => void;
+  onClusterClick?: (clusterId: number) => void;
   highlightNodeId?: string | null;
+  reframeTrigger?: number;
 }
 
 /**
@@ -34,7 +36,9 @@ export function SolarGraph({
   nodes,
   edges,
   onNodeClick,
+  onClusterClick,
   highlightNodeId,
+  reframeTrigger,
 }: SolarGraphProps) {
   return (
     <div
@@ -51,7 +55,9 @@ export function SolarGraph({
             nodes={nodes}
             edges={edges}
             onNodeClick={onNodeClick}
+            onClusterClick={onClusterClick}
             highlightNodeId={highlightNodeId}
+            reframeTrigger={reframeTrigger}
           />
         </Suspense>
         {/* makeDefault exposes controls to useThree() in child components */}

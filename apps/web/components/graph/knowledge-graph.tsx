@@ -35,7 +35,9 @@ interface KnowledgeGraphProps {
   nodes: GraphNode[];
   edges: GraphEdge[];
   onNodeClick: (nodeId: string) => void;
+  onClusterClick?: (clusterId: number) => void;
   highlightNodeId?: string | null;
+  reframeTrigger?: number;
 }
 
 export function KnowledgeGraph(props: KnowledgeGraphProps) {

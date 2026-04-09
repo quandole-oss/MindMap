@@ -5,6 +5,7 @@ import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import type { LayoutNode } from "./use-graph-layout";
 import type { GraphNode } from "@/actions/graph";
+import { getDomainColor } from "@/lib/graph/domain-colors";
 
 // Node health state base colors — same hex values as 2D knowledge-graph.tsx
 const NODE_COLORS: Record<string, THREE.Color> = {
@@ -14,28 +15,12 @@ const NODE_COLORS: Record<string, THREE.Color> = {
   bridge: new THREE.Color("#7c3aed"),
 };
 
-// Domain hue offsets — each subject gets a distinct tint blended with health color
+// Cache THREE.Color objects per domain to avoid repeated construction
 const DOMAIN_HUES: Record<string, THREE.Color> = {};
-const DOMAIN_HUE_PALETTE = [
-  "#22d3ee", // cyan
-  "#a78bfa", // violet
-  "#f472b6", // pink
-  "#fb923c", // orange
-  "#4ade80", // green
-  "#facc15", // yellow
-  "#60a5fa", // blue
-  "#e879f9", // fuchsia
-  "#34d399", // emerald
-  "#f87171", // red-light
-];
-let nextHueIndex = 0;
 
 function getDomainHue(domain: string): THREE.Color {
   if (!DOMAIN_HUES[domain]) {
-    DOMAIN_HUES[domain] = new THREE.Color(
-      DOMAIN_HUE_PALETTE[nextHueIndex % DOMAIN_HUE_PALETTE.length]
-    );
-    nextHueIndex++;
+    DOMAIN_HUES[domain] = new THREE.Color(getDomainColor(domain));
   }
   return DOMAIN_HUES[domain];
 }
@@ -183,8 +168,8 @@ export function SolarNodes({
       <sphereGeometry args={[1, 16, 16]} />
       <meshStandardMaterial
         vertexColors
-        emissive={new THREE.Color(0.6, 0.6, 0.7)}
-        emissiveIntensity={1.8}
+        emissive={new THREE.Color(0.15, 0.15, 0.2)}
+        emissiveIntensity={2.5}
         toneMapped={false}
         roughness={0.3}
         metalness={0}

@@ -1,9 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { KnowledgeGraph } from "@/components/graph/knowledge-graph";
 import { NodeDetailPanel } from "@/components/graph/node-detail-panel";
 import { BridgeToast } from "@/components/graph/bridge-toast";
+import { GraphFilterBar } from "@/components/graph/graph-filter-bar";
+import { useGraphFilters } from "@/components/graph/use-graph-filters";
+import { searchNodes } from "@/actions/graph";
 import type { GraphNode, GraphEdge } from "@/actions/graph";
 
 interface BridgeData {
@@ -22,11 +25,57 @@ interface GraphPageClientProps {
 export function GraphPageClient({ nodes, edges, bridgeData }: GraphPageClientProps) {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [highlightNodeId, setHighlightNodeId] = useState<string | null>(null);
+  const [searching, setSearching] = useState(false);
+
+  const {
+    filters,
+    clusters,
+    availableDomains,
+    filteredNodes,
+    filteredEdges,
+    hasActiveFilters,
+    toggleDomain,
+    toggleStatus,
+    setActiveCluster,
+    setSearchText,
+    setSearchResults,
+    clearAllFilters,
+  } = useGraphFilters(nodes, edges);
+
+  // Reframe camera when filters change
+  const reframeTrigger = useRef(0);
+  const [reframe, setReframe] = useState(0);
+  useEffect(() => {
+    if (hasActiveFilters || reframeTrigger.current > 0) {
+      reframeTrigger.current++;
+      setReframe(reframeTrigger.current);
+    }
+  }, [filteredNodes.length, hasActiveFilters]);
+
+  const handleSearch = useCallback(
+    async (query: string) => {
+      if (!query.trim()) {
+        setSearchResults("", null);
+        return;
+      }
+
+      setSearching(true);
+      try {
+        const nodeList = nodes.map((n) => ({ id: n.id, name: n.name, domain: n.domain }));
+        const matchedIds = await searchNodes(query, nodeList);
+        setSearchResults(query, matchedIds);
+      } catch (err) {
+        console.error("AI search failed:", err);
+      } finally {
+        setSearching(false);
+      }
+    },
+    [nodes, setSearchResults]
+  );
 
   function handleExplore(nodeId: string) {
     setSelectedNodeId(nodeId);
     setHighlightNodeId(nodeId);
-    // Clear pulse highlight after 3 cycles (~1.5s at 500ms per cycle)
     setTimeout(() => setHighlightNodeId(null), 1500);
   }
 
@@ -42,10 +91,25 @@ export function GraphPageClient({ nodes, edges, bridgeData }: GraphPageClientPro
         />
       )}
       <KnowledgeGraph
-        nodes={nodes}
-        edges={edges}
+        nodes={filteredNodes}
+        edges={filteredEdges}
         onNodeClick={(nodeId) => setSelectedNodeId(nodeId)}
+        onClusterClick={setActiveCluster}
         highlightNodeId={highlightNodeId}
+        reframeTrigger={reframe}
+      />
+      <GraphFilterBar
+        availableDomains={availableDomains}
+        filters={filters}
+        clusters={clusters}
+        hasActiveFilters={hasActiveFilters}
+        searching={searching}
+        onToggleDomain={toggleDomain}
+        onToggleStatus={toggleStatus}
+        onClearCluster={() => setActiveCluster(null)}
+        onClearAll={clearAllFilters}
+        onSearchTextChange={setSearchText}
+        onSearch={handleSearch}
       />
       <NodeDetailPanel
         conceptId={selectedNodeId}

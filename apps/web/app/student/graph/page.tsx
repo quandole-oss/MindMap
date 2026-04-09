@@ -2,7 +2,6 @@ import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
 import { getGraphData, getBridgeConnection } from "@/actions/graph";
-import { HealthLegend } from "@/components/graph/health-legend";
 import { GraphPageClient } from "./graph-page-client";
 
 export default async function GraphPage() {
@@ -34,17 +33,11 @@ export default async function GraphPage() {
           </p>
         </div>
       ) : (
-        <>
-          <GraphPageClient
-            nodes={graphData.nodes}
-            edges={graphData.edges}
-            bridgeData={bridgeData}
-          />
-          {/* Floating legend — glassmorphism box in bottom-left corner */}
-          <div className="absolute bottom-4 left-4 z-20 bg-black/50 backdrop-blur-md border border-white/10 rounded-lg px-4 py-3">
-            <HealthLegend />
-          </div>
-        </>
+        <GraphPageClient
+          nodes={graphData.nodes}
+          edges={graphData.edges}
+          bridgeData={bridgeData}
+        />
       )}
     </div>
   );
