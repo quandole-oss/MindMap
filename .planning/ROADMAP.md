@@ -201,5 +201,15 @@ Plans:
 
 **Total: 49/49 requirements mapped**
 
+### Phase 7: 3D Solar System Knowledge Graph
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 6
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 7 to break down)
+
 ---
 *Roadmap created: 2026-04-08*
