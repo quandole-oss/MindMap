@@ -15,6 +15,7 @@
 - [x] **Phase 4: Misconception Diagnostics** - Full probe/classify/confront/resolve diagnostic flow with node state management (completed 2026-04-08)
 - [x] **Phase 5: Teacher Dashboard** - Class management, misconception heatmap, engagement analytics, and curiosity metrics (completed 2026-04-08)
 - [x] **Phase 6: Demo & Deployment** - Seed data generation, Docker Compose, Vercel deployment, privacy hardening, and polish (completed 2026-04-08)
+- [ ] **Phase 7: 3D Solar System Knowledge Graph** - Replace 2D D3.js SVG graph with immersive 3D WebGL visualization using react-three-fiber
 
 ---
 
@@ -137,6 +138,7 @@ Plans:
 | 4. Misconception Diagnostics | 2/2 | Complete   | 2026-04-08 |
 | 5. Teacher Dashboard | 3/3 | Complete   | 2026-04-08 |
 | 6. Demo & Deployment | 4/4 | Complete   | 2026-04-08 |
+| 7. 3D Solar System Knowledge Graph | 0/3 | Planning   | — |
 
 ---
 
@@ -203,13 +205,15 @@ Plans:
 
 ### Phase 7: 3D Solar System Knowledge Graph
 
-**Goal:** [To be planned]
-**Requirements**: TBD
+**Goal:** Replace the existing 2D D3.js SVG knowledge graph with an immersive 3D WebGL solar system visualization using react-three-fiber, where concept nodes appear as glowing stars in space with constellation-style edges, OrbitControls navigation, and all existing graph functionality preserved
+**Requirements**: Enhancement phase — tracked via CONTEXT.md decisions (D-01 through D-16)
 **Depends on:** Phase 6
-**Plans:** 0 plans
+**Plans:** 3 plans
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 7 to break down)
+- [ ] 07-01-PLAN.md — Install 3D packages, d3-force-3d layout hook, InstancedMesh nodes, Line edges
+- [ ] 07-02-PLAN.md — SolarScene + SolarGraph Canvas wrapper + SSR-safe KnowledgeGraph replacement
+- [ ] 07-03-PLAN.md — LOD rendering, bridge highlight integration, visual verification
 
 ---
 *Roadmap created: 2026-04-08*
