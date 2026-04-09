@@ -1,22 +1,26 @@
 "use client";
 
+import { useMemo } from "react";
 import { Line } from "@react-three/drei";
 import type { LayoutNode } from "./use-graph-layout";
 import type { GraphEdge } from "@/actions/graph";
 
 /**
  * Edge visual style keyed by edgeType.
- * Colors match the existing 2D knowledge-graph.tsx edge palette.
+ * Bridge = highlighted surprise connections (bright, thick, glowing).
+ * Curiosity_link = standard connections (subtle).
+ * Misconception_cluster = warning connections (red tint).
  */
-function getEdgeStyle(edgeType: string): { color: string; opacity: number } {
+function getEdgeStyle(edgeType: string): { color: string; opacity: number; lineWidth: number } {
   switch (edgeType) {
     case "bridge":
-      return { color: "#7c3aed", opacity: 0.5 };
+      // Surprise cross-domain connections — bright purple, thick, highly visible
+      return { color: "#a78bfa", opacity: 0.85, lineWidth: 2.5 };
     case "misconception_cluster":
-      return { color: "#dc2626", opacity: 0.4 };
+      return { color: "#f87171", opacity: 0.6, lineWidth: 1.5 };
     case "curiosity_link":
     default:
-      return { color: "#4a4a8a", opacity: 0.35 };
+      return { color: "#6366f1", opacity: 0.4, lineWidth: 0.8 };
   }
 }
 
@@ -27,30 +31,29 @@ interface SolarEdgesProps {
 
 /**
  * Renders constellation-style edges between star nodes.
- *
- * Each edge is a drei <Line> component (THREE.Line2 under the hood).
- * Source and target nodes are looked up from layoutNodes via an O(1) id map.
- * Edges with missing source or target are silently skipped.
- *
- * D-07 compliance: edges rendered as thin glowing lines.
- *
- * Performance: acceptable for <500 edges. If edge count exceeds 500,
- * migrate to a single <Segments> component for better batching.
+ * Bridge edges render on top (sorted last) and are thicker + brighter
+ * to highlight surprise cross-domain connections.
  */
 export function SolarEdges({ layoutNodes, edges }: SolarEdgesProps) {
-  // O(1) lookup from node id → LayoutNode
-  const nodeIndex = Object.fromEntries(layoutNodes.map((n) => [n.id, n]));
+  const nodeIndex = useMemo(
+    () => Object.fromEntries(layoutNodes.map((n) => [n.id, n])),
+    [layoutNodes]
+  );
+
+  // Sort: curiosity_link first (background), then misconception, then bridge on top
+  const sortedEdges = useMemo(() => {
+    const order: Record<string, number> = { curiosity_link: 0, misconception_cluster: 1, bridge: 2 };
+    return [...edges].sort((a, b) => (order[a.edgeType] ?? 0) - (order[b.edgeType] ?? 0));
+  }, [edges]);
 
   return (
     <>
-      {edges.map((edge, i) => {
+      {sortedEdges.map((edge, i) => {
         const src = nodeIndex[edge.source];
         const tgt = nodeIndex[edge.target];
-
-        // Skip edges where either endpoint is not in the layout
         if (!src || !tgt) return null;
 
-        const { color, opacity } = getEdgeStyle(edge.edgeType);
+        const { color, opacity, lineWidth } = getEdgeStyle(edge.edgeType);
 
         return (
           <Line
@@ -60,7 +63,7 @@ export function SolarEdges({ layoutNodes, edges }: SolarEdgesProps) {
               [tgt.x, tgt.y, tgt.z],
             ]}
             color={color}
-            lineWidth={0.5}
+            lineWidth={lineWidth}
             transparent
             opacity={opacity}
           />

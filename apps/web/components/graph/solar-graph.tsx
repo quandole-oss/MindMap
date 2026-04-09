@@ -58,9 +58,9 @@ export function SolarGraph({
         <OrbitControls makeDefault enableDamping dampingFactor={0.05} />
         <EffectComposer>
           <Bloom
-            luminanceThreshold={0.8}
+            luminanceThreshold={0.6}
             luminanceSmoothing={0.9}
-            intensity={1.5}
+            intensity={2.0}
             mipmapBlur
           />
         </EffectComposer>

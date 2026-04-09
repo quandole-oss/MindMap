@@ -754,51 +754,92 @@ async function seed() {
     }
   }
 
-  // curiosity_link edges for 30-day student
-  const s30ConceptIds = Array.from(s30ConceptMap.values());
+  // ─── Rich edge creation for 30-day student ─────────────────────────────────
+  // Helper to add an edge if both concepts exist
   const s30EdgeSet = new Set<string>();
-  let s30EdgeCount = 0;
-  for (let i = 0; i < s30ConceptIds.length - 1 && s30EdgeCount < 15; i++) {
-    const key = `${s30ConceptIds[i]}-${s30ConceptIds[i + 1]}`;
-    if (!s30EdgeSet.has(key)) {
-      s30EdgeSet.add(key);
-      await db.insert(conceptEdges).values({
-        id: crypto.randomUUID(),
-        sourceConceptId: s30ConceptIds[i],
-        targetConceptId: s30ConceptIds[i + 1],
-        edgeType: "curiosity_link",
-      });
-      s30EdgeCount++;
+  async function addEdge(nameA: string, nameB: string, type: "curiosity_link" | "bridge" | "misconception_cluster") {
+    const idA = s30ConceptMap.get(nameA);
+    const idB = s30ConceptMap.get(nameB);
+    if (!idA || !idB || idA === idB) return;
+    const [src, tgt] = idA < idB ? [idA, idB] : [idB, idA];
+    const key = `${src}-${tgt}-${type}`;
+    if (s30EdgeSet.has(key)) return;
+    s30EdgeSet.add(key);
+    await db.insert(conceptEdges).values({
+      id: crypto.randomUUID(),
+      sourceConceptId: src,
+      targetConceptId: tgt,
+      edgeType: type,
+    });
+  }
+
+  // Same-question curiosity links (concepts extracted from the same question)
+  for (const q of QUESTIONS_30DAY) {
+    for (let i = 0; i < q.conceptNames.length; i++) {
+      for (let j = i + 1; j < q.conceptNames.length; j++) {
+        await addEdge(q.conceptNames[i], q.conceptNames[j], "curiosity_link");
+      }
     }
   }
 
-  // bridge edges: "energy" concept connecting physics/biology
-  const energyConcept = s30ConceptMap.get("entropy") ?? s30ConceptIds[0];
-  const photosynConcept = s30ConceptMap.get("photosynthesis") ?? s30ConceptIds[1];
-  if (energyConcept !== photosynConcept) {
-    const bridgeKey = `${energyConcept}-${photosynConcept}`;
-    if (!s30EdgeSet.has(bridgeKey)) {
-      await db.insert(conceptEdges).values({
-        id: crypto.randomUUID(),
-        sourceConceptId: energyConcept,
-        targetConceptId: photosynConcept,
-        edgeType: "bridge",
-      });
-    }
-  }
-  const gravityConcept = s30ConceptMap.get("gravity") ?? s30ConceptIds[2];
-  const tidalConcept = s30ConceptMap.get("tidal forces") ?? s30ConceptIds[3];
-  if (gravityConcept !== tidalConcept) {
-    const bridgeKey2 = `${gravityConcept}-${tidalConcept}`;
-    if (!s30EdgeSet.has(bridgeKey2)) {
-      await db.insert(conceptEdges).values({
-        id: crypto.randomUUID(),
-        sourceConceptId: gravityConcept,
-        targetConceptId: tidalConcept,
-        edgeType: "bridge",
-      });
-    }
-  }
+  // Same-domain connections — physics cluster
+  await addEdge("gravity", "gravitational collapse", "curiosity_link");
+  await addEdge("gravity", "gravitational gradient", "curiosity_link");
+  await addEdge("gravity", "free fall", "curiosity_link");
+  await addEdge("gravity", "aerodynamic lift", "curiosity_link");
+  await addEdge("wavelength", "light scattering", "curiosity_link");
+  await addEdge("wavelength", "reflection", "curiosity_link");
+  await addEdge("electric current", "electromagnetism", "curiosity_link");
+  await addEdge("electric current", "lightning", "curiosity_link");
+  await addEdge("electromagnetism", "magnetism", "curiosity_link");
+  await addEdge("electromagnetism", "electron spin", "curiosity_link");
+  await addEdge("seismic waves", "tectonic plates", "curiosity_link");
+  await addEdge("entropy", "thermodynamics", "curiosity_link");
+  await addEdge("entropy", "statistical mechanics", "curiosity_link");
+  await addEdge("black holes", "event horizon", "curiosity_link");
+  await addEdge("black holes", "supernovae", "curiosity_link");
+  await addEdge("stellar parallax", "light-years", "curiosity_link");
+  await addEdge("orbital motion", "orbital period", "curiosity_link");
+  await addEdge("orbital motion", "axial tilt", "curiosity_link");
+  await addEdge("lunar phases", "tidal forces", "curiosity_link");
+  await addEdge("reflection", "solar radiation angle", "curiosity_link");
+  await addEdge("phase changes", "freezing point depression", "curiosity_link");
+
+  // Same-domain connections — biology cluster
+  await addEdge("immune response", "antibodies", "curiosity_link");
+  await addEdge("immune response", "vaccines", "curiosity_link");
+  await addEdge("immune response", "allergic response", "curiosity_link");
+  await addEdge("vaccines", "pathogens", "curiosity_link");
+  await addEdge("vaccines", "memory cells", "curiosity_link");
+  await addEdge("antibodies", "IgE antibodies", "curiosity_link");
+  await addEdge("T-cells", "memory cells", "curiosity_link");
+  await addEdge("antibiotics", "pathogens", "curiosity_link");
+  await addEdge("antibiotics", "cell wall synthesis", "curiosity_link");
+  await addEdge("DNA structure", "genetic code", "curiosity_link");
+  await addEdge("DNA structure", "proteins", "curiosity_link");
+  await addEdge("photosynthesis", "chlorophyll", "curiosity_link");
+  await addEdge("photosynthesis", "glucose", "curiosity_link");
+  await addEdge("photosynthesis", "phototropism", "curiosity_link");
+  await addEdge("phototropism", "auxin", "curiosity_link");
+  await addEdge("phototropism", "plant hormones", "curiosity_link");
+  await addEdge("hibernation", "metabolic rate", "curiosity_link");
+  await addEdge("hibernation", "energy conservation", "curiosity_link");
+  await addEdge("food chains", "mass extinction", "curiosity_link");
+  await addEdge("neuroscience", "synaptic plasticity", "curiosity_link");
+  await addEdge("neuroscience", "hippocampus", "curiosity_link");
+  await addEdge("neuroscience", "memory consolidation", "curiosity_link");
+  await addEdge("REM sleep", "neuroscience", "curiosity_link");
+
+  // Bridge edges — surprise cross-domain connections
+  await addEdge("entropy", "photosynthesis", "bridge");           // physics↔biology: energy systems
+  await addEdge("gravity", "tidal forces", "bridge");             // gravity↔ocean dynamics
+  await addEdge("electromagnetism", "magnetoreception", "bridge"); // physics↔biology: birds use EM fields
+  await addEdge("electric current", "neuroscience", "bridge");    // physics↔biology: neurons are electrical
+  await addEdge("electrons", "DNA structure", "bridge");          // physics↔biology: molecular bonds
+  await addEdge("evaporation", "phase changes", "bridge");        // chemistry↔earth science
+  await addEdge("memory consolidation", "binary systems", "bridge"); // biology↔CS: how memory works
+  await addEdge("energy conservation", "entropy", "bridge");      // biology↔physics: energy laws
+  await addEdge("light scattering", "stellar parallax", "bridge"); // atmospheric↔astronomical optics
 
   // Diagnostic sessions for 30-day student
   const s30ConceptIdsList = Array.from(s30ConceptMap.values());
@@ -1003,7 +1044,6 @@ async function seed() {
 
   // Question pool to pick from for varied students
   const enrichQuestionPool = QUESTIONS_30DAY.filter((q) => q.routingMode === "enrich");
-  const domainPool = ["physics", "biology", "math", "history"];
 
   let totalAdditionalSessions = 0;
 
@@ -1011,7 +1051,6 @@ async function seed() {
     const student = insertedStudents[idx];
 
     let questionCount: number;
-    let conceptCount: number;
     let addDiagnostic: boolean;
 
     if (idx <= 5) {

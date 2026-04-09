@@ -6,17 +6,50 @@ import * as THREE from "three";
 import type { LayoutNode } from "./use-graph-layout";
 import type { GraphNode } from "@/actions/graph";
 
-// Node health state colors — exact same hex values as 2D knowledge-graph.tsx
-const NODE_COLORS = {
+// Node health state base colors — same hex values as 2D knowledge-graph.tsx
+const NODE_COLORS: Record<string, THREE.Color> = {
   healthy: new THREE.Color("#0d9488"),
   misconception: new THREE.Color("#dc2626"),
   unprobed: new THREE.Color("#71717a"),
   bridge: new THREE.Color("#7c3aed"),
-} as const;
+};
+
+// Domain hue offsets — each subject gets a distinct tint blended with health color
+const DOMAIN_HUES: Record<string, THREE.Color> = {};
+const DOMAIN_HUE_PALETTE = [
+  "#22d3ee", // cyan
+  "#a78bfa", // violet
+  "#f472b6", // pink
+  "#fb923c", // orange
+  "#4ade80", // green
+  "#facc15", // yellow
+  "#60a5fa", // blue
+  "#e879f9", // fuchsia
+  "#34d399", // emerald
+  "#f87171", // red-light
+];
+let nextHueIndex = 0;
+
+function getDomainHue(domain: string): THREE.Color {
+  if (!DOMAIN_HUES[domain]) {
+    DOMAIN_HUES[domain] = new THREE.Color(
+      DOMAIN_HUE_PALETTE[nextHueIndex % DOMAIN_HUE_PALETTE.length]
+    );
+    nextHueIndex++;
+  }
+  return DOMAIN_HUES[domain];
+}
+
+// Reusable Color to avoid per-node allocation
+const _blended = new THREE.Color();
 
 function getNodeColor(node: GraphNode): THREE.Color {
   if (node.isBridge) return NODE_COLORS.bridge;
-  return NODE_COLORS[node.status] ?? NODE_COLORS.unprobed;
+  const base = NODE_COLORS[node.status] ?? NODE_COLORS.unprobed;
+  // Blend 85% health state + 15% domain hue — subtle tint, health color still dominates
+  const domainHue = getDomainHue(node.domain);
+  _blended.copy(base).lerp(domainHue, 0.15);
+  return _blended.clone();
 }
 
 /**
@@ -24,7 +57,7 @@ function getNodeColor(node: GraphNode): THREE.Color {
  * Smaller than 2D pixel radius — scaled for WebGL units.
  */
 export function getNodeRadius(node: GraphNode): number {
-  return Math.min(3 + node.visitCount * 0.8, 10);
+  return Math.min(5 + node.visitCount * 0.8, 12);
 }
 
 interface SolarNodesProps {
@@ -88,6 +121,9 @@ export function SolarNodes({
     if (meshRef.current.instanceColor) {
       meshRef.current.instanceColor.needsUpdate = true;
     }
+    // Required for raycasting to work on InstancedMesh
+    meshRef.current.computeBoundingBox();
+    meshRef.current.computeBoundingSphere();
   }, [layoutNodes, dummy]);
 
   // Callback ref: populates both internalMeshRef and optional externalMeshRef
@@ -148,7 +184,7 @@ export function SolarNodes({
       <meshStandardMaterial
         vertexColors
         emissive={new THREE.Color(1, 1, 1)}
-        emissiveIntensity={1.5}
+        emissiveIntensity={2.5}
         toneMapped={false}
         roughness={0.3}
         metalness={0.1}

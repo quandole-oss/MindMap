@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { Stars, Html } from "@react-three/drei";
 import * as THREE from "three";
@@ -64,6 +64,33 @@ export function SolarScene({
   // Since SolarNodes owns the InstancedMesh, we communicate via a shared ref.
   const meshRef = useRef<THREE.InstancedMesh | null>(null);
 
+  // Proximity labels: track which nodes are close enough to show labels
+  const [nearbyNodes, setNearbyNodes] = useState<LayoutNode[]>([]);
+
+  // Nebula clusters: group nodes by domain and compute cluster center + radius
+  const nebulae = useMemo(() => {
+    if (layoutNodes.length === 0) return [];
+    const groups: Record<string, LayoutNode[]> = {};
+    for (const node of layoutNodes) {
+      const d = node.domain || "unknown";
+      (groups[d] ??= []).push(node);
+    }
+    return Object.entries(groups)
+      .filter(([, nodes]) => nodes.length >= 2)
+      .map(([domain, nodes]) => {
+        const cx = nodes.reduce((s, n) => s + n.x, 0) / nodes.length;
+        const cy = nodes.reduce((s, n) => s + n.y, 0) / nodes.length;
+        const cz = nodes.reduce((s, n) => s + n.z, 0) / nodes.length;
+        // Radius = max distance from center to any node in cluster + padding
+        const maxDist = Math.max(
+          ...nodes.map((n) =>
+            Math.sqrt((n.x - cx) ** 2 + (n.y - cy) ** 2 + (n.z - cz) ** 2)
+          )
+        );
+        return { domain, center: [cx, cy, cz] as [number, number, number], radius: maxDist + 20, count: nodes.length };
+      });
+  }, [layoutNodes]);
+
   const { camera } = useThree();
   const controls = useThree((state) => state.controls) as any;
 
@@ -106,30 +133,41 @@ export function SolarScene({
   );
 
   /**
-   * Handle click on a node — single click opens side panel,
-   * double-click (same node within 300ms) triggers fly-to.
+   * Handle click on a node — opens side panel AND flies camera to the node.
    */
   const handleClick = useCallback(
     (nodeId: string) => {
-      const now = Date.now();
-      const isSameNode = lastClickNodeId.current === nodeId;
-      const isDoubleClick = isSameNode && now - lastClickTime.current < 300;
-
-      lastClickTime.current = now;
-      lastClickNodeId.current = nodeId;
-
-      if (isDoubleClick) {
-        const node = layoutNodes.find((n) => n.id === nodeId);
-        if (node) flyToNode(node);
-      } else {
-        onNodeClick(nodeId);
-      }
+      onNodeClick(nodeId);
+      const node = layoutNodes.find((n) => n.id === nodeId);
+      if (node) flyToNode(node);
     },
     [layoutNodes, flyToNode, onNodeClick]
   );
 
-  // Camera fly-to lerp + bridge pulse animation
+  // Proximity label update: every 10 frames, find nodes within 250 units of camera
+  const frameCount = useRef(0);
+  const tempVec = useMemo(() => new THREE.Vector3(), []);
+
+  // Camera fly-to lerp + bridge pulse animation + proximity labels
   useFrame(({ clock }) => {
+    // Update proximity labels every 10 frames (perf: avoid per-frame sort)
+    frameCount.current++;
+    if (frameCount.current % 10 === 0 && layoutNodes.length > 0) {
+      const nearby: LayoutNode[] = [];
+      for (const node of layoutNodes) {
+        const dist = camera.position.distanceTo(
+          tempVec.set(node.x, node.y, node.z)
+        );
+        if (dist < 250) nearby.push(node);
+      }
+      // Cap at 12 labels to avoid clutter
+      nearby.sort((a, b) => {
+        const da = camera.position.distanceTo(tempVec.set(a.x, a.y, a.z));
+        const db = camera.position.distanceTo(tempVec.set(b.x, b.y, b.z));
+        return da - db;
+      });
+      setNearbyNodes(nearby.slice(0, 12));
+    }
     // Camera fly-to
     if (isFlying.current) {
       camera.position.lerp(targetPosition.current, 0.06);
@@ -205,6 +243,55 @@ export function SolarScene({
         meshRef={meshRef}
       />
       <SolarEdges layoutNodes={layoutNodes} edges={edges} />
+      {/* Nebula domain labels use nebulae data but no cloud spheres */}
+      {/* Nebula domain labels — shown at cluster centers */}
+      {nebulae.map((neb) => (
+        <Html
+          key={`label-${neb.domain}`}
+          position={[neb.center[0], neb.center[1] + neb.radius + 5, neb.center[2]]}
+          center
+          distanceFactor={150}
+        >
+          <div
+            style={{
+              color: "rgba(255,255,255,0.35)",
+              fontSize: "11px",
+              fontWeight: 500,
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              whiteSpace: "nowrap",
+              pointerEvents: "none",
+              userSelect: "none",
+            }}
+          >
+            {neb.domain}
+          </div>
+        </Html>
+      ))}
+      {/* Proximity labels — visible for nearby nodes (within 100 units) */}
+      {nearbyNodes
+        .filter((n) => !hoveredNode || n.id !== hoveredNode.id)
+        .map((node) => (
+        <Html
+          key={`prox-${node.id}`}
+          position={[node.x, node.y + getNodeRadius(node) + 3, node.z]}
+          center
+          distanceFactor={60}
+        >
+          <div
+            style={{
+              color: "rgba(255,255,255,0.7)",
+              fontSize: "11px",
+              whiteSpace: "nowrap",
+              pointerEvents: "none",
+              userSelect: "none",
+              textShadow: "0 0 6px rgba(0,0,0,0.8)",
+            }}
+          >
+            {node.name}
+          </div>
+        </Html>
+      ))}
       {/* Hover label — only rendered for the hovered node, never for all nodes (D-11) */}
       {hoveredNode && (
         <Html
