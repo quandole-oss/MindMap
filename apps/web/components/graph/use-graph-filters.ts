@@ -5,7 +5,7 @@ import type { GraphNode, GraphEdge } from "@/actions/graph";
 import { computeClusters, type Cluster } from "@/lib/graph/clusters";
 
 // Domain hierarchy — maps parent categories to child domains
-const DOMAIN_GROUPS: Record<string, string[]> = {
+export const DOMAIN_GROUPS: Record<string, string[]> = {
   science: ["physics", "biology", "chemistry", "earth-science", "astronomy", "health", "engineering"],
   stem: ["physics", "biology", "chemistry", "earth-science", "astronomy", "math", "computer-science", "engineering"],
   humanities: ["history", "literature", "social-studies", "art", "music"],
@@ -13,7 +13,7 @@ const DOMAIN_GROUPS: Record<string, string[]> = {
 };
 
 /** Expand a search query into matching domains if it's a known group */
-function expandDomainQuery(q: string): Set<string> | null {
+export function expandDomainQuery(q: string): Set<string> | null {
   const domains = DOMAIN_GROUPS[q];
   return domains ? new Set(domains) : null;
 }
