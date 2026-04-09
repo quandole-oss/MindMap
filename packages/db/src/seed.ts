@@ -880,7 +880,7 @@ async function seed() {
     },
   ]);
 
-  console.log(`30-day student: ${s30ConceptMap.size} concepts, ${s30EdgeCount + 2} edges, 3 diagnostic sessions`);
+  console.log(`30-day student: ${s30ConceptMap.size} concepts, ${s30EdgeSet.size} edges, 3 diagnostic sessions`);
 
   // ── 60-day student (index 1 = Jordan Williams) ────────────────────────────
   console.log("Seeding 60-day student (Jordan Williams)...");

@@ -44,11 +44,11 @@ function getDomainHue(domain: string): THREE.Color {
 const _blended = new THREE.Color();
 
 function getNodeColor(node: GraphNode): THREE.Color {
-  if (node.isBridge) return NODE_COLORS.bridge;
+  if (node.isBridge) return NODE_COLORS.bridge.clone();
   const base = NODE_COLORS[node.status] ?? NODE_COLORS.unprobed;
-  // Blend 85% health state + 15% domain hue — subtle tint, health color still dominates
+  // Blend 50% health state + 50% domain hue — topics visually distinct
   const domainHue = getDomainHue(node.domain);
-  _blended.copy(base).lerp(domainHue, 0.15);
+  _blended.copy(base).lerp(domainHue, 0.50);
   return _blended.clone();
 }
 
@@ -57,7 +57,7 @@ function getNodeColor(node: GraphNode): THREE.Color {
  * Smaller than 2D pixel radius — scaled for WebGL units.
  */
 export function getNodeRadius(node: GraphNode): number {
-  return Math.min(5 + node.visitCount * 0.8, 12);
+  return Math.min(8 + node.visitCount * 1.2, 18);
 }
 
 interface SolarNodesProps {
@@ -183,11 +183,11 @@ export function SolarNodes({
       <sphereGeometry args={[1, 16, 16]} />
       <meshStandardMaterial
         vertexColors
-        emissive={new THREE.Color(1, 1, 1)}
-        emissiveIntensity={2.5}
+        emissive={new THREE.Color(0.6, 0.6, 0.7)}
+        emissiveIntensity={1.8}
         toneMapped={false}
         roughness={0.3}
-        metalness={0.1}
+        metalness={0}
       />
     </instancedMesh>
   );

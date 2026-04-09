@@ -86,9 +86,13 @@ declare module "d3-force-3d" {
     radius?: number | ((node: unknown) => number)
   ): CollideForce;
 
-  export function forceX(x?: number | ((node: unknown) => number)): Force;
-  export function forceY(y?: number | ((node: unknown) => number)): Force;
-  export function forceZ(z?: number | ((node: unknown) => number)): Force;
+  export interface PositionForce extends Force {
+    strength(s: number | ((node: unknown) => number)): this;
+  }
+
+  export function forceX(x?: number | ((node: unknown) => number)): PositionForce;
+  export function forceY(y?: number | ((node: unknown) => number)): PositionForce;
+  export function forceZ(z?: number | ((node: unknown) => number)): PositionForce;
   export function forceRadial(
     radius: number | ((node: unknown) => number),
     x?: number,

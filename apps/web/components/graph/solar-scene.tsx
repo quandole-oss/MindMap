@@ -67,29 +67,63 @@ export function SolarScene({
   // Proximity labels: track which nodes are close enough to show labels
   const [nearbyNodes, setNearbyNodes] = useState<LayoutNode[]>([]);
 
-  // Nebula clusters: group nodes by domain and compute cluster center + radius
+  // Cluster labels: find connected components via edges, label each with dominant domain
   const nebulae = useMemo(() => {
     if (layoutNodes.length === 0) return [];
-    const groups: Record<string, LayoutNode[]> = {};
-    for (const node of layoutNodes) {
-      const d = node.domain || "unknown";
-      (groups[d] ??= []).push(node);
+
+    // Build adjacency list and find connected components via BFS
+    const nodeIdx = new Map(layoutNodes.map((n, i) => [n.id, i]));
+    const adj: number[][] = layoutNodes.map(() => []);
+    for (const e of edges) {
+      const si = nodeIdx.get(e.source);
+      const ti = nodeIdx.get(e.target);
+      if (si !== undefined && ti !== undefined) {
+        adj[si].push(ti);
+        adj[ti].push(si);
+      }
     }
-    return Object.entries(groups)
-      .filter(([, nodes]) => nodes.length >= 2)
-      .map(([domain, nodes]) => {
+
+    const visited = new Uint8Array(layoutNodes.length);
+    const components: number[][] = [];
+    for (let i = 0; i < layoutNodes.length; i++) {
+      if (visited[i]) continue;
+      const comp: number[] = [];
+      const queue = [i];
+      visited[i] = 1;
+      while (queue.length > 0) {
+        const cur = queue.shift()!;
+        comp.push(cur);
+        for (const nb of adj[cur]) {
+          if (!visited[nb]) {
+            visited[nb] = 1;
+            queue.push(nb);
+          }
+        }
+      }
+      components.push(comp);
+    }
+
+    // For each component with >= 2 nodes, compute center, radius, and dominant domain
+    return components
+      .filter((comp) => comp.length >= 2)
+      .map((comp) => {
+        const nodes = comp.map((i) => layoutNodes[i]);
         const cx = nodes.reduce((s, n) => s + n.x, 0) / nodes.length;
         const cy = nodes.reduce((s, n) => s + n.y, 0) / nodes.length;
         const cz = nodes.reduce((s, n) => s + n.z, 0) / nodes.length;
-        // Radius = max distance from center to any node in cluster + padding
         const maxDist = Math.max(
           ...nodes.map((n) =>
             Math.sqrt((n.x - cx) ** 2 + (n.y - cy) ** 2 + (n.z - cz) ** 2)
           )
         );
-        return { domain, center: [cx, cy, cz] as [number, number, number], radius: maxDist + 20, count: nodes.length };
+        // Build a descriptive label from the most-visited concept names in this cluster
+        const sorted = [...nodes].sort((a, b) => b.visitCount - a.visitCount);
+        // Pick up to 2 top concept names for the label
+        const topNames = sorted.slice(0, 2).map((n) => n.name);
+        const label = topNames.join(" & ");
+        return { label, center: [cx, cy, cz] as [number, number, number], radius: maxDist + 20, count: nodes.length };
       });
-  }, [layoutNodes]);
+  }, [layoutNodes, edges]);
 
   const { camera } = useThree();
   const controls = useThree((state) => state.controls) as any;
@@ -224,7 +258,7 @@ export function SolarScene({
 
   return (
     <>
-      <ambientLight intensity={0.15} />
+      <ambientLight intensity={3} />
       {/* Background star field (3000 particles, D-08) */}
       <Stars
         radius={300}
@@ -245,26 +279,30 @@ export function SolarScene({
       <SolarEdges layoutNodes={layoutNodes} edges={edges} />
       {/* Nebula domain labels use nebulae data but no cloud spheres */}
       {/* Nebula domain labels — shown at cluster centers */}
-      {nebulae.map((neb) => (
+      {nebulae.map((neb, i) => (
         <Html
-          key={`label-${neb.domain}`}
-          position={[neb.center[0], neb.center[1] + neb.radius + 5, neb.center[2]]}
+          key={`label-${i}`}
+          position={[neb.center[0], neb.center[1] + neb.radius + 12, neb.center[2]]}
           center
-          distanceFactor={150}
         >
           <div
             style={{
-              color: "rgba(255,255,255,0.35)",
-              fontSize: "11px",
-              fontWeight: 500,
-              letterSpacing: "0.1em",
-              textTransform: "uppercase",
+              color: "rgba(255,255,255,0.85)",
+              fontSize: "13px",
+              fontWeight: 600,
+              letterSpacing: "0.05em",
+              textTransform: "capitalize",
               whiteSpace: "nowrap",
               pointerEvents: "none",
               userSelect: "none",
+              textShadow: "0 0 12px rgba(100,100,255,0.5), 0 0 30px rgba(0,0,0,0.9)",
+              background: "rgba(0,0,0,0.3)",
+              padding: "4px 12px",
+              borderRadius: "6px",
+              border: "1px solid rgba(255,255,255,0.1)",
             }}
           >
-            {neb.domain}
+            {neb.label}
           </div>
         </Html>
       ))}
@@ -276,16 +314,17 @@ export function SolarScene({
           key={`prox-${node.id}`}
           position={[node.x, node.y + getNodeRadius(node) + 3, node.z]}
           center
-          distanceFactor={60}
+          distanceFactor={40}
         >
           <div
             style={{
-              color: "rgba(255,255,255,0.7)",
-              fontSize: "11px",
+              color: "rgba(255,255,255,0.95)",
+              fontSize: "15px",
+              fontWeight: 500,
               whiteSpace: "nowrap",
               pointerEvents: "none",
               userSelect: "none",
-              textShadow: "0 0 6px rgba(0,0,0,0.8)",
+              textShadow: "0 0 8px rgba(0,0,0,0.9), 0 0 20px rgba(0,0,0,0.5)",
             }}
           >
             {node.name}

@@ -246,6 +246,12 @@ importers:
       '@mindmap/misconceptions':
         specifier: workspace:*
         version: link:../misconceptions
+      ai:
+        specifier: ^6.0.154
+        version: 6.0.154(zod@3.25.76)
+      zod:
+        specifier: ^3.25.76
+        version: 3.25.76
     devDependencies:
       '@types/node':
         specifier: ^25.5.2
