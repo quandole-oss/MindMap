@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-04-09T03:31:08.523Z"
+last_updated: "2026-04-09T03:36:21.031Z"
 progress:
   total_phases: 7
   completed_phases: 6
   total_plans: 24
-  completed_plans: 22
-  percent: 92
+  completed_plans: 23
+  percent: 96
 ---
 
 # State: MindMap
@@ -31,7 +31,7 @@ progress:
 ## Current Position
 
 Phase: 07 (3d-solar-system-knowledge-graph) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 **Milestone**: v1 — Initial Release
 **Current Phase**: 6 (Demo & Deployment) — COMPLETE
 **Current Plan**: 4 (06-04) — DONE
@@ -66,6 +66,7 @@ Phase 6: Demo & Deployment   [ COMPLETE — 4/4 plans done ]
 | Phase 06 P03 | 420 | 2 tasks | 3 files |
 | Phase 06 P04 | 360 | 2 tasks | 17 files |
 | Phase 07 P01 | 196 | 2 tasks | 5 files |
+| Phase 07 P02 | 132 | 2 tasks | 3 files |
 
 ### Execution History
 
@@ -141,6 +142,9 @@ Phase 6: Demo & Deployment   [ COMPLETE — 4/4 plans done ]
 | 503 for missing ANTHROPIC_API_KEY (06-04) | Returns generic JSON message; does not leak env var values (T-06-11); placed after auth check, before LLM calls |
 | AppShell use client for mobile drawer (06-04) | Sidebar hidden below lg: breakpoint; hamburger triggers full-screen overlay drawer; main content px-4 sm:px-6 lg:px-8 |
 | d3-force-3d has no @types package (07-01) | Created apps/web/types/d3-force-3d.d.ts with minimal declarations; generic type param changed from `<N extends SimulationNode>` to `<N = SimulationNode>` to avoid index-signature conflict with GraphNode |
+| Html hover label rendered only for hovered node (07-02) | Avoids mounting 250 Html portals in DOM; <Html> only rendered when hoveredNode state is non-null |
+| next/dynamic ssr:false in knowledge-graph.tsx (07-02) | Preserves existing import path for graph-page-client.tsx while preventing WebGL SSR crash; loading fallback matches #050510 background |
+| OrbitControls makeDefault in solar-graph.tsx (07-02) | Required for useThree state.controls access in SolarScene camera fly-to useFrame loop |
 
 ### Open Questions
 
@@ -160,8 +164,8 @@ None.
 ## Session Continuity
 
 **Last updated**: 2026-04-09
-**Last action**: Completed 07-01 — installed R3F/three.js/d3-force-3d packages, created useGraphLayout hook (3D static layout), SolarNodes (InstancedMesh), SolarEdges (drei Line); custom d3-force-3d type declarations
-**Next action**: Phase 7 Plan 2 — compose SolarGraph canvas scene (SolarScene + KnowledgeGraph wrapper replacement)
+**Last action**: Completed 07-02 — created SolarScene (inner R3F scene with nodes, edges, Stars, hover label, fly-to), SolarGraph (Canvas + OrbitControls + Bloom), replaced 2D KnowledgeGraph with SSR-safe dynamic import; build passes
+**Next action**: Phase 7 Plan 3 — final plan in phase
 
 **Stack snapshot**:
 
