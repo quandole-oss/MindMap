@@ -22,7 +22,7 @@ const signUpSchema = z.object({
 
 type SignUpFormValues = z.infer<typeof signUpSchema>;
 
-export function SignupForm() {
+export function SignupForm({ onSwitchToLogin }: { onSwitchToLogin?: () => void } = {}) {
   const router = useRouter();
   const [serverError, setServerError] = useState<string | null>(null);
 
@@ -63,13 +63,13 @@ export function SignupForm() {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
-      <h1 className="text-[20px] font-semibold leading-[1.2] text-[#18181b]">
+      <h1 className="text-[20px] font-semibold leading-[1.2] text-white">
         Create your account
       </h1>
 
       {/* Name field */}
       <div className="flex flex-col gap-2">
-        <Label htmlFor="name">Name</Label>
+        <Label htmlFor="name" className="text-white/80">Name</Label>
         <Input
           id="name"
           type="text"
@@ -84,7 +84,7 @@ export function SignupForm() {
 
       {/* Email field */}
       <div className="flex flex-col gap-2">
-        <Label htmlFor="email">Email</Label>
+        <Label htmlFor="email" className="text-white/80">Email</Label>
         <Input
           id="email"
           type="email"
@@ -99,7 +99,7 @@ export function SignupForm() {
 
       {/* Password field */}
       <div className="flex flex-col gap-2">
-        <Label htmlFor="password">Password</Label>
+        <Label htmlFor="password" className="text-white/80">Password</Label>
         <Input
           id="password"
           type="password"
@@ -114,7 +114,7 @@ export function SignupForm() {
 
       {/* Role toggle — accessible fieldset */}
       <fieldset className="flex flex-col gap-2 border-0 m-0 p-0">
-        <legend className="text-sm font-medium text-[#18181b] mb-1">I am a...</legend>
+        <legend className="text-sm font-medium text-white/80 mb-1">I am a...</legend>
         <ToggleGroup
           value={[role]}
           onValueChange={(vals) => {
@@ -154,11 +154,17 @@ export function SignupForm() {
         {isSubmitting ? "Creating account..." : "Create account"}
       </Button>
 
-      <p className="text-center text-sm text-[#71717a]">
+      <p className="text-center text-sm text-white/60">
         Already have an account?{" "}
-        <Link href="/login" className="text-[#18181b] font-medium underline underline-offset-4">
-          Log in
-        </Link>
+        {onSwitchToLogin ? (
+          <button type="button" onClick={onSwitchToLogin} className="text-white font-medium underline underline-offset-4">
+            Log in
+          </button>
+        ) : (
+          <Link href="/login" className="text-white font-medium underline underline-offset-4">
+            Log in
+          </Link>
+        )}
       </p>
     </form>
   );

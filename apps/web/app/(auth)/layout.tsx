@@ -1,16 +1,11 @@
 import type { ReactNode } from "react";
-import dynamic from "next/dynamic";
-
-const SpiralAnimation = dynamic(
-  () => import("@/components/ui/spiral-animation").then((m) => m.SpiralAnimation),
-  { ssr: false }
-);
+import { SpiralBackground } from "@/components/ui/spiral-background";
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
     <div className="relative min-h-screen bg-black flex flex-col items-center justify-center px-4 py-12 overflow-hidden">
       {/* Spiral background — fills entire viewport */}
-      <SpiralAnimation />
+      <SpiralBackground />
 
       {/* Content layer — above the canvas */}
       <div className="relative z-10 flex flex-col items-center w-full">

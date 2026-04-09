@@ -19,7 +19,7 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
-export function LoginForm() {
+export function LoginForm({ onSwitchToSignup }: { onSwitchToSignup?: () => void } = {}) {
   const router = useRouter();
   const [serverError, setServerError] = useState<string | null>(null);
 
@@ -53,13 +53,13 @@ export function LoginForm() {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
-      <h1 className="text-[20px] font-semibold leading-[1.2] text-[#18181b]">
+      <h1 className="text-[20px] font-semibold leading-[1.2] text-white">
         Welcome back
       </h1>
 
       {/* Email field */}
       <div className="flex flex-col gap-2">
-        <Label htmlFor="email">Email</Label>
+        <Label htmlFor="email" className="text-white/80">Email</Label>
         <Input
           id="email"
           type="email"
@@ -74,7 +74,7 @@ export function LoginForm() {
 
       {/* Password field */}
       <div className="flex flex-col gap-2">
-        <Label htmlFor="password">Password</Label>
+        <Label htmlFor="password" className="text-white/80">Password</Label>
         <Input
           id="password"
           type="password"
@@ -103,11 +103,17 @@ export function LoginForm() {
         {isSubmitting ? "Logging in..." : "Log in"}
       </Button>
 
-      <p className="text-center text-sm text-[#71717a]">
+      <p className="text-center text-sm text-white/60">
         Don&apos;t have an account?{" "}
-        <Link href="/signup" className="text-[#18181b] font-medium underline underline-offset-4">
-          Sign up
-        </Link>
+        {onSwitchToSignup ? (
+          <button type="button" onClick={onSwitchToSignup} className="text-white font-medium underline underline-offset-4">
+            Sign up
+          </button>
+        ) : (
+          <Link href="/signup" className="text-white font-medium underline underline-offset-4">
+            Sign up
+          </Link>
+        )}
       </p>
     </form>
   );

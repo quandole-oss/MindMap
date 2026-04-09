@@ -28,7 +28,7 @@ export function HealthLegend() {
               flexShrink: 0,
             }}
           />
-          <span className="text-[14px] font-normal text-[#52525b]">{item.label}</span>
+          <span className="text-[13px] font-normal text-white/70">{item.label}</span>
         </div>
       ))}
     </div>
@@ -41,7 +41,7 @@ export function HealthLegend() {
 
       {/* Mobile: collapsible legend */}
       <details className="md:hidden">
-        <summary className="text-[14px] font-normal text-[#52525b] cursor-pointer select-none mb-2">
+        <summary className="text-[13px] font-normal text-white/70 cursor-pointer select-none mb-2">
           Legend
         </summary>
         {items}

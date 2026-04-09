@@ -39,7 +39,7 @@ export function SolarGraph({
   return (
     <div
       className="relative w-full"
-      style={{ height: "calc(100vh - 120px)", background: "#050510" }}
+      style={{ height: "calc(100vh - 56px)", background: "#050510" }}
     >
       <Canvas
         camera={{ position: [0, 0, 200], fov: 60, near: 0.1, far: 2000 }}

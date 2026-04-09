@@ -19,33 +19,32 @@ export default async function GraphPage() {
   ]);
 
   return (
-    <div className="pt-6 pb-8">
-      <div className="mb-2">
-        <h1 className="text-[20px] font-semibold text-[#18181b]">My Knowledge Graph</h1>
-      </div>
-      <div className="mb-4">
-        <HealthLegend />
-      </div>
-
+    <div className="relative">
       {graphData.nodes.length === 0 ? (
         /* Empty state */
         <div
-          className="flex flex-col items-center justify-center text-center"
-          style={{ height: "calc(100vh - 200px)" }}
+          className="flex flex-col items-center justify-center text-center bg-[#050510]"
+          style={{ height: "calc(100vh - 56px)" }}
         >
-          <h2 className="text-[20px] font-semibold text-[#18181b] mb-2">
-            Your graph is empty
+          <h2 className="text-[20px] font-semibold text-white mb-2">
+            Your knowledge universe is empty
           </h2>
-          <p className="text-[16px] text-[#71717a] max-w-[400px]">
-            Ask your first curiosity question from the dashboard to start building your knowledge map.
+          <p className="text-[16px] text-white/60 max-w-[400px]">
+            Ask your first curiosity question to plant a star.
           </p>
         </div>
       ) : (
-        <GraphPageClient
-          nodes={graphData.nodes}
-          edges={graphData.edges}
-          bridgeData={bridgeData}
-        />
+        <>
+          <GraphPageClient
+            nodes={graphData.nodes}
+            edges={graphData.edges}
+            bridgeData={bridgeData}
+          />
+          {/* Floating legend — glassmorphism box in bottom-left corner */}
+          <div className="absolute bottom-4 left-4 z-20 bg-black/50 backdrop-blur-md border border-white/10 rounded-lg px-4 py-3">
+            <HealthLegend />
+          </div>
+        </>
       )}
     </div>
   );
