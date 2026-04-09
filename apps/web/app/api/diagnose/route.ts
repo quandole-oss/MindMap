@@ -10,6 +10,28 @@ import {
   buildResolveMessage,
 } from "@mindmap/llm";
 import { getMisconceptionById } from "@mindmap/misconceptions";
+import { z } from "zod";
+
+const messagePartSchema = z.object({
+  type: z.string(),
+  text: z.string().optional(),
+});
+
+const uiMessageSchema = z.object({
+  role: z.enum(["user", "assistant", "system"]),
+  parts: z.array(messagePartSchema).optional(),
+  content: z.string().optional(),
+});
+
+/** Validate raw JSONB messages into UIMessage[]. Returns empty array on invalid data. */
+function validateMessages(raw: unknown): UIMessage[] {
+  const result = z.array(uiMessageSchema).safeParse(raw);
+  if (!result.success) {
+    console.error("[diagnose] invalid message structure in DB:", result.error.message);
+    return [];
+  }
+  return result.data as UIMessage[];
+}
 
 export const maxDuration = 60;
 
@@ -101,7 +123,7 @@ export async function POST(req: Request) {
     // Stage "probe" — initial probe question (no messages in DB yet)
     if (
       diagnosticSession.stage === "probe" &&
-      diagnosticSession.messages.length === 0
+      validateMessages(diagnosticSession.messages).length === 0
     ) {
       // Look up original question text for context in probe prompt
       let originalQuestion = "something you were curious about";
@@ -157,7 +179,7 @@ export async function POST(req: Request) {
       }
 
       // T-04-06: Server loads history from DB; client only sends latest message
-      const allMessages: UIMessage[] = [...diagnosticSession.messages, message];
+      const allMessages: UIMessage[] = [...validateMessages(diagnosticSession.messages), message];
 
       // Extract the student's probe response (last user message in history)
       const lastUserMessage = [...allMessages].reverse().find((m) => m.role === "user");
@@ -221,7 +243,7 @@ export async function POST(req: Request) {
       }
 
       // T-04-06: Append new student message to DB history
-      const allMessages: UIMessage[] = [...diagnosticSession.messages, message];
+      const allMessages: UIMessage[] = [...validateMessages(diagnosticSession.messages), message];
 
       // Extract student's final response text (last user message)
       const studentFinalMessage = [...allMessages].reverse().find((m) => m.role === "user");
@@ -238,7 +260,7 @@ export async function POST(req: Request) {
           .join("") ?? "";
 
       // Extract the confrontation used (last assistant message before the student's final response)
-      const lastAssistantMessage = [...diagnosticSession.messages]
+      const lastAssistantMessage = [...validateMessages(diagnosticSession.messages)]
         .reverse()
         .find((m) => m.role === "assistant");
       const confrontationUsed =

@@ -8,8 +8,6 @@ import {
   type GradeBand,
 } from "./schema";
 
-const DOMAINS = ["physics", "biology", "math", "history"] as const;
-
 let _library: MisconceptionEntry[] | null = null;
 
 function getLibraryDir(): string {
@@ -30,8 +28,10 @@ export function loadLibrary(): MisconceptionEntry[] {
   const entries: unknown[] = [];
   const libraryDir = getLibraryDir();
 
-  for (const domain of DOMAINS) {
-    const filePath = path.join(libraryDir, `${domain}.yaml`);
+  // Dynamically scan all .yaml files — new domains are added by dropping a YAML file
+  const yamlFiles = fs.readdirSync(libraryDir).filter((f) => f.endsWith(".yaml"));
+  for (const file of yamlFiles) {
+    const filePath = path.join(libraryDir, file);
     const content = fs.readFileSync(filePath, "utf-8");
     const parsed = yaml.load(content);
     if (Array.isArray(parsed)) {

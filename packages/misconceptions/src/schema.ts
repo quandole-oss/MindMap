@@ -5,7 +5,7 @@ export const gradeBandSchema = z.enum(["K-5", "6-8", "9-12"]);
 export const misconceptionEntrySchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
-  domain: z.enum(["physics", "biology", "math", "history"]),
+  domain: z.string().min(1),
   grade_band: gradeBandSchema,
   description: z.string().min(10),
   citation: z.string().min(1),

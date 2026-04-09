@@ -191,8 +191,15 @@ export async function POST(req: Request) {
           let resolvedConceptId: string;
 
           try {
-            // Generate embedding for the concept name
-            const embedding = await generateEmbedding(concept.name);
+            // Generate embedding with one retry on failure
+            let embedding: number[];
+            try {
+              embedding = await generateEmbedding(concept.name);
+            } catch (firstErr) {
+              console.warn(`[dedup] embedding attempt 1 failed for "${concept.name}", retrying...`);
+              await new Promise((r) => setTimeout(r, 500));
+              embedding = await generateEmbedding(concept.name);
+            }
 
             // Search for similar existing concepts via pgvector HNSW
             const similar = await findSimilarConcepts(userId, embedding, 0.85, 5);
