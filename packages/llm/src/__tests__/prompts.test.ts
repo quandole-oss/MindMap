@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { buildEnrichSystemPrompt } from "../prompts/enrich";
-import { buildExtractPrompt, conceptExtractionSchema } from "../prompts/extract";
+import { buildExtractPrompt, conceptExtractionSchema, DOMAINS } from "../prompts/extract";
 
 describe("buildEnrichSystemPrompt", () => {
   it("contains 'Grade 5' for gradeLevel 5", () => {
@@ -69,6 +69,26 @@ describe("buildExtractPrompt", () => {
     const prompt = buildExtractPrompt("What is gravity?", "Gravity is a force.");
     expect(prompt.toLowerCase()).toMatch(/concept|extract/);
   });
+
+  it("contains '2-4' concept count guidance", () => {
+    const prompt = buildExtractPrompt("What is gravity?", "Gravity is a force.");
+    expect(prompt).toContain("2-4");
+  });
+
+  it("contains at least one <example> tag", () => {
+    const prompt = buildExtractPrompt("What is gravity?", "Gravity is a force.");
+    expect(prompt).toContain("<example>");
+  });
+
+  it("contains 'computer-science' in the domain list", () => {
+    const prompt = buildExtractPrompt("What is gravity?", "Gravity is a force.");
+    expect(prompt).toContain("computer-science");
+  });
+
+  it("contains 'astronomy' in the domain list", () => {
+    const prompt = buildExtractPrompt("What is gravity?", "Gravity is a force.");
+    expect(prompt).toContain("astronomy");
+  });
 });
 
 describe("conceptExtractionSchema", () => {
@@ -98,11 +118,27 @@ describe("conceptExtractionSchema", () => {
     expect(result.success).toBe(true);
   });
 
-  it("rejects an invalid domain value", () => {
+  it("accepts 'chemistry' as a valid domain (now part of 15-domain enum)", () => {
     const result = conceptExtractionSchema.safeParse({
-      concepts: [{ name: "gravity", domain: "chemistry" }],
+      concepts: [{ name: "acid-base reactions", domain: "chemistry" }],
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects a truly invalid domain value like 'cooking'", () => {
+    const result = conceptExtractionSchema.safeParse({
+      concepts: [{ name: "sourdough bread", domain: "cooking" }],
     });
     expect(result.success).toBe(false);
+  });
+
+  it("accepts all 15 domains", () => {
+    for (const domain of DOMAINS) {
+      const result = conceptExtractionSchema.safeParse({
+        concepts: [{ name: "test concept", domain }],
+      });
+      expect(result.success, `domain '${domain}' should be valid`).toBe(true);
+    }
   });
 
   it("rejects missing name field", () => {
