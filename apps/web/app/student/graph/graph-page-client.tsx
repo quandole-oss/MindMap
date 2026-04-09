@@ -8,6 +8,7 @@ import { GraphFilterBar } from "@/components/graph/graph-filter-bar";
 import { useGraphFilters } from "@/components/graph/use-graph-filters";
 import { searchNodes } from "@/actions/graph";
 import type { GraphNode, GraphEdge } from "@/actions/graph";
+import { HealthLegend } from "@/components/graph/health-legend";
 
 interface BridgeData {
   bridgeNodeId: string;
@@ -111,6 +112,9 @@ export function GraphPageClient({ nodes, edges, bridgeData }: GraphPageClientPro
         onSearchTextChange={setSearchText}
         onSearch={handleSearch}
       />
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 bg-black/50 backdrop-blur-md border border-white/10 rounded-lg px-5 py-2.5">
+        <HealthLegend />
+      </div>
       <NodeDetailPanel
         conceptId={selectedNodeId}
         open={!!selectedNodeId}

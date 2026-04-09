@@ -1,37 +1,54 @@
 "use client";
 
 import { useMemo } from "react";
+import * as THREE from "three";
 import { Line } from "@react-three/drei";
 import type { LayoutNode } from "./use-graph-layout";
 import type { GraphEdge } from "@/actions/graph";
+import { getDomainColor } from "@/lib/graph/domain-colors";
+
+// Cache blended colors to avoid repeated THREE.Color allocations
+const _colorA = new THREE.Color();
+const _colorB = new THREE.Color();
 
 /**
- * Base style maximums per edge type. Actual opacity and lineWidth are
- * modulated by edge.weight [0..1] (co-occurrence strength).
- * Bridge = surprise connections (boldest). Curiosity_link = standard (subtlest).
+ * Edge color = 50/50 blend of both endpoints' domain colors.
+ * Same-domain → blend = domain color (e.g., cyan+cyan = cyan).
+ * Cross-domain → unique blend (e.g., cyan+pink = lavender).
+ * Misconception edges always red.
  */
-function getBaseStyle(edgeType: string): { color: string; maxOpacity: number; maxLineWidth: number } {
-  switch (edgeType) {
-    case "bridge":
-      return { color: "#a78bfa", maxOpacity: 0.95, maxLineWidth: 4.0 };
-    case "misconception_cluster":
-      return { color: "#f87171", maxOpacity: 0.80, maxLineWidth: 2.5 };
-    case "curiosity_link":
-    default:
-      return { color: "#6366f1", maxOpacity: 0.60, maxLineWidth: 1.8 };
-  }
+function getEdgeColor(srcDomain: string, tgtDomain: string, edgeType: string): string {
+  if (edgeType === "misconception_cluster") return "#f87171";
+  _colorA.set(getDomainColor(srcDomain));
+  _colorB.set(getDomainColor(tgtDomain));
+  _colorA.lerp(_colorB, 0.5);
+  return `#${_colorA.getHexString()}`;
 }
 
-function getEdgeStyle(edge: GraphEdge): { color: string; opacity: number; lineWidth: number } {
-  const base = getBaseStyle(edge.edgeType);
+function getEdgeStyle(
+  edge: GraphEdge,
+  srcDomain: string,
+  tgtDomain: string
+): { color: string; opacity: number; lineWidth: number } {
+  const color = getEdgeColor(srcDomain, tgtDomain, edge.edgeType);
   const w = edge.weight ?? 0.5;
-  // Weak links nearly invisible, strong links dramatically bold
-  const MIN_OPACITY = 0.06, MIN_WIDTH = 0.2;
+  const isCrossDomain = srcDomain !== tgtDomain;
+
+  // Cross-domain edges POP (the interesting surprise connections);
+  // same-domain edges are faint background structure
+  const isBridge = edge.edgeType === "bridge";
+  const isMisconception = edge.edgeType === "misconception_cluster";
+
+  const maxOpacity = isBridge ? 0.95 : isMisconception ? 0.85 : isCrossDomain ? 0.85 : 0.15;
+  const maxLineWidth = isBridge ? 4.0 : isMisconception ? 2.5 : isCrossDomain ? 2.5 : 0.5;
+
+  const MIN_OPACITY = isCrossDomain ? 0.50 : 0.06;
+  const MIN_WIDTH = isCrossDomain ? 1.2 : 0.2;
 
   return {
-    color: base.color,
-    opacity: MIN_OPACITY + w * w * (base.maxOpacity - MIN_OPACITY),
-    lineWidth: MIN_WIDTH + w * w * (base.maxLineWidth - MIN_WIDTH),
+    color,
+    opacity: MIN_OPACITY + w * w * (maxOpacity - MIN_OPACITY),
+    lineWidth: MIN_WIDTH + w * w * (maxLineWidth - MIN_WIDTH),
   };
 }
 
@@ -64,7 +81,7 @@ export function SolarEdges({ layoutNodes, edges }: SolarEdgesProps) {
         const tgt = nodeIndex[edge.target];
         if (!src || !tgt) return null;
 
-        const { color, opacity, lineWidth } = getEdgeStyle(edge);
+        const { color, opacity, lineWidth } = getEdgeStyle(edge, src.domain, tgt.domain);
 
         return (
           <Line

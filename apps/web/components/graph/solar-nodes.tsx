@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef, useEffect, useMemo, useCallback } from "react";
-import { useFrame, useThree } from "@react-three/fiber";
+import { useRef, useEffect, useMemo, useCallback, useState } from "react";
+
 import * as THREE from "three";
 import type { LayoutNode } from "./use-graph-layout";
 import type { GraphNode } from "@/actions/graph";
@@ -31,9 +31,9 @@ function getNodeColor(node: GraphNode): THREE.Color {
  * Linear mapping so low-importance nodes are noticeably small.
  */
 export function getNodeRadius(node: GraphNode): number {
-  const MIN = 3, MAX = 22;
+  const MIN = 1.5, MAX = 14;
   const t = node.importance ?? 0;
-  return MIN + t * (MAX - MIN);
+  return MIN + t * t * (MAX - MIN);
 }
 
 interface SolarNodesProps {
@@ -49,17 +49,11 @@ interface SolarNodesProps {
  * Renders all graph nodes as a single InstancedMesh (one draw call).
  *
  * Each instance has its own matrix (position + scale via getNodeRadius) and
- * color (via getNodeColor). Health state colors and radius formula match the
- * existing 2D KnowledgeGraph component.
+ * color (via getNodeColor). Node scale is fixed — no LOD, so nodes maintain
+ * consistent size at all camera distances.
  *
- * LOD (D-15): useFrame checks camera distance per node each frame.
- * Nodes farther than 150 world units from the camera are scaled down 0.3x,
- * making them appear as tiny glowing dots — visual LOD without geometry switching.
- * O(n) per frame; at 250 nodes ~0.1ms — within T-07-06 acceptable range.
- *
- * D-04, D-05, D-06, D-14 compliance:
  * - Single draw call via InstancedMesh
- * - vertexColors + toneMapped={false} required for Bloom (Research Pitfall 1)
+ * - meshBasicMaterial + toneMapped={false} for Bloom-compatible self-luminous rendering
  * - onClick uses e.instanceId to identify the clicked node
  * - onNodeHover for tooltip display
  */
@@ -76,12 +70,11 @@ export function SolarNodes({
 
   // Stable Object3D for matrix computation — memoized to avoid recreation
   const dummy = useMemo(() => new THREE.Object3D(), []);
-  // Reusable Vector3 for distance checks — avoids per-frame heap allocations
-  const tempVec = useMemo(() => new THREE.Vector3(), []);
 
-  const { camera } = useThree();
+  // Track when the mesh ref is available so useEffect can depend on it
+  const [meshReady, setMeshReady] = useState(false);
 
-  // Initial matrix + color setup whenever layout changes
+  // Initial matrix + color setup whenever layout or mesh changes
   useEffect(() => {
     if (!meshRef.current || layoutNodes.length === 0) return;
 
@@ -100,7 +93,7 @@ export function SolarNodes({
     // Required for raycasting to work on InstancedMesh
     meshRef.current.computeBoundingBox();
     meshRef.current.computeBoundingSphere();
-  }, [layoutNodes, dummy]);
+  }, [layoutNodes, dummy, meshReady]);
 
   // Callback ref: populates both internalMeshRef and optional externalMeshRef
   // Must be declared before any conditional return (Rules of Hooks)
@@ -110,33 +103,13 @@ export function SolarNodes({
       if (externalMeshRef) {
         externalMeshRef.current = instance;
       }
+      if (instance) setMeshReady(true);
     },
     [externalMeshRef]
   );
 
-  /**
-   * LOD: per-frame distance check. Nodes beyond 150 units shrink to 0.3x scale
-   * (appear as small glowing points). Nodes within 150 units stay full-size.
-   * T-07-06 mitigation: O(n) check; 250 nodes ≈ 0.1ms per frame — acceptable.
-   */
-  useFrame(() => {
-    if (!meshRef.current || layoutNodes.length === 0) return;
-
-    layoutNodes.forEach((node, i) => {
-      const dist = camera.position.distanceTo(
-        tempVec.set(node.x, node.y, node.z)
-      );
-      const baseRadius = getNodeRadius(node);
-      const lodScale = dist > 150 ? 0.3 : 1;
-
-      dummy.position.set(node.x, node.y, node.z);
-      dummy.scale.setScalar(baseRadius * lodScale);
-      dummy.updateMatrix();
-      meshRef.current.setMatrixAt(i, dummy.matrix);
-    });
-
-    meshRef.current.instanceMatrix.needsUpdate = true;
-  });
+  // Node scale is set once in useEffect above and stays constant during zoom/pan.
+  // No per-frame LOD — nodes maintain consistent size at all camera distances.
 
   if (layoutNodes.length === 0) return null;
 

@@ -4,7 +4,7 @@ import { useRef } from "react";
 import { Search, ChevronDown, ChevronUp, X, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { getDomainColor } from "@/lib/graph/domain-colors";
-import { HealthLegend } from "./health-legend";
+
 import type { GraphFilters } from "./use-graph-filters";
 import type { Cluster } from "@/lib/graph/clusters";
 
@@ -230,10 +230,6 @@ export function GraphFilterBar({
         )}
       </div>
 
-      {/* Legend always visible */}
-      <div className="bg-black/50 backdrop-blur-md border border-white/10 rounded-lg px-4 py-3">
-        <HealthLegend />
-      </div>
     </div>
   );
 }
