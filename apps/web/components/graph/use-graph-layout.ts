@@ -89,10 +89,11 @@ export function useGraphLayout(
           .distance((link: any) =>
             link.edgeType === "bridge" ? 100 : 60
           )
+          .strength((link: any) => 0.3 + (link.weight ?? 0.5) * 0.7)
       )
       .force("charge", forceManyBody().strength(-180))
       .force("center", forceCenter(0, 0, 0))
-      .force("collide", forceCollide().radius(14))
+      .force("collide", forceCollide().radius(16))
       // Domain galaxy forces — pull each node toward its domain's region
       .force(
         "domainX",

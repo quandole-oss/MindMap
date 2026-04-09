@@ -1,9 +1,9 @@
 "use server";
 
 import { auth } from "@/lib/auth";
-import { db, schema } from "@mindmap/db";
+import { db, schema, getEdgeCoOccurrences } from "@mindmap/db";
 import { eq, and, inArray, or } from "drizzle-orm";
-import { findTopBridgeNode } from "@/lib/graph/centrality";
+import { computeBetweennessCentrality, findTopBridgeNode } from "@/lib/graph/centrality";
 import { generateObject } from "ai";
 import { createLLMAdapter } from "@mindmap/llm";
 import { z } from "zod";
@@ -15,12 +15,16 @@ export interface GraphNode {
   status: "unprobed" | "healthy" | "misconception";
   visitCount: number;
   isBridge: boolean;
+  degree: number;
+  betweenness: number;
+  importance: number;
 }
 
 export interface GraphEdge {
   source: string;
   target: string;
   edgeType: string;
+  weight: number;
 }
 
 export async function getGraphData(): Promise<{ nodes: GraphNode[]; edges: GraphEdge[] }> {
@@ -58,26 +62,92 @@ export async function getGraphData(): Promise<{ nodes: GraphNode[]; edges: Graph
       )
     );
 
-  const edges: GraphEdge[] = rawEdges.map((e) => ({
+  const edgePairs = rawEdges.map((e) => ({
     source: e.sourceConceptId,
     target: e.targetConceptId,
     edgeType: e.edgeType,
   }));
 
-  // Detect bridge node via betweenness centrality (T-03-13: O(V*E), server-side only)
-  const bridge = findTopBridgeNode(
-    concepts.map((c) => ({ id: c.id, domain: c.domain })),
-    edges.map((e) => ({ source: e.source, target: e.target }))
+  // Compute degree per node
+  const degreeMap = new Map<string, number>();
+  for (const id of conceptIds) degreeMap.set(id, 0);
+  for (const e of edgePairs) {
+    degreeMap.set(e.source, (degreeMap.get(e.source) ?? 0) + 1);
+    degreeMap.set(e.target, (degreeMap.get(e.target) ?? 0) + 1);
+  }
+
+  // Compute full betweenness centrality map (T-03-13: O(V*E), server-side only)
+  const centralityMap = computeBetweennessCentrality(
+    conceptIds,
+    edgePairs.map((e) => ({ source: e.source, target: e.target }))
   );
 
-  const nodes: GraphNode[] = concepts.map((c) => ({
-    id: c.id,
-    name: c.name,
-    domain: c.domain,
-    status: c.status as "unprobed" | "healthy" | "misconception",
-    visitCount: c.visitCount,
-    isBridge: bridge !== null && c.id === bridge.nodeId,
-  }));
+  // Detect bridge node — reuse precomputed centrality to avoid double computation
+  const bridge = findTopBridgeNode(
+    concepts.map((c) => ({ id: c.id, domain: c.domain })),
+    edgePairs.map((e) => ({ source: e.source, target: e.target })),
+    centralityMap
+  );
+
+  // Co-occurrence counts for edge weight
+  const coOccurrences = await getEdgeCoOccurrences(conceptIds);
+
+  // Normalize all metrics to [0..1]
+  const degreeValues = Array.from(degreeMap.values());
+  const centralityValues = Array.from(centralityMap.values());
+  const maxDegree = (degreeValues.length > 0 ? Math.max(...degreeValues) : 0) || 1;
+  const maxBetweenness = (centralityValues.length > 0 ? Math.max(...centralityValues) : 0) || 1;
+  const maxVisitCount = Math.max(...concepts.map((c) => c.visitCount)) || 1;
+  const coValues = Array.from(coOccurrences.values());
+  const maxCoOccurrence = coValues.length > 0 ? Math.max(...coValues) : 1;
+
+  const nodes: GraphNode[] = concepts.map((c) => {
+    const isBridge = bridge !== null && c.id === bridge.nodeId;
+    const normDegree = (degreeMap.get(c.id) ?? 0) / maxDegree;
+    const normBetweenness = (centralityMap.get(c.id) ?? 0) / maxBetweenness;
+    const normVisitCount = c.visitCount / maxVisitCount;
+    const rawImportance =
+      0.35 * normDegree +
+      0.30 * normBetweenness +
+      0.25 * normVisitCount +
+      0.10 * (isBridge ? 1 : 0);
+    const importance = Math.pow(rawImportance, 0.6);
+
+    return {
+      id: c.id,
+      name: c.name,
+      domain: c.domain,
+      status: c.status as "unprobed" | "healthy" | "misconception",
+      visitCount: c.visitCount,
+      isBridge,
+      degree: degreeMap.get(c.id) ?? 0,
+      betweenness: normBetweenness,
+      importance,
+    };
+  });
+
+  // Build importance lookup for edge weight computation
+  const importanceMap = new Map<string, number>();
+  for (const n of nodes) importanceMap.set(n.id, n.importance);
+
+  const edges: GraphEdge[] = edgePairs.map((e) => {
+    // Co-occurrence signal
+    const key = e.source < e.target ? `${e.source}:${e.target}` : `${e.target}:${e.source}`;
+    const rawCo = coOccurrences.get(key) ?? 0;
+    const normCo = maxCoOccurrence > 0 ? rawCo / maxCoOccurrence : 0;
+
+    // Endpoint importance signal — avg of connected nodes
+    const srcImp = importanceMap.get(e.source) ?? 0;
+    const tgtImp = importanceMap.get(e.target) ?? 0;
+    const endpointAvg = (srcImp + tgtImp) / 2;
+
+    // Edge type bonus: bridge edges always strong
+    const typeBonus = e.edgeType === "bridge" ? 0.3 : e.edgeType === "misconception_cluster" ? 0.15 : 0;
+
+    // Blend: 30% co-occurrence + 50% endpoint importance + 20% type bonus
+    const weight = Math.min(0.30 * normCo + 0.50 * endpointAvg + 0.20 * (typeBonus / 0.3), 1);
+    return { ...e, weight: Math.max(weight, 0.05) };
+  });
 
   return { nodes, edges };
 }

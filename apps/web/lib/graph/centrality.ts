@@ -119,7 +119,8 @@ export function computeBetweennessCentrality(
  */
 export function findTopBridgeNode(
   nodes: Array<{ id: string; domain: string }>,
-  edges: Array<{ source: string; target: string }>
+  edges: Array<{ source: string; target: string }>,
+  precomputedCentrality?: Map<string, number>
 ): { nodeId: string; connectedDomains: [string, string] } | null {
   // Need at least 3 nodes and 2 edges for a meaningful bridge
   if (nodes.length < 3 || edges.length < 2) {
@@ -132,7 +133,7 @@ export function findTopBridgeNode(
     domainById.set(node.id, node.domain);
   }
 
-  const centrality = computeBetweennessCentrality(nodeIds, edges);
+  const centrality = precomputedCentrality ?? computeBetweennessCentrality(nodeIds, edges);
 
   // Build adjacency list to find each node's neighbor domains
   const adj = new Map<string, string[]>();

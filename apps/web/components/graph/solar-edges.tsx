@@ -6,22 +6,33 @@ import type { LayoutNode } from "./use-graph-layout";
 import type { GraphEdge } from "@/actions/graph";
 
 /**
- * Edge visual style keyed by edgeType.
- * Bridge = highlighted surprise connections (bright, thick, glowing).
- * Curiosity_link = standard connections (subtle).
- * Misconception_cluster = warning connections (red tint).
+ * Base style maximums per edge type. Actual opacity and lineWidth are
+ * modulated by edge.weight [0..1] (co-occurrence strength).
+ * Bridge = surprise connections (boldest). Curiosity_link = standard (subtlest).
  */
-function getEdgeStyle(edgeType: string): { color: string; opacity: number; lineWidth: number } {
+function getBaseStyle(edgeType: string): { color: string; maxOpacity: number; maxLineWidth: number } {
   switch (edgeType) {
     case "bridge":
-      // Surprise cross-domain connections — bright purple, thick, highly visible
-      return { color: "#a78bfa", opacity: 0.85, lineWidth: 2.5 };
+      return { color: "#a78bfa", maxOpacity: 0.95, maxLineWidth: 4.0 };
     case "misconception_cluster":
-      return { color: "#f87171", opacity: 0.6, lineWidth: 1.5 };
+      return { color: "#f87171", maxOpacity: 0.80, maxLineWidth: 2.5 };
     case "curiosity_link":
     default:
-      return { color: "#6366f1", opacity: 0.4, lineWidth: 0.8 };
+      return { color: "#6366f1", maxOpacity: 0.60, maxLineWidth: 1.8 };
   }
+}
+
+function getEdgeStyle(edge: GraphEdge): { color: string; opacity: number; lineWidth: number } {
+  const base = getBaseStyle(edge.edgeType);
+  const w = edge.weight ?? 0.5;
+  // Weak links nearly invisible, strong links dramatically bold
+  const MIN_OPACITY = 0.06, MIN_WIDTH = 0.2;
+
+  return {
+    color: base.color,
+    opacity: MIN_OPACITY + w * w * (base.maxOpacity - MIN_OPACITY),
+    lineWidth: MIN_WIDTH + w * w * (base.maxLineWidth - MIN_WIDTH),
+  };
 }
 
 interface SolarEdgesProps {
@@ -53,7 +64,7 @@ export function SolarEdges({ layoutNodes, edges }: SolarEdgesProps) {
         const tgt = nodeIndex[edge.target];
         if (!src || !tgt) return null;
 
-        const { color, opacity, lineWidth } = getEdgeStyle(edge.edgeType);
+        const { color, opacity, lineWidth } = getEdgeStyle(edge);
 
         return (
           <Line

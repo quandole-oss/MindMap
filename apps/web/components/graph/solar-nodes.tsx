@@ -5,9 +5,12 @@ import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import type { LayoutNode } from "./use-graph-layout";
 import type { GraphNode } from "@/actions/graph";
-import { getDomainColor } from "@/lib/graph/domain-colors";
-
-// Node health state base colors — same hex values as 2D knowledge-graph.tsx
+// Node health state base colors (linear RGB, used with meshBasicMaterial)
+// Multipliers computed from BT.709 luminance to exceed bloom threshold (0.7):
+//   healthy:       L_base=0.229 × 4.0 = 0.917 → vivid teal glow
+//   misconception: L_base=0.166 × 5.0 = 0.832 → vivid red glow
+//   unprobed:      L_base=0.160 × 3.0 = 0.481 → faint ghost glow (intentionally dimmer)
+//   bridge:        L_base=0.132 × 6.0 = 0.793 → brightest, most prominent
 const NODE_COLORS: Record<string, THREE.Color> = {
   healthy: new THREE.Color("#0d9488"),
   misconception: new THREE.Color("#dc2626"),
@@ -15,34 +18,22 @@ const NODE_COLORS: Record<string, THREE.Color> = {
   bridge: new THREE.Color("#7c3aed"),
 };
 
-// Cache THREE.Color objects per domain to avoid repeated construction
-const DOMAIN_HUES: Record<string, THREE.Color> = {};
-
-function getDomainHue(domain: string): THREE.Color {
-  if (!DOMAIN_HUES[domain]) {
-    DOMAIN_HUES[domain] = new THREE.Color(getDomainColor(domain));
-  }
-  return DOMAIN_HUES[domain];
-}
-
-// Reusable Color to avoid per-node allocation
-const _blended = new THREE.Color();
-
 function getNodeColor(node: GraphNode): THREE.Color {
-  if (node.isBridge) return NODE_COLORS.bridge.clone();
-  const base = NODE_COLORS[node.status] ?? NODE_COLORS.unprobed;
-  // Blend 50% health state + 50% domain hue — topics visually distinct
-  const domainHue = getDomainHue(node.domain);
-  _blended.copy(base).lerp(domainHue, 0.50);
-  return _blended.clone();
+  if (node.isBridge) return NODE_COLORS.bridge.clone().multiplyScalar(6.0);
+  if (node.status === "misconception") return NODE_COLORS.misconception.clone().multiplyScalar(5.0);
+  if (node.status === "healthy") return NODE_COLORS.healthy.clone().multiplyScalar(4.0);
+  return NODE_COLORS.unprobed.clone().multiplyScalar(3.0);
 }
 
 /**
- * 3D sphere radius in world units.
- * Smaller than 2D pixel radius — scaled for WebGL units.
+ * 3D sphere radius in world units, driven by pre-computed importance [0..1].
+ * Range [3..22] gives dramatic visual differentiation.
+ * Linear mapping so low-importance nodes are noticeably small.
  */
 export function getNodeRadius(node: GraphNode): number {
-  return Math.min(8 + node.visitCount * 1.2, 18);
+  const MIN = 3, MAX = 22;
+  const t = node.importance ?? 0;
+  return MIN + t * (MAX - MIN);
 }
 
 interface SolarNodesProps {
@@ -166,13 +157,8 @@ export function SolarNodes({
     >
       {/* radius=1, scale applied per-instance via dummy.scale.setScalar(radius) */}
       <sphereGeometry args={[1, 16, 16]} />
-      <meshStandardMaterial
-        vertexColors
-        emissive={new THREE.Color(0.15, 0.15, 0.2)}
-        emissiveIntensity={2.5}
+      <meshBasicMaterial
         toneMapped={false}
-        roughness={0.3}
-        metalness={0}
       />
     </instancedMesh>
   );

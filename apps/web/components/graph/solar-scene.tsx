@@ -408,6 +408,8 @@ export function SolarScene({
             }}
           >
             {hoveredNode.name} &middot;{" "}
+            {hoveredNode.degree} connection
+            {hoveredNode.degree !== 1 ? "s" : ""} &middot;{" "}
             {hoveredNode.visitCount} visit
             {hoveredNode.visitCount !== 1 ? "s" : ""}
           </div>

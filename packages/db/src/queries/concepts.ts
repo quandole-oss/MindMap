@@ -1,6 +1,58 @@
-import { cosineDistance, sql, and, eq, isNotNull } from "drizzle-orm";
+import { cosineDistance, sql, and, eq, isNotNull, inArray } from "drizzle-orm";
 import { db } from "../index";
 import * as schema from "../schema";
+
+/**
+ * Count how many questions each pair of concepts co-occurred in.
+ * Used to derive edge weight (strength) for the knowledge graph visualization.
+ *
+ * Returns a Map keyed by "minId:maxId" (lexicographic order) → raw co-occurrence count.
+ */
+export async function getEdgeCoOccurrences(
+  conceptIds: string[]
+): Promise<Map<string, number>> {
+  if (conceptIds.length < 2) return new Map();
+
+  // Fetch all concept-question links for these concepts
+  const links = await db
+    .select({
+      conceptId: schema.conceptQuestions.conceptId,
+      questionId: schema.conceptQuestions.questionId,
+    })
+    .from(schema.conceptQuestions)
+    .where(inArray(schema.conceptQuestions.conceptId, conceptIds));
+
+  // Group question IDs by concept
+  const questionsByConcept = new Map<string, Set<string>>();
+  for (const link of links) {
+    let qs = questionsByConcept.get(link.conceptId);
+    if (!qs) {
+      qs = new Set<string>();
+      questionsByConcept.set(link.conceptId, qs);
+    }
+    qs.add(link.questionId);
+  }
+
+  // Count co-occurrences for each concept pair
+  const result = new Map<string, number>();
+  const ids = Array.from(questionsByConcept.keys());
+  for (let i = 0; i < ids.length; i++) {
+    for (let j = i + 1; j < ids.length; j++) {
+      const a = ids[i] < ids[j] ? ids[i] : ids[j];
+      const b = ids[i] < ids[j] ? ids[j] : ids[i];
+      const qsA = questionsByConcept.get(ids[i])!;
+      const qsB = questionsByConcept.get(ids[j])!;
+      let count = 0;
+      Array.from(qsA).forEach((q) => {
+        if (qsB.has(q)) count++;
+      });
+      if (count > 0) {
+        result.set(`${a}:${b}`, count);
+      }
+    }
+  }
+  return result;
+}
 
 /**
  * Find existing concepts for a user that are semantically similar to the given embedding.
