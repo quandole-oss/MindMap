@@ -13,9 +13,19 @@ import { Separator } from "@/components/ui/separator";
 
 type ConceptStatus = "unprobed" | "healthy" | "misconception";
 
+interface NodeConnection {
+  conceptId: string;
+  conceptName: string;
+  conceptDomain: string;
+  conceptStatus: string;
+  edgeType: string;
+  sharedQuestions: string[];
+}
+
 interface ConceptDetails {
   concept: { name: string; domain: string; status: string; visitCount: number };
   exchanges: Array<{ questionText: string; aiResponse: string | null; createdAt: Date | null }>;
+  connections: NodeConnection[];
 }
 
 interface NodeDetailPanelProps {
@@ -208,6 +218,51 @@ export function NodeDetailPanel({ conceptId, open, onClose }: NodeDetailPanelPro
                     />
                   ))}
                 </div>
+              )}
+
+              {details.connections.length > 0 && (
+                <>
+                  <Separator className="mt-2" />
+                  <p className="text-[14px] font-normal text-[#71717a]">
+                    Connections ({details.connections.length})
+                  </p>
+                  <div className="flex flex-col gap-3">
+                    {details.connections.map((conn) => (
+                      <div key={conn.conceptId} className="flex flex-col gap-1.5">
+                        <div className="flex items-center gap-2">
+                          <span
+                            aria-hidden="true"
+                            style={{
+                              backgroundColor: STATUS_COLORS[conn.conceptStatus] ?? "#71717a",
+                              width: "8px",
+                              height: "8px",
+                              borderRadius: "50%",
+                              display: "inline-block",
+                              flexShrink: 0,
+                            }}
+                          />
+                          <p className="text-[15px] font-medium text-[#18181b] truncate">
+                            {conn.conceptName}
+                          </p>
+                          <span className="text-[11px] text-[#a1a1aa] uppercase tracking-wide">
+                            {conn.conceptDomain}
+                          </span>
+                        </div>
+                        {conn.sharedQuestions.length > 0 && (
+                          <p className="text-[13px] text-[#71717a] italic pl-4">
+                            Linked via: &ldquo;{conn.sharedQuestions[0]}&rdquo;
+                            {conn.sharedQuestions.length > 1 && ` (+${conn.sharedQuestions.length - 1} more)`}
+                          </p>
+                        )}
+                        {conn.edgeType !== "curiosity_link" && (
+                          <span className="text-[11px] text-[#a1a1aa] pl-4">
+                            {conn.edgeType === "bridge" ? "Bridge connection" : "Misconception cluster"}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </>
               )}
             </div>
           )}

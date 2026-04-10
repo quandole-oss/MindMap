@@ -107,7 +107,7 @@ export function SolarScene({
       components.push(comp);
     }
 
-    // For each component with >= 2 nodes, compute center, radius, and dominant domain
+    // For each component with >= 2 nodes, compute center, radius, and check for misconception clusters
     return components
       .filter((comp) => comp.length >= 2)
       .map((comp, idx) => {
@@ -120,12 +120,49 @@ export function SolarScene({
             Math.sqrt((n.x - cx) ** 2 + (n.y - cy) ** 2 + (n.z - cz) ** 2)
           )
         );
+
+        // Red alert: does this component contain misconception nodes within 2 hops of each other?
+        const misconceptionIdxs = comp.filter((i) => layoutNodes[i].status === "misconception");
+        let isRedAlert = false;
+        if (misconceptionIdxs.length >= 2) {
+          // BFS from each misconception node, check if another misconception is within 2 hops
+          for (const startIdx of misconceptionIdxs) {
+            const dist = new Map<number, number>([[startIdx, 0]]);
+            const queue: number[] = [startIdx];
+            while (queue.length > 0) {
+              const cur = queue.shift()!;
+              const curDist = dist.get(cur)!;
+              if (curDist >= 2) continue;
+              for (const nb of adj[cur]) {
+                if (!dist.has(nb)) {
+                  dist.set(nb, curDist + 1);
+                  queue.push(nb);
+                }
+              }
+            }
+            // Check if any other misconception node is reachable within 2 hops
+            const foundOther = misconceptionIdxs.some(
+              (mi) => mi !== startIdx && dist.has(mi) && dist.get(mi)! <= 2
+            );
+            if (foundOther) {
+              isRedAlert = true;
+              break;
+            }
+          }
+        }
+
         // Build a descriptive label from the most-visited concept names in this cluster
         const sorted = [...nodes].sort((a, b) => b.visitCount - a.visitCount);
-        // Pick up to 2 top concept names for the label
         const topNames = sorted.slice(0, 2).map((n) => n.name);
         const label = topNames.join(" & ");
-        return { id: idx, label, center: [cx, cy, cz] as [number, number, number], radius: maxDist + 20, count: nodes.length };
+        return {
+          id: idx,
+          label,
+          center: [cx, cy, cz] as [number, number, number],
+          radius: maxDist + 20,
+          count: nodes.length,
+          isRedAlert,
+        };
       });
   }, [layoutNodes, edges]);
 
@@ -336,7 +373,7 @@ export function SolarScene({
               onClusterClick?.(neb.id);
             }}
             style={{
-              color: "rgba(255,255,255,0.95)",
+              color: neb.isRedAlert ? "#fca5a5" : "rgba(255,255,255,0.95)",
               fontSize: `${fontSize}px`,
               fontWeight,
               letterSpacing: "0.05em",
@@ -345,21 +382,26 @@ export function SolarScene({
               pointerEvents: onClusterClick ? "auto" : "none",
               userSelect: "none",
               cursor: onClusterClick ? "pointer" : "default",
-              textShadow: "0 0 12px rgba(100,100,255,0.5), 0 0 30px rgba(0,0,0,0.9)",
-              background: "rgba(0,0,0,0.3)",
+              textShadow: neb.isRedAlert
+                ? "0 0 12px rgba(220,38,38,0.8), 0 0 30px rgba(0,0,0,0.9)"
+                : "0 0 12px rgba(100,100,255,0.5), 0 0 30px rgba(0,0,0,0.9)",
+              background: neb.isRedAlert ? "rgba(127,29,29,0.4)" : "rgba(0,0,0,0.3)",
               padding: "4px 12px",
               borderRadius: "6px",
-              border: "1px solid rgba(255,255,255,0.1)",
+              border: neb.isRedAlert
+                ? "1px solid rgba(220,38,38,0.5)"
+                : "1px solid rgba(255,255,255,0.1)",
               transition: "background 0.2s, border-color 0.2s",
             }}
             onMouseEnter={(e) => {
               if (!onClusterClick) return;
-              e.currentTarget.style.background = "rgba(99,102,241,0.25)";
-              e.currentTarget.style.borderColor = "rgba(99,102,241,0.4)";
+              const color = neb.isRedAlert ? "220,38,38" : "99,102,241";
+              e.currentTarget.style.background = `rgba(${color},0.35)`;
+              e.currentTarget.style.borderColor = `rgba(${color},0.6)`;
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.background = "rgba(0,0,0,0.3)";
-              e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)";
+              e.currentTarget.style.background = neb.isRedAlert ? "rgba(127,29,29,0.4)" : "rgba(0,0,0,0.3)";
+              e.currentTarget.style.borderColor = neb.isRedAlert ? "rgba(220,38,38,0.5)" : "rgba(255,255,255,0.1)";
             }}
           >
             {neb.label}

@@ -115,6 +115,7 @@ export function SolarNodes({
 
   return (
     <instancedMesh
+      key={layoutNodes.length}
       ref={setMeshRef}
       args={[undefined, undefined, layoutNodes.length]}
       onClick={(e) => {

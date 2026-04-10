@@ -152,11 +152,21 @@ export async function getGraphData(): Promise<{ nodes: GraphNode[]; edges: Graph
   return { nodes, edges };
 }
 
+export interface NodeConnection {
+  conceptId: string;
+  conceptName: string;
+  conceptDomain: string;
+  conceptStatus: string;
+  edgeType: string;
+  sharedQuestions: string[]; // question texts that link these concepts
+}
+
 export async function getNodeDetails(
   conceptId: string
 ): Promise<{
   concept: { name: string; domain: string; status: string; visitCount: number };
   exchanges: Array<{ questionText: string; aiResponse: string | null; createdAt: Date | null }>;
+  connections: NodeConnection[];
 }> {
   const session = await auth();
   if (!session?.user?.id) {
@@ -208,6 +218,91 @@ export async function getNodeDetails(
     }));
   }
 
+  // Fetch connected concepts and the questions that link them
+  const connectedEdges = await db
+    .select()
+    .from(schema.conceptEdges)
+    .where(
+      or(
+        eq(schema.conceptEdges.sourceConceptId, conceptId),
+        eq(schema.conceptEdges.targetConceptId, conceptId)
+      )
+    );
+
+  const connectedIds = connectedEdges.map((e) =>
+    e.sourceConceptId === conceptId ? e.targetConceptId : e.sourceConceptId
+  );
+
+  let connections: NodeConnection[] = [];
+  if (connectedIds.length > 0) {
+    const connectedConcepts = await db.query.concepts.findMany({
+      where: and(
+        inArray(schema.concepts.id, connectedIds),
+        eq(schema.concepts.userId, session.user.id)
+      ),
+      columns: { id: true, name: true, domain: true, status: true },
+    });
+
+    // Build a map of connected concept IDs to their question IDs (for shared question lookup)
+    const otherConceptQuestionLinks = await db.query.conceptQuestions.findMany({
+      where: inArray(schema.conceptQuestions.conceptId, connectedIds),
+    });
+    const questionsByConcept = new Map<string, Set<string>>();
+    for (const link of otherConceptQuestionLinks) {
+      let qs = questionsByConcept.get(link.conceptId);
+      if (!qs) {
+        qs = new Set();
+        questionsByConcept.set(link.conceptId, qs);
+      }
+      qs.add(link.questionId);
+    }
+
+    // Lookup question text for shared questions
+    const ourQuestionIds = new Set(questionIds);
+    const sharedQuestionIds = new Set<string>();
+    for (const cId of connectedIds) {
+      const qs = questionsByConcept.get(cId);
+      if (qs) {
+        for (const q of Array.from(qs)) {
+          if (ourQuestionIds.has(q)) sharedQuestionIds.add(q);
+        }
+      }
+    }
+
+    const sharedQuestionsArray = Array.from(sharedQuestionIds);
+    const sharedQuestionTexts = new Map<string, string>();
+    if (sharedQuestionsArray.length > 0) {
+      const qs = await db
+        .select({ id: schema.questions.id, text: schema.questions.text })
+        .from(schema.questions)
+        .where(inArray(schema.questions.id, sharedQuestionsArray));
+      for (const q of qs) sharedQuestionTexts.set(q.id, q.text);
+    }
+
+    const conceptById = new Map(connectedConcepts.map((c) => [c.id, c]));
+    for (const edge of connectedEdges) {
+      const otherId = edge.sourceConceptId === conceptId ? edge.targetConceptId : edge.sourceConceptId;
+      const other = conceptById.get(otherId);
+      if (!other) continue;
+      const otherQs = questionsByConcept.get(otherId) ?? new Set<string>();
+      const shared: string[] = [];
+      for (const q of Array.from(ourQuestionIds)) {
+        if (otherQs.has(q)) {
+          const text = sharedQuestionTexts.get(q);
+          if (text) shared.push(text);
+        }
+      }
+      connections.push({
+        conceptId: other.id,
+        conceptName: other.name,
+        conceptDomain: other.domain,
+        conceptStatus: other.status,
+        edgeType: edge.edgeType,
+        sharedQuestions: shared,
+      });
+    }
+  }
+
   return {
     concept: {
       name: concept.name,
@@ -216,6 +311,7 @@ export async function getNodeDetails(
       visitCount: concept.visitCount,
     },
     exchanges,
+    connections,
   };
 }
 
