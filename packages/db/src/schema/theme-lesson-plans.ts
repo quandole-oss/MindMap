@@ -3,7 +3,6 @@ import {
   text,
   timestamp,
   jsonb,
-  uniqueIndex,
   index,
 } from "drizzle-orm/pg-core";
 import { classes } from "./classes";
@@ -42,16 +41,28 @@ export type LessonPlanJson = {
  *
  * CACHE SEMANTICS
  *
- * The composite unique index on (classId, themeId, dataHash) is the cache
+ * The composite lookup index on (classId, themeId, dataHash) is the cache
  * key. `dataHash` is a SHA-256 digest of the current set of per-misconception
  * counts for this theme in this class (see apps/web/lib/theme-cache-hash.ts).
  *
- * - Cache HIT: `findFirst({ where: classId+themeId+dataHash })` returns the
- *   existing row — no LLM call.
+ * - Cache HIT: `findFirst({ where: classId+themeId+dataHash, orderBy:
+ *   desc(generatedAt) })` returns the most-recent matching row — no LLM call.
  * - Cache MISS (data has changed): no matching row, call generateLessonPlan,
  *   INSERT a new row (D-18: never UPDATE — history is preserved).
  * - Force regenerate: skip the lookup, always INSERT a new row. Previous
  *   rows remain so a teacher can compare plans over time.
+ *
+ * IMPORTANT — why this is NOT a unique index (CR-01 fix):
+ *
+ *   D-18 says "force regenerate always INSERTs a new row". When the
+ *   underlying class data has not changed between two regenerate clicks,
+ *   both rows share the same (classId, themeId, dataHash) tuple — so a
+ *   UNIQUE constraint on that tuple would reject the second INSERT and
+ *   crash the regenerate path at runtime. We therefore use a plain
+ *   `index()` here: duplicate (classId, themeId, dataHash) rows are
+ *   allowed, and the cache read picks the newest via
+ *   `orderBy: [desc(generatedAt)], limit: 1`. Append-only history
+ *   semantics are preserved; the unique-constraint bug is gone.
  *
  * The secondary (classId, themeId) index supports cheap "show me every plan
  * I've ever generated for this theme" lookups without scanning by hash.
@@ -94,10 +105,11 @@ export const themeLessonPlans = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
   },
   (t) => [
-    // Cache key: a specific data fingerprint for a specific theme in a
-    // specific class is unique. Cache misses produce a new row because the
-    // dataHash changed, not because of a collision.
-    uniqueIndex("theme_lesson_plans_class_theme_hash_idx").on(
+    // Cache key: lookup by (class, theme, dataHash) selects the newest plan
+    // for a given data fingerprint. NOT unique — see the "IMPORTANT — why
+    // this is NOT a unique index (CR-01 fix)" docblock above. Callers MUST
+    // `orderBy: [desc(generatedAt)], limit: 1` on the cache read.
+    index("theme_lesson_plans_class_theme_hash_idx").on(
       t.classId,
       t.themeId,
       t.dataHash

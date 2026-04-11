@@ -140,5 +140,5 @@ ALTER TABLE "theme_lesson_plans" ADD CONSTRAINT "theme_lesson_plans_class_id_cla
 CREATE INDEX "concepts_embedding_hnsw_idx" ON "concepts" USING hnsw ("embedding" vector_cosine_ops);--> statement-breakpoint
 CREATE INDEX "questions_user_created_idx" ON "questions" USING btree ("user_id","created_at");--> statement-breakpoint
 CREATE INDEX "diagnostic_sessions_user_created_idx" ON "diagnostic_sessions" USING btree ("user_id","created_at");--> statement-breakpoint
-CREATE UNIQUE INDEX "theme_lesson_plans_class_theme_hash_idx" ON "theme_lesson_plans" USING btree ("class_id","theme_id","data_hash");--> statement-breakpoint
+CREATE INDEX "theme_lesson_plans_class_theme_hash_idx" ON "theme_lesson_plans" USING btree ("class_id","theme_id","data_hash");--> statement-breakpoint
 CREATE INDEX "theme_lesson_plans_class_theme_idx" ON "theme_lesson_plans" USING btree ("class_id","theme_id");

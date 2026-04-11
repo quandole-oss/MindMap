@@ -2,7 +2,7 @@
 
 import { auth } from "@/lib/auth";
 import { db, schema } from "@mindmap/db";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import {
   getThemeById,
   getMisconceptionsByTheme,
@@ -377,6 +377,10 @@ export async function getOrGenerateLessonPlan(
   const dataHash = await computeDataHash(tuples);
 
   // ── 4. Cache lookup unless forced ───────────────────────────────────────
+  //       Multiple rows may share the same (classId, themeId, dataHash)
+  //       because force-regenerate appends a new row even when data has not
+  //       changed (D-18 + CR-01 fix). Pick the newest so teachers see the
+  //       most-recently generated plan.
   if (!opts.forceRegenerate) {
     const cached = await db.query.themeLessonPlans.findFirst({
       where: and(
@@ -384,6 +388,7 @@ export async function getOrGenerateLessonPlan(
         eq(schema.themeLessonPlans.themeId, themeId),
         eq(schema.themeLessonPlans.dataHash, dataHash)
       ),
+      orderBy: [desc(schema.themeLessonPlans.generatedAt)],
     });
     if (cached) return cached.lessonPlan as LessonPlan;
   }
