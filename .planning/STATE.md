@@ -87,6 +87,10 @@ Phase 6: Demo & Deployment   [ COMPLETE — 4/4 plans done ]
 
 ## Accumulated Context
 
+### Roadmap Evolution
+
+- Phase 8 added: Root-cause theme diagnosis and teacher remediation — surfaces hand-authored cross-domain themes, per-student narratives, and cached LLM lesson plan scaffolds in the teacher dashboard. Independent of in-progress Phase 7. See `/Users/q/.claude/plans/snug-greeting-nygaard.md` for the approved phase design.
+
 ### Key Decisions Made
 
 | Decision | Rationale |

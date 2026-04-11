@@ -215,5 +215,15 @@ Plans:
 - [x] 07-02-PLAN.md — SolarScene + SolarGraph Canvas wrapper + SSR-safe KnowledgeGraph replacement
 - [ ] 07-03-PLAN.md — LOD rendering, bridge highlight integration, visual verification
 
+### Phase 8: Root-cause theme diagnosis and teacher remediation
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 7
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 8 to break down)
+
 ---
 *Roadmap created: 2026-04-08*
