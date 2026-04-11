@@ -3,6 +3,7 @@
 import { auth } from "@/lib/auth";
 import { db, schema } from "@mindmap/db";
 import { eq, and, inArray, or, desc } from "drizzle-orm";
+import { loadLibrary, loadThemes } from "@mindmap/misconceptions";
 import type {
   ClassDashboardData,
   StudentSummary,
@@ -10,6 +11,7 @@ import type {
   MisconceptionCluster,
   StudentGraphData,
 } from "@/lib/dashboard-types";
+import { buildThemeClusters } from "@/lib/theme-aggregation";
 
 // ─── Streak Helper ────────────────────────────────────────────────────────────
 
@@ -101,6 +103,7 @@ export async function getClassDashboardData(
       students: [],
       conceptHeatmap: [],
       misconceptionClusters: [],
+      themeClusters: [],
       totals: {
         totalStudents: 0,
         totalQuestions: 0,
@@ -363,6 +366,16 @@ export async function getClassDashboardData(
     };
   });
 
+  // ── 9b. Theme clusters (DASH-07 / THME-03) ─────────────────────────────────
+  // Project the ALREADY-LOADED `allSessions` array through the theme index.
+  // NO new DB query; this is a pure JS-side Map join over in-memory data.
+  // No `theme` column is added to diagnostic_sessions (THME-03 / D-07).
+  const themeClusters = buildThemeClusters(
+    allSessions,
+    loadLibrary(),
+    loadThemes()
+  );
+
   // ── 10. Totals ─────────────────────────────────────────────────────────────
   const totalStudents = students.length;
   const totalQuestions = students.reduce((sum, s) => sum + s.totalQuestions, 0);
@@ -384,6 +397,7 @@ export async function getClassDashboardData(
     students,
     conceptHeatmap,
     misconceptionClusters,
+    themeClusters,
     totals: {
       totalStudents,
       totalQuestions,
