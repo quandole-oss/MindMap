@@ -13,6 +13,8 @@ export { buildProbeSystemPrompt } from "./prompts/diagnose-probe";
 export { buildConfrontSystemPrompt } from "./prompts/diagnose-confront";
 export { evaluateResolution, buildResolveMessage } from "./prompts/diagnose-resolve";
 export type { ResolutionResult } from "./prompts/diagnose-resolve";
+export { generateLessonPlan, lessonPlanSchema } from "./prompts/generate-lesson-plan";
+export type { LessonPlan } from "./prompts/generate-lesson-plan";
 
 export interface LLMAdapter {
   getModel(): unknown;
