@@ -11,7 +11,13 @@
   confrontation_scenarios:
     - "In 1971, astronaut David Scott dropped a hammer and a feather on the Moon where there is no air. They hit the ground at exactly the same time. How does this change your thinking about falling objects?"
     - "A skydiver and a lead ball are dropped from the same height in a sealed vacuum chamber. Without air resistance, which hits the floor first?"
-  themes: [continuous-force-required-for-motion]
+  # WR-01 fix: primary root is substance-based-reasoning — the naive
+  # theory is "more matter = falls harder", a weight-as-stuff intuition,
+  # not McCloskey's impetus-theory claim about maintained motion. The
+  # continuous-force tag is retained as a secondary because "heavy things
+  # want to move down harder" also reads as a force/impetus intuition and
+  # because theme clusters require >=3 constituents (D-04).
+  themes: [substance-based-reasoning, continuous-force-required-for-motion]
 
 - id: phys-002
   name: "An object at rest has no forces acting on it"
