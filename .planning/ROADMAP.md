@@ -224,7 +224,7 @@ Plans:
 **Plans:** 4 plans
 
 Plans:
-- [ ] 08-01-PLAN.md — Theme taxonomy authoring (themes.yaml + schema/loader extension + library backfill + CI orphan check)
+- [x] 08-01-PLAN.md — Theme taxonomy authoring (themes.yaml + schema/loader extension + library backfill + CI orphan check)
 - [ ] 08-02-PLAN.md — Dashboard aggregation by theme (getClassDashboardData themeClusters + getThemeDetail + getStudentThemeProfile)
 - [ ] 08-03-PLAN.md — LLM prompt builders (analyze-student-themes + generate-lesson-plan with PRIV-01 audit)
 - [ ] 08-04-PLAN.md — Teacher UI + theme_lesson_plans cache table + getOrGenerateLessonPlan + ThemesView/LessonPlanCard/StudentNarrativeDialog
