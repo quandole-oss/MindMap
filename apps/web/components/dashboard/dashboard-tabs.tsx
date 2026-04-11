@@ -49,7 +49,11 @@ export function DashboardTabs({ data }: DashboardTabsProps) {
         <ConceptsTab heatmap={data.conceptHeatmap} />
       )}
       {activeTab === "misconceptions" && (
-        <MisconceptionsTab clusters={data.misconceptionClusters} />
+        <MisconceptionsTab
+          clusters={data.misconceptionClusters}
+          themeClusters={data.themeClusters}
+          classId={data.classInfo.id}
+        />
       )}
       {activeTab === "students" && <StudentsTab students={data.students} />}
     </div>

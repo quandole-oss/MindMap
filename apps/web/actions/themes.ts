@@ -12,8 +12,8 @@ import {
   generateLessonPlan,
   analyzeStudentThemes,
   type LessonPlan,
-  type StudentThemeAnalysis,
 } from "@mindmap/llm";
+import { getMisconceptionById } from "@mindmap/misconceptions";
 import type {
   ThemeDetail,
   StudentThemeProfile,
@@ -422,12 +422,22 @@ export async function getOrGenerateLessonPlan(
 
 // ─── generateStudentNarrative (DASH-08 / D-13 / D-19) ─────────────────────────
 
+export type StudentNarrativeResult = {
+  dominantThemes: string[];
+  narrative: string;
+  supportingMisconceptions: Array<{ id: string; name: string }>;
+};
+
 /**
  * Thin server-action wrapper around analyzeStudentThemes so the LLM SDK
- * stays out of the client bundle. Returns the narrative analysis result
- * UNMODIFIED — the UI component is responsible for binding the student's
- * name into the dialog title from props (never from the LLM output). Per
- * D-19 the result is NOT cached.
+ * AND the YAML library loader stay out of the client bundle.
+ *
+ * Returns a client-safe projection of the analysis result: dominantThemes
+ * and narrative UNMODIFIED, plus supportingMisconceptionIds dereferenced
+ * through the YAML library into {id, name} pairs so the dialog component
+ * does not need to import @mindmap/misconceptions (which pulls node:fs).
+ *
+ * Per D-19 the result is NOT cached. Every open regenerates.
  *
  * `studentName` is intentionally NOT a parameter — the LLM is never given
  * a way to reference the student by name. The component layer binds the
@@ -435,9 +445,20 @@ export async function getOrGenerateLessonPlan(
  */
 export async function generateStudentNarrative(
   studentId: string
-): Promise<StudentThemeAnalysis> {
+): Promise<StudentNarrativeResult> {
   // getStudentThemeProfile performs the auth + ownership check and returns
   // the PRIV-01 clean four-field profile shape.
   const profile = await getStudentThemeProfile(studentId);
-  return analyzeStudentThemes(profile);
+  const analysis = await analyzeStudentThemes(profile);
+  const supportingMisconceptions = analysis.supportingMisconceptionIds.map(
+    (id) => {
+      const entry = getMisconceptionById(id);
+      return { id, name: entry?.name ?? id };
+    }
+  );
+  return {
+    dominantThemes: analysis.dominantThemes,
+    narrative: analysis.narrative,
+    supportingMisconceptions,
+  };
 }

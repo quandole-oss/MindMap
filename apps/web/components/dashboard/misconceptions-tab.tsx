@@ -2,19 +2,89 @@
 
 import { useState } from "react";
 
-import type { MisconceptionCluster } from "@/lib/dashboard-types";
+import type {
+  MisconceptionCluster,
+  ThemeCluster,
+} from "@/lib/dashboard-types";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { ThemesView } from "./themes-view";
 
 interface MisconceptionsTabProps {
   clusters: MisconceptionCluster[];
+  themeClusters: ThemeCluster[];
+  classId: string;
 }
 
-export function MisconceptionsTab({ clusters }: MisconceptionsTabProps) {
+type ViewMode = "misconception" | "theme";
+
+/**
+ * Misconceptions tab with a pill toggle between "By Misconception" (the
+ * original view — extracted into MisconceptionCardGrid byte-identically)
+ * and "By Root Theme" (DASH-07 / Plan 08-04 / D-20).
+ *
+ * The pill toggle lives IN THIS tab (D-20: not a new top-level tab) so that
+ * teachers flip between two views of the same underlying data without
+ * losing their place in the dashboard nav.
+ */
+export function MisconceptionsTab({
+  clusters,
+  themeClusters,
+  classId,
+}: MisconceptionsTabProps) {
+  const [viewMode, setViewMode] = useState<ViewMode>("misconception");
+
+  return (
+    <div className="space-y-4">
+      {/* View-mode pill toggle */}
+      <div className="inline-flex items-center rounded-full bg-[#f4f4f5] border border-[#e4e4e7] p-1 gap-1">
+        <button
+          type="button"
+          onClick={() => setViewMode("misconception")}
+          className={`px-4 py-1.5 text-[13px] font-medium rounded-full transition-colors ${
+            viewMode === "misconception"
+              ? "bg-white text-[#18181b] shadow-sm"
+              : "text-[#71717a] hover:text-[#18181b]"
+          }`}
+        >
+          By Misconception
+        </button>
+        <button
+          type="button"
+          onClick={() => setViewMode("theme")}
+          className={`px-4 py-1.5 text-[13px] font-medium rounded-full transition-colors ${
+            viewMode === "theme"
+              ? "bg-white text-[#18181b] shadow-sm"
+              : "text-[#71717a] hover:text-[#18181b]"
+          }`}
+        >
+          By Root Theme
+        </button>
+      </div>
+
+      {viewMode === "misconception" ? (
+        <MisconceptionCardGrid clusters={clusters} />
+      ) : (
+        <ThemesView themes={themeClusters} classId={classId} />
+      )}
+    </div>
+  );
+}
+
+// ─── MisconceptionCardGrid — byte-equivalent extraction of the original view
+// Extracted into a private sub-component so the pill toggle can swap views
+// without rewriting the existing misconception rendering. Behavior and class
+// names are unchanged from the pre-Plan-08-04 implementation.
+
+interface MisconceptionCardGridProps {
+  clusters: MisconceptionCluster[];
+}
+
+function MisconceptionCardGrid({ clusters }: MisconceptionCardGridProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   if (clusters.length === 0) {
