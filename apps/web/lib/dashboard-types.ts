@@ -94,23 +94,12 @@ export type StudentThemeProfile = {
   sessionOutcomes: Array<"resolved" | "unresolved" | "incomplete">;
 };
 
-/**
- * Lesson plan shape (mirror of the Zod schema built in Plan 08-03).
- * Declared here so Plan 08-04's jsonb $type<T>() on theme_lesson_plans
- * can reference a single source of truth.
- */
-export type LessonPlan = {
-  theme: string;
-  commonMisunderstanding: string;
-  targetUnderstanding: string;
-  suggestedActivities: Array<{
-    title: string;
-    description: string;
-    referencedMisconceptionIds: string[];
-  }>;
-  discussionPrompts: string[];
-  confrontationApproaches: string[];
-};
+// NOTE: the authoritative `LessonPlan` type lives in
+// `packages/llm/src/prompts/generate-lesson-plan.ts` (Zod-inferred).
+// The db layer keeps a separate `LessonPlanJson` mirror in
+// `packages/db/src/schema/theme-lesson-plans.ts` to avoid a db -> llm
+// dependency. No third copy lives here — all callers in apps/web import
+// `LessonPlan` from `@mindmap/llm` directly.
 
 export interface ClassDashboardData {
   classInfo: {

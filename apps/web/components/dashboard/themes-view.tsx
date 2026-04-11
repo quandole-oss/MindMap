@@ -110,12 +110,23 @@ export function ThemesView({ themes, classId }: ThemesViewProps) {
   }
 
   async function handleRegenerate(themeId: string) {
+    setErrorByTheme((prev) => ({ ...prev, [themeId]: "" }));
     setRegeneratingPlans((prev) => ({ ...prev, [themeId]: true }));
     try {
       const fresh = await getOrGenerateLessonPlan(classId, themeId, {
         forceRegenerate: true,
       });
       setLessonPlansByTheme((prev) => ({ ...prev, [themeId]: fresh }));
+    } catch {
+      // IN-04 fix: surface the failure in-band so the user sees why the
+      // regenerate didn't update the card. Without this, handleRegenerate
+      // would swallow the error and leave the spinner-cleared UI showing
+      // the stale plan with no feedback.
+      setErrorByTheme((prev) => ({
+        ...prev,
+        [themeId]:
+          "Couldn't regenerate the lesson plan right now. Please try again.",
+      }));
     } finally {
       setRegeneratingPlans((prev) => ({ ...prev, [themeId]: false }));
     }
