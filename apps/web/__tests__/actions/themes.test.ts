@@ -4,6 +4,10 @@ import {
   gradeLevelToBand,
   type ThemeAggregatableSession,
 } from "../../lib/theme-aggregation";
+import {
+  computeDataHash,
+  sha256Hex,
+} from "../../lib/theme-cache-hash";
 import type { MisconceptionEntry } from "@mindmap/misconceptions";
 
 // ---------------------------------------------------------------------------
@@ -12,15 +16,22 @@ import type { MisconceptionEntry } from "@mindmap/misconceptions";
 // Per the existing convention in apps/web/lib/graph/__tests__/clusters.test.ts
 // we do NOT import the "use server" module directly (would pull DB + auth
 // into Vitest's Node runtime). Auth + class-ownership enforcement in
-// themes.ts::getThemeDetail / getStudentThemeProfile is copied VERBATIM from
-// dashboard.ts:70–76 (which already ships) and is covered by integration
-// coverage at the route layer.
+// themes.ts::getThemeDetail / getStudentThemeProfile / getOrGenerateLessonPlan
+// is copied VERBATIM from dashboard.ts:70–76 (which already ships) and is
+// covered by integration coverage at the route layer.
 //
 // The critical boundary THIS test suite must enforce is PRIV-01 / D-13: the
 // return value of buildStudentThemeProfile (which is what getStudentThemeProfile
 // returns unchanged) contains EXACTLY the four anonymized fields — nothing
 // more. Test 4 is the structural Object.keys guard that fails the build on
 // any future addition of an identifier field.
+//
+// For Plan 08-04 (LSPL-02) we add unit tests for the pure cache-hash helpers
+// — computeDataHash + sha256Hex — which are the deterministic core of
+// getOrGenerateLessonPlan's cache key. The server action's cache hit / miss
+// / regenerate row-count semantics are verified end-to-end in the Plan 08-04
+// human-verify checkpoint (Task 3) since the test runtime cannot spin up
+// Postgres.
 // ---------------------------------------------------------------------------
 
 const library: MisconceptionEntry[] = [
@@ -196,5 +207,109 @@ describe("buildStudentThemeProfile (PRIV-01 / D-13)", () => {
     expect(result.misconceptionIds).toContain("unknown-misc-999");
     // Both sessions contribute an outcome.
     expect(result.sessionOutcomes.length).toBe(2);
+  });
+});
+
+// ─── Plan 08-04 — cache hash core for getOrGenerateLessonPlan (LSPL-02) ──────
+
+describe("sha256Hex (Plan 08-04 / LSPL-02)", () => {
+  it("produces a 64-character lowercase hex digest", async () => {
+    const hash = await sha256Hex("hello");
+    expect(hash).toMatch(/^[a-f0-9]{64}$/);
+  });
+
+  it("is deterministic — same input yields same hash", async () => {
+    const a = await sha256Hex("canonical-input");
+    const b = await sha256Hex("canonical-input");
+    expect(a).toBe(b);
+  });
+
+  it("is sensitive — different input yields different hash", async () => {
+    const a = await sha256Hex("abc");
+    const b = await sha256Hex("abd");
+    expect(a).not.toBe(b);
+  });
+
+  it("matches the well-known SHA-256 digest for 'abc'", async () => {
+    // RFC 6234 reference vector — if this fails, Web Crypto is wrong.
+    expect(await sha256Hex("abc")).toBe(
+      "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+    );
+  });
+});
+
+describe("computeDataHash (Plan 08-04 / LSPL-02 / D-17)", () => {
+  // Test 4 from the plan: deterministic — call twice with tuples in
+  // different orders, get the same hash.
+  it("is deterministic regardless of input order (sorts before hashing)", async () => {
+    const tuplesA = [
+      { misconceptionId: "phys-002", studentCount: 3, unresolvedCount: 1 },
+      { misconceptionId: "phys-001", studentCount: 5, unresolvedCount: 2 },
+      { misconceptionId: "phys-003", studentCount: 1, unresolvedCount: 1 },
+    ];
+    const tuplesB = [
+      { misconceptionId: "phys-001", studentCount: 5, unresolvedCount: 2 },
+      { misconceptionId: "phys-003", studentCount: 1, unresolvedCount: 1 },
+      { misconceptionId: "phys-002", studentCount: 3, unresolvedCount: 1 },
+    ];
+    const hashA = await computeDataHash(tuplesA);
+    const hashB = await computeDataHash(tuplesB);
+    expect(hashA).toBe(hashB);
+  });
+
+  // Test 5 from the plan: sensitive to value changes — change studentCount
+  // on one tuple, get a different hash (natural cache invalidation).
+  it("changes when any studentCount changes", async () => {
+    const base = [
+      { misconceptionId: "phys-001", studentCount: 5, unresolvedCount: 2 },
+      { misconceptionId: "phys-002", studentCount: 3, unresolvedCount: 1 },
+    ];
+    const mutated = [
+      { misconceptionId: "phys-001", studentCount: 6, unresolvedCount: 2 },
+      { misconceptionId: "phys-002", studentCount: 3, unresolvedCount: 1 },
+    ];
+    expect(await computeDataHash(base)).not.toBe(
+      await computeDataHash(mutated)
+    );
+  });
+
+  it("changes when any unresolvedCount changes", async () => {
+    const base = [
+      { misconceptionId: "phys-001", studentCount: 5, unresolvedCount: 2 },
+    ];
+    const mutated = [
+      { misconceptionId: "phys-001", studentCount: 5, unresolvedCount: 3 },
+    ];
+    expect(await computeDataHash(base)).not.toBe(
+      await computeDataHash(mutated)
+    );
+  });
+
+  it("changes when a misconceptionId is added or removed", async () => {
+    const small = [
+      { misconceptionId: "phys-001", studentCount: 5, unresolvedCount: 2 },
+    ];
+    const large = [
+      { misconceptionId: "phys-001", studentCount: 5, unresolvedCount: 2 },
+      { misconceptionId: "phys-002", studentCount: 3, unresolvedCount: 1 },
+    ];
+    expect(await computeDataHash(small)).not.toBe(
+      await computeDataHash(large)
+    );
+  });
+
+  it("does not mutate the caller's tuple array", async () => {
+    const tuples = [
+      { misconceptionId: "phys-002", studentCount: 3, unresolvedCount: 1 },
+      { misconceptionId: "phys-001", studentCount: 5, unresolvedCount: 2 },
+    ];
+    const snapshot = JSON.parse(JSON.stringify(tuples));
+    await computeDataHash(tuples);
+    expect(tuples).toEqual(snapshot);
+  });
+
+  it("handles an empty tuple array without throwing", async () => {
+    const hash = await computeDataHash([]);
+    expect(hash).toMatch(/^[a-f0-9]{64}$/);
   });
 });
