@@ -1,5 +1,12 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { loadLibrary, getMisconceptionsByDomainAndBand, resetLibraryCache } from "../loader";
+import {
+  loadLibrary,
+  getMisconceptionsByDomainAndBand,
+  resetLibraryCache,
+  loadThemes,
+  getMisconceptionsByTheme,
+  resetThemeCache,
+} from "../loader";
 
 describe("misconception library", () => {
   beforeEach(() => {
@@ -80,5 +87,39 @@ describe("misconception library", () => {
       expect(entry.domain).toBe("physics");
       expect(entry.grade_band).toBe("K-5");
     }
+  });
+});
+
+describe("theme integrity (THME-01, THME-02, D-04)", () => {
+  beforeEach(() => {
+    resetLibraryCache();
+    resetThemeCache();
+  });
+
+  it("every misconception declares >=1 theme (THME-01)", () => {
+    const orphans = loadLibrary().filter(
+      (m) => !m.themes || m.themes.length === 0
+    );
+    expect(orphans.map((o) => o.id)).toEqual([]);
+  });
+
+  it("every referenced theme ID exists in themes.yaml (THME-02)", () => {
+    const validIds = new Set(loadThemes().map((t) => t.id));
+    const dangling: Array<{ misconceptionId: string; badThemeId: string }> = [];
+    for (const m of loadLibrary()) {
+      for (const themeId of m.themes ?? []) {
+        if (!validIds.has(themeId)) {
+          dangling.push({ misconceptionId: m.id, badThemeId: themeId });
+        }
+      }
+    }
+    expect(dangling).toEqual([]);
+  });
+
+  it("every theme has >=3 constituent misconceptions (D-04)", () => {
+    const undersized = loadThemes()
+      .map((t) => ({ id: t.id, count: getMisconceptionsByTheme(t.id).length }))
+      .filter((t) => t.count < 3);
+    expect(undersized).toEqual([]);
   });
 });
