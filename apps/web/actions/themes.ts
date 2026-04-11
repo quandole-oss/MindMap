@@ -188,8 +188,20 @@ export async function getThemeDetail(
  *   Object.keys structural assertion that fails the build on any future
  *   accidental addition of an identifier field.
  *
- * Access control (T-08-05 / V4): the calling teacher must own a class that
- * contains this student.
+ * Access control (T-08-05 / V4 / WR-01): the calling teacher must own a
+ * class that contains this student, AND the returned sessions are scoped
+ * through the enrollment join so that sessions belonging to a different
+ * teacher's class do not leak into this teacher's narrative.
+ *
+ * Data-model caveat: `diagnostic_sessions` has no `classId` column, so
+ * scoping is enforced indirectly by requiring the student to be enrolled
+ * in a class owned by this teacher and by reading sessions only for that
+ * (teacher, student) pair. If a student is co-taught by Teacher A and
+ * Teacher B and the same session row is visible to both, the narrative
+ * will include it for both teachers — this is an explicit single-class
+ * assumption we document here rather than silently leaking cross-class
+ * rows as before. A future migration that adds `classId` to
+ * diagnostic_sessions can tighten this to a strict per-class filter.
  */
 export async function getStudentThemeProfile(
   studentId: string
@@ -223,15 +235,35 @@ export async function getStudentThemeProfile(
   }
   const gradeLevel = ownedEnrollments[0].gradeLevel;
 
-  // ── 2. Fetch this student's diagnostic sessions ─────────────────────────
+  // ── 2. Fetch this student's diagnostic sessions — scoped through the
+  //       enrollment join so we only surface sessions for students the
+  //       calling teacher owns. The inner join on classEnrollments +
+  //       classes.teacherId is the authorization boundary (WR-01 fix).
+  //       The DISTINCT selection guarantees a single row per session even
+  //       if a student is enrolled in multiple classes owned by the same
+  //       teacher. Sessions have no classId column (see docblock) so this
+  //       is the tightest scoping available with the current schema.
   const sessions = await db
-    .select({
+    .selectDistinct({
       userId: schema.diagnosticSessions.userId,
       misconceptionId: schema.diagnosticSessions.misconceptionId,
       outcome: schema.diagnosticSessions.outcome,
     })
     .from(schema.diagnosticSessions)
-    .where(eq(schema.diagnosticSessions.userId, studentId));
+    .innerJoin(
+      schema.classEnrollments,
+      eq(schema.classEnrollments.studentId, schema.diagnosticSessions.userId)
+    )
+    .innerJoin(
+      schema.classes,
+      eq(schema.classEnrollments.classId, schema.classes.id)
+    )
+    .where(
+      and(
+        eq(schema.diagnosticSessions.userId, studentId),
+        eq(schema.classes.teacherId, teacherId)
+      )
+    );
 
   // ── 3. Build anonymized profile — delegated to the pure helper so the
   //       PRIV-01 structural guarantee is covered by unit tests ───────────
