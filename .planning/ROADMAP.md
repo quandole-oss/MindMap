@@ -218,13 +218,16 @@ Plans:
 
 ### Phase 8: Root-cause theme diagnosis and teacher remediation
 
-**Goal:** [To be planned]
-**Requirements**: TBD
+**Goal:** When a teacher opens their class dashboard, they can move from "here are the misconceptions my students hold" to "here is the underlying naive theory driving them" to "here is a structured lesson plan I can run tomorrow." The system groups individual misconceptions into ~10 hand-authored cross-domain root-cause themes, generates a per-student narrative summary of dominant themes, and produces a cached, regeneratable, Zod-validated lesson plan scaffold — all teacher-facing, with no changes to the student experience.
+**Requirements**: THME-01, THME-02, THME-03, DASH-07, DASH-08, LSPL-01, LSPL-02
 **Depends on:** Phase 7
-**Plans:** 0 plans
+**Plans:** 4 plans
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 8 to break down)
+- [ ] 08-01-PLAN.md — Theme taxonomy authoring (themes.yaml + schema/loader extension + library backfill + CI orphan check)
+- [ ] 08-02-PLAN.md — Dashboard aggregation by theme (getClassDashboardData themeClusters + getThemeDetail + getStudentThemeProfile)
+- [ ] 08-03-PLAN.md — LLM prompt builders (analyze-student-themes + generate-lesson-plan with PRIV-01 audit)
+- [ ] 08-04-PLAN.md — Teacher UI + theme_lesson_plans cache table + getOrGenerateLessonPlan + ThemesView/LessonPlanCard/StudentNarrativeDialog
 
 ---
 *Roadmap created: 2026-04-08*
