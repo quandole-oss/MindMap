@@ -1,0 +1,64 @@
+# Cross-domain root themes (naive theories) underlying student misconceptions.
+# Hand-authored from 08-RESEARCH.md §A1. Every misconception entry in the
+# domain library files MUST reference ≥1 theme ID below; CI enforces this in
+# library.test.ts. Each theme MUST have ≥3 constituent misconceptions (D-04).
+
+- id: substance-based-reasoning
+  name: "Substance-based reasoning (energy, heat, force, current as stuff)"
+  naive_theory: "Abstract processes and relational quantities are treated as if they were tangible material substances that can be stored, moved, possessed, and used up."
+  description: "Students reify energy, heat, electric current, and other process quantities into substance-like 'stuff' that flows from source to sink and gets consumed. Rooted in Chi's ontological category theory: students place these concepts in the 'matter' ontology instead of the 'process/constraint' ontology, and the mis-categorization resists ordinary instruction."
+  citation: "Reiner, M., Slotta, J. D., Chi, M. T. H., & Resnick, L. B. (2000). Naive physics reasoning: A commitment to substance-based conceptions. Cognition and Instruction, 18(1), 1-34."
+
+- id: continuous-force-required-for-motion
+  name: "Force is required to maintain motion"
+  naive_theory: "Moving objects need a continuous force to keep moving; in the absence of force, motion decays. Also: heavier objects inherently 'want' to move faster."
+  description: "The Aristotelian / medieval impetus-theory intuition that motion requires a cause, contradicting Newton's first law. McCloskey showed this is the single most robust pre-Newtonian belief in adolescent physics learners."
+  citation: "McCloskey, M. (1983). Intuitive physics. Scientific American, 248(4), 122-130."
+
+- id: teleological-and-anthropomorphic-reasoning
+  name: "Teleological and anthropomorphic reasoning about living things"
+  naive_theory: "Organisms, cells, and even ecosystems have goals, desires, and the ability to 'try' to achieve them; biological change is directed by need."
+  description: "Students explain biological processes in terms of purpose ('the giraffe needed a longer neck'), conflating the outcome of natural selection with intention. Kelemen's developmental work shows this is the default intuitive biology of K-12 learners."
+  citation: "Kelemen, D. (1999). Why are rocks pointy? Children's preference for teleological explanations of the natural world. Developmental Psychology, 35(6), 1440-1452."
+
+- id: whole-number-overgeneralization
+  name: "Whole-number intuitions overgeneralized to fractions, decimals, and signed numbers"
+  naive_theory: "The rules learned for natural numbers are assumed to hold for every number — 'more' digits means 'larger', multiplication always grows, division always shrinks."
+  description: "A classic framework-theory effect: students build a coherent intuitive mathematics of counting numbers, then apply it inappropriately when the number system expands. Stafylidou & Vosniadou document this across fractions; Vamvakoussi & Vosniadou extend it to rational numbers broadly."
+  citation: "Vamvakoussi, X., & Vosniadou, S. (2004). Understanding the structure of the set of rational numbers: A conceptual change approach. Learning and Instruction, 14(5), 453-467."
+
+- id: presentism-and-single-cause-narratives
+  name: "Presentism and single-cause historical narratives"
+  naive_theory: "The past is understood through present-day assumptions; historical events have one simple cause, usually the one named in the textbook."
+  description: "Wineburg's 'historical thinking' framework identifies this as the single most persistent obstacle to history learning: students project present values backward, flatten complex causation into heroic narratives, and treat textbook summaries as complete truth. It is the history-domain counterpart to Vosniadou's framework theory in science."
+  citation: "Wineburg, S. (2001). Historical Thinking and Other Unnatural Acts: Charting the Future of Teaching the Past. Temple University Press."
+
+- id: linear-progress-hierarchy
+  name: "Linear progress hierarchy (bigger/newer/more complex = better)"
+  naive_theory: "Processes of change are monotonic and ordered on a single 'progress' axis — evolution produces ever-more-advanced beings, technology produces ever-better lives, history proceeds from worse to better."
+  description: "Gould's 'Full House' framed this for biology; Winner extended it to technology; it is one expression of a general developmental bias toward essentializing complex systems on a single dimension."
+  citation: "Gould, S. J. (1996). Full House: The Spread of Excellence from Plato to Darwin. Harmony Books."
+
+- id: perception-equals-reality
+  name: "Perception-equals-reality (what I see must be what is)"
+  naive_theory: "If something looks a certain way, that appearance is a direct report of the underlying reality; abstract representations and counterintuitive numbers aren't 'real'."
+  description: "A diSessa-style phenomenological primitive: immediate sensory experience is privileged over formal reasoning. Manifests in biology (blue-looking veins = blue blood), math (negatives aren't 'real' quantities; graphs are literal pictures), and elsewhere."
+  citation: "diSessa, A. A. (1993). Toward an epistemology of physics. Cognition and Instruction, 10(2-3), 105-225."
+
+- id: category-confusion-cause-vs-effect
+  name: "Category confusion and cause/effect conflation"
+  naive_theory: "Categories are mutually exclusive (a thing can only belong to one), and when two things co-occur, one must cause the other."
+  description: "Two tightly related Chi-style ontological errors: (1) treating hierarchical category membership as exclusive (a square can't also be a rectangle; zero isn't a number), and (2) conflating correlation with causation in multi-step processes (vaccines 'cause' the disease because their side-effects resemble symptoms)."
+  citation: "Chi, M. T. H. (2008). Three types of conceptual change: Belief revision, mental model transformation, and categorical shift. In S. Vosniadou (Ed.), International Handbook of Research on Conceptual Change (pp. 61-82). Routledge."
+
+- id: intuitive-time-and-scale
+  name: "Intuitive (mis)calibration of time, scale, and probability"
+  naive_theory: "Very large, very small, or very rare quantities are flattened to the scale of everyday experience — light is 'instant' because it seems instant; 50% probability should mean '5 out of 10'; atomic scales and cosmic scales blur into 'small' and 'big'."
+  description: "Captures the Kahneman/Tversky representativeness heuristic and its counterparts in science learning. Students lack calibrated mental models for scales outside direct experience."
+  citation: "Kahneman, D., & Tversky, A. (1972). Subjective probability: A judgment of representativeness. Cognitive Psychology, 3(3), 430-454."
+
+- id: operational-vs-relational-reasoning
+  name: "Operational (compute-the-answer) vs relational (see-the-structure) reasoning"
+  naive_theory: "Mathematics and disciplined knowledge are about executing procedures and memorizing facts, not about the relationships and structures those procedures express."
+  description: "Knuth et al. document this for the equals sign; Sfard generalizes it as the process/object duality in mathematics learning; Seixas et al. extend it to history as 'memorizing dates' vs historical thinking. A single cognitive disposition with cross-disciplinary expression."
+  citation: "Sfard, A. (1991). On the dual nature of mathematical conceptions: Reflections on processes and objects as different sides of the same coin. Educational Studies in Mathematics, 22(1), 1-36."

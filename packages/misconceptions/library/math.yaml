@@ -10,6 +10,7 @@
     - "Can you think of a number you could multiply 100 by to get something smaller than 100?"
   confrontation_scenarios:
     - "10 × (1/2) = 5. Ten was multiplied by one-half, and the result is smaller than 10. Similarly, 100 × 0.1 = 10 — much smaller. Multiplication means 'scaled by'; scaling by less than 1 shrinks the number. Does this change your rule about multiplication?"
+  themes: [whole-number-overgeneralization]
 
 - id: math-002
   name: "Division always makes numbers smaller"
@@ -23,6 +24,7 @@
     - "If you divide 10 cookies equally among half a person (as a fraction), what does that even mean?"
   confrontation_scenarios:
     - "1 ÷ (1/2) = 2. One divided by one-half equals two — larger than one. Think of it this way: 'How many halves fit inside 1?' Two halves fit in 1 whole. Division asks how many groups fit; if the groups are tiny, many of them fit. Does this break your rule about division making things smaller?"
+  themes: [whole-number-overgeneralization]
 
 - id: math-003
   name: "A square is not a rectangle"
@@ -36,6 +38,7 @@
     - "Is a poodle a dog? Is a square a rectangle?"
   confrontation_scenarios:
     - "A rectangle is defined as a quadrilateral (4 sides) with four right angles. A square has four sides and four right angles. Therefore, a square satisfies every requirement to be called a rectangle — it is a rectangle with the extra property that all sides are equal. In mathematics, shapes can belong to multiple categories based on their properties. Does thinking about definitions (rather than pictures) change your view?"
+  themes: [category-confusion-cause-vs-effect]
 
 - id: math-004
   name: "Larger denominators mean larger fractions"
@@ -49,6 +52,7 @@
     - "What does the bottom number (denominator) of a fraction tell you?"
   confrontation_scenarios:
     - "Cut a piece of paper into 4 equal pieces and 8 equal pieces. Hold up one piece from each. The piece from the 4-slice set (1/4) is clearly larger. A larger denominator means you divided into more parts — so each part is smaller. 8 slices means smaller slices; 8 alone is a larger number, but 1/8 is a smaller fraction than 1/4."
+  themes: [whole-number-overgeneralization]
 
 - id: math-005
   name: "The equals sign means 'compute the answer'"
@@ -62,6 +66,7 @@
     - "Solve this: 4 + __ = 3 + 5. What goes in the blank?"
   confrontation_scenarios:
     - "3 + 4 = 7 and 7 = 3 + 4 are both true, and they mean exactly the same thing. The equals sign doesn't say 'write the answer on the right' — it says 'both sides have the same value.' This is why 4 + __ = 3 + 5 makes sense: you need something that makes the left side equal 8. The blank is 4. Does thinking of = as a balance scale help?"
+  themes: [operational-vs-relational-reasoning]
 
 - id: math-006
   name: "Negative numbers do not represent real quantities"
@@ -75,6 +80,7 @@
     - "If you owe someone $10, how might you represent that with a number?"
   confrontation_scenarios:
     - "Negative numbers appear constantly in the real world: -15°C is 15 degrees below zero (real cold); a bank balance of -$50 means real debt; sea level is 0 feet, so Death Valley at -282 feet is a real, physical location. Negative numbers aren't imaginary — they represent quantities below a reference point. What reference point makes sense for each example?"
+  themes: [perception-equals-reality]
 
 - id: math-007
   name: "Probability of 50% means something will happen half the time in small samples"
@@ -88,6 +94,7 @@
     - "How many coin flips would you need to reliably see close to 50% heads?"
   confrontation_scenarios:
     - "A fair coin flipped 10 times might show 3 heads, 7 heads, or even 10 heads — all without the coin being unfair. The Law of Large Numbers says that over thousands of flips, heads will approach 50%. But in small samples, wide variation is normal. In a study of U.S. counties with the highest kidney cancer rates, many were small rural counties — not because rural life causes cancer, but because small samples have more variable rates. What does this say about interpreting statistics from small groups?"
+  themes: [intuitive-time-and-scale]
 
 - id: math-008
   name: "Zero is not a real number"
@@ -101,6 +108,7 @@
     - "Where does zero fit on the number line?"
   confrontation_scenarios:
     - "Zero is one of the most important numbers in mathematics. It is the additive identity: any number plus zero equals that number. It is neither positive nor negative. It appears on the number line between the positives and negatives. The invention of zero as a placeholder and a number in its own right was a revolutionary mathematical breakthrough (Indian mathematicians, ~5th century CE). Without zero, we cannot write the number 10, 100, or 1000 in our number system."
+  themes: [category-confusion-cause-vs-effect]
 
 - id: math-009
   name: "You cannot take the square root of a negative number"
@@ -114,6 +122,7 @@
     - "Can you extend the rules of mathematics to allow operations that seem impossible?"
   confrontation_scenarios:
     - "Mathematicians defined i = sqrt(-1), calling it the imaginary unit. This created the complex numbers (a + bi), which turned out to describe electrical circuits, quantum mechanics, and signal processing — all real-world applications. The number seemed 'impossible' until the rules were extended. Many 'impossible' operations in mathematics led to new number systems: negative numbers, fractions, and complex numbers all started as extensions. What does this tell you about mathematical impossibility?"
+  themes: [operational-vs-relational-reasoning]
 
 - id: math-010
   name: "Graphs are pictures of physical situations"
@@ -127,3 +136,4 @@
     - "How is a graph different from a photograph of an event?"
   confrontation_scenarios:
     - "A graph showing temperature rising, peaking, then falling looks like a mountain. But it means the temperature increased over time, reached a maximum, then decreased — the temperature did not travel up a hill. The shape of a graph reflects the mathematical relationship between variables, not the physical shape of the motion. A horizontal line on a distance-time graph means constant speed, not standing still. Does separating 'graph shape' from 'physical shape' change how you read graphs?"
+  themes: [perception-equals-reality]

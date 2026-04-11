@@ -28,8 +28,11 @@ export function loadLibrary(): MisconceptionEntry[] {
   const entries: unknown[] = [];
   const libraryDir = getLibraryDir();
 
-  // Dynamically scan all .yaml files — new domains are added by dropping a YAML file
-  const yamlFiles = fs.readdirSync(libraryDir).filter((f) => f.endsWith(".yaml"));
+  // Dynamically scan all .yaml files — new domains are added by dropping a YAML file.
+  // themes.yaml is the theme registry (different schema) and is loaded separately by loadThemes().
+  const yamlFiles = fs
+    .readdirSync(libraryDir)
+    .filter((f) => f.endsWith(".yaml") && f !== "themes.yaml");
   for (const file of yamlFiles) {
     const filePath = path.join(libraryDir, file);
     const content = fs.readFileSync(filePath, "utf-8");
