@@ -4,11 +4,14 @@ import { fileURLToPath } from "url";
 import * as yaml from "js-yaml";
 import {
   misconceptionLibrarySchema,
+  themeLibrarySchema,
   type MisconceptionEntry,
   type GradeBand,
+  type Theme,
 } from "./schema";
 
 let _library: MisconceptionEntry[] | null = null;
+let _themes: Theme[] | null = null;
 
 function getLibraryDir(): string {
   // Support both ESM (import.meta.url) and CJS (__dirname)
@@ -61,4 +64,26 @@ export function getMisconceptionById(id: string): MisconceptionEntry | undefined
 
 export function resetLibraryCache(): void {
   _library = null;
+}
+
+export function loadThemes(): Theme[] {
+  if (_themes) return _themes;
+  const libraryDir = getLibraryDir();
+  const filePath = path.join(libraryDir, "themes.yaml");
+  const content = fs.readFileSync(filePath, "utf-8");
+  const parsed = yaml.load(content);
+  _themes = themeLibrarySchema.parse(parsed);
+  return _themes;
+}
+
+export function getThemeById(id: string): Theme | undefined {
+  return loadThemes().find((t) => t.id === id);
+}
+
+export function getMisconceptionsByTheme(themeId: string): MisconceptionEntry[] {
+  return loadLibrary().filter((e) => e.themes.includes(themeId));
+}
+
+export function resetThemeCache(): void {
+  _themes = null;
 }
