@@ -15,6 +15,11 @@ export { evaluateResolution, buildResolveMessage } from "./prompts/diagnose-reso
 export type { ResolutionResult } from "./prompts/diagnose-resolve";
 export { generateLessonPlan, lessonPlanSchema } from "./prompts/generate-lesson-plan";
 export type { LessonPlan } from "./prompts/generate-lesson-plan";
+export {
+  analyzeStudentThemes,
+  studentThemeAnalysisSchema,
+} from "./prompts/analyze-student-themes";
+export type { StudentThemeAnalysis } from "./prompts/analyze-student-themes";
 
 export interface LLMAdapter {
   getModel(): unknown;
