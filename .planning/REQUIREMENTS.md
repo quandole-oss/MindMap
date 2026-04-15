@@ -158,6 +158,8 @@ Explicitly excluded. Documented to prevent scope creep.
 
 Which phases cover which requirements. Updated during roadmap creation.
 
+### v1 Traceability
+
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | AUTH-01 | Phase 1 | Pending |
@@ -215,11 +217,37 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DEMO-05 | Phase 6 | Complete |
 | DEMO-06 | Phase 6 | Complete |
 
-**Coverage:**
+**v1 Coverage:**
 - v1 requirements: 49 total
 - Mapped to phases: 49
 - Unmapped: 0
 
+### v1.1 Traceability
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| GANIM-01 | Phase 9 | Pending |
+| GANIM-02 | Phase 9 | Pending |
+| GANIM-03 | Phase 9 | Pending |
+| GANIM-04 | Phase 9 | Pending |
+| GANIM-05 | Phase 9 | Pending |
+| GANIM-06 | Phase 9 | Pending |
+| GANIM-07 | Phase 9 | Pending |
+| BRIDGE-01 | Phase 10 | Pending |
+| BRIDGE-02 | Phase 10 | Pending |
+| BRIDGE-03 | Phase 10 | Pending |
+| BRIDGE-04 | Phase 10 | Pending |
+| BRIDGE-05 | Phase 10 | Pending |
+| TLOOP-01 | Phase 11 | Pending |
+| TLOOP-02 | Phase 11 | Pending |
+| TLOOP-03 | Phase 11 | Pending |
+| TLOOP-04 | Phase 11 | Pending |
+
+**v1.1 Coverage:**
+- v1.1 requirements: 16 total
+- Mapped to phases: 16
+- Unmapped: 0
+
 ---
 *Requirements defined: 2026-04-08*
-*Last updated: 2026-04-15 — v1.1 requirements added (15 new)*
+*Last updated: 2026-04-14 -- v1.1 traceability added (16 requirements mapped to Phases 9-11)*

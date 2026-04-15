@@ -1,25 +1,14 @@
 # Roadmap: MindMap
 
-**Milestone:** v1 — Initial Release
-**Created:** 2026-04-08
-**Granularity:** Standard (6 phases)
-**Coverage:** 49/49 requirements mapped
+## Milestones
+
+- **v1.0 Initial Release** - Phases 1-8 (shipped 2026-04-13)
+- **v1.1 Value Experience** - Phases 9-11 (in progress)
 
 ---
 
-## Phases
-
-- [x] **Phase 1: Foundation** - Monorepo scaffold, database schema, misconception library package, and authentication (completed 2026-04-08)
-- [x] **Phase 2: Curiosity Engine** - Daily question submission, AI-powered answers, concept extraction, and routing logic (completed 2026-04-08)
-- [x] **Phase 3: Knowledge Graph** - pgvector concept deduplication, graph storage, and D3.js force-directed visualization (completed 2026-04-08)
-- [x] **Phase 4: Misconception Diagnostics** - Full probe/classify/confront/resolve diagnostic flow with node state management (completed 2026-04-08)
-- [x] **Phase 5: Teacher Dashboard** - Class management, misconception heatmap, engagement analytics, and curiosity metrics (completed 2026-04-08)
-- [x] **Phase 6: Demo & Deployment** - Seed data generation, Docker Compose, Vercel deployment, privacy hardening, and polish (completed 2026-04-08)
-- [ ] **Phase 7: 3D Solar System Knowledge Graph** - Replace 2D D3.js SVG graph with immersive 3D WebGL visualization using react-three-fiber
-
----
-
-## Phase Details
+<details>
+<summary>v1.0 Initial Release (Phases 1-8) - SHIPPED</summary>
 
 ### Phase 1: Foundation
 **Goal**: The monorepo builds cleanly, the database schema is fully migrated with COPPA TTL fields, the misconception library package loads and validates, and students and teachers can create accounts and log in
@@ -37,7 +26,6 @@ Plans:
 - [x] 01-02-PLAN.md — Misconception library package (YAML + Zod + Vitest)
 - [x] 01-03-PLAN.md — Auth.js v5 authentication, landing page, app shell UI
 - [x] 01-04-PLAN.md — Class management (create, join, roster, grade levels)
-**UI hint**: yes
 
 ### Phase 2: Curiosity Engine
 **Goal**: A student can submit a daily curiosity question, receive an age-appropriate AI answer with a Socratic follow-up, and watch concepts automatically appear as nodes on their graph — and the routing engine correctly decides enrich vs. diagnose mode
@@ -55,7 +43,6 @@ Plans:
 - [x] 02-02-PLAN.md — Database schema (questions, concepts, concept_questions) + drizzle-kit push
 - [x] 02-03-PLAN.md — Streaming API route + question form UI + concept extraction pipeline
 - [x] 02-04-PLAN.md — Question history page + streak tracking + sidebar navigation update
-**UI hint**: yes
 
 ### Phase 3: Knowledge Graph
 **Goal**: Every extracted concept is correctly deduplicated against the student's existing graph via pgvector semantic search and LLM disambiguation, stored with embedding vectors, and rendered as an interactive force-directed D3.js graph the student can explore
@@ -73,7 +60,6 @@ Plans:
 - [x] 03-02-PLAN.md — Two-stage dedup pipeline (pgvector ANN + LLM disambiguation) + edge creation in onFinish
 - [x] 03-03-PLAN.md — D3.js force-directed graph page, node detail side panel, health legend, sidebar link
 - [x] 03-04-PLAN.md — Bridge node detection (betweenness centrality) + weekly surprise connection toast
-**UI hint**: yes
 
 ### Phase 4: Misconception Diagnostics
 **Goal**: When the routing engine selects diagnose mode, the student experiences a complete Socratic diagnostic session — open probe, mental model classification, targeted confrontation scenario, and resolution — with the node health state updating to reflect the outcome
@@ -89,7 +75,6 @@ Plans:
 Plans:
 - [x] 04-01-PLAN.md — Diagnostic sessions schema, LLM prompt builders, /api/ask diagnose branch, server actions
 - [x] 04-02-PLAN.md — Multi-turn /api/diagnose route, diagnostic chat UI, misconception reveal, student page integration
-**UI hint**: yes
 
 ### Phase 5: Teacher Dashboard
 **Goal**: A teacher can open their class dashboard and immediately see which concepts are widespread across students, which misconceptions are persistent, which students are disengaging, and each student's individual curiosity breadth — all derived from live student data
@@ -106,7 +91,6 @@ Plans:
 - [x] 05-01-PLAN.md — Dashboard server actions, TypeScript types, and mini graph SVG component
 - [x] 05-02-PLAN.md — Dashboard page, tab navigation, Overview tab, Students tab, sidebar updates
 - [x] 05-03-PLAN.md — Concepts heatmap tab and Misconceptions cluster tab with repair progress
-**UI hint**: yes
 
 ### Phase 6: Demo & Deployment
 **Goal**: Anyone can deploy MindMap with a single Docker Compose command or to Vercel + Neon, student data never leaves the deployer's server, and the demo seed data produces a live 5-minute showcase of misconception detection, graph growth, and teacher dashboard analytics
@@ -124,26 +108,107 @@ Plans:
 - [x] 06-02-PLAN.md — Docker Compose full-stack + Vercel deployment config + telemetry audit
 - [x] 06-03-PLAN.md — COPPA TTL cleanup endpoint + PRIV-01 audit
 - [x] 06-04-PLAN.md — WCAG AA color fixes + responsive design + graceful LLM error handling
+
+### Phase 7: 3D Solar System Knowledge Graph
+**Goal**: Replace the existing 2D D3.js SVG knowledge graph with an immersive 3D WebGL solar system visualization using react-three-fiber, where concept nodes appear as glowing stars in space with constellation-style edges, OrbitControls navigation, and all existing graph functionality preserved
+**Requirements**: Enhancement phase — tracked via CONTEXT.md decisions (D-01 through D-16)
+**Depends on**: Phase 6
+**Plans**: 3 plans
+Plans:
+- [x] 07-01-PLAN.md — Install 3D packages, d3-force-3d layout hook, InstancedMesh nodes, Line edges
+- [x] 07-02-PLAN.md — SolarScene + SolarGraph Canvas wrapper + SSR-safe KnowledgeGraph replacement
+- [x] 07-03-PLAN.md — LOD rendering, bridge highlight integration, visual verification
+
+### Phase 8: Root-Cause Theme Diagnosis & Teacher Remediation
+**Goal**: When a teacher opens their class dashboard, they can move from "here are the misconceptions my students hold" to "here is the underlying naive theory driving them" to "here is a structured lesson plan I can run tomorrow"
+**Requirements**: THME-01, THME-02, THME-03, DASH-07, DASH-08, LSPL-01, LSPL-02
+**Depends on**: Phase 7
+**Plans**: 4 plans
+Plans:
+- [x] 08-01-PLAN.md — Theme taxonomy authoring (themes.yaml + schema/loader extension + library backfill + CI orphan check)
+- [x] 08-02-PLAN.md — Dashboard aggregation by theme (getClassDashboardData themeClusters + getThemeDetail + getStudentThemeProfile)
+- [x] 08-03-PLAN.md — LLM prompt builders (analyze-student-themes + generate-lesson-plan with PRIV-01 audit)
+- [x] 08-04-PLAN.md — Teacher UI + theme_lesson_plans cache table + getOrGenerateLessonPlan + ThemesView/LessonPlanCard/StudentNarrativeDialog
+
+</details>
+
+---
+
+## v1.1 Value Experience
+
+**Milestone Goal:** Make the core learning experience emotionally resonant -- the graph is the reward, connections feel surprising, and teachers get actionable next steps.
+
+## Phases
+
+- [ ] **Phase 9: Graph Animation** - Animate graph growth after asking a question so the visual expansion is the reward
+- [ ] **Phase 10: Bridge Discovery** - Surface surprising cross-domain connections with cinematic reveal and persistent insight cards
+- [ ] **Phase 11: Teacher Action Loop** - Close the loop from misconception cluster to classroom intervention to measurable impact
+
+---
+
+## Phase Details
+
+### Phase 9: Graph Animation
+**Goal**: After a student submits a curiosity question and receives an answer, they are automatically transitioned to their knowledge graph where new concepts animate into existence -- scaling up, drawing edges, and framing the camera -- making graph growth the emotional reward for asking
+**Depends on**: Phase 8
+**Requirements**: GANIM-01, GANIM-02, GANIM-03, GANIM-04, GANIM-05, GANIM-06, GANIM-07
+**Success Criteria** (what must be TRUE):
+  1. After the AI answer finishes streaming, the student is automatically transitioned to the graph view and new concept nodes animate in with a visible scale-up stagger (not instant appearance)
+  2. New edges draw progressively from source to target after nodes have settled, and the camera auto-frames to include all new content
+  3. New nodes spawn with a particle birth effect (sparkles) that transitions into their final health-state appearance
+  4. A growth summary overlay appears after animation completes showing how many concepts and connections were added (e.g., "+3 concepts, +2 connections")
+  5. When the user has `prefers-reduced-motion` enabled, all new content appears instantly with no animation or motion effects (WCAG 2.1 compliance)
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 10: Bridge Discovery
+**Goal**: When a bridge concept is detected connecting two different knowledge domains, the student experiences a cinematic reveal -- the camera pulls back, highlights the connecting path, flies to the bridge node, and displays a persistent AI-generated insight card explaining why the connection matters
+**Depends on**: Phase 9
+**Requirements**: BRIDGE-01, BRIDGE-02, BRIDGE-03, BRIDGE-04, BRIDGE-05
+**Success Criteria** (what must be TRUE):
+  1. Bridge concepts display a persistent visual highlight on the graph (distinct from the transient toast used in v1.0) that remains visible during normal graph exploration
+  2. When a new bridge is discovered, a camera fly-to choreography plays: pull back to show both domains, highlight the connecting path with glowing edges, then fly to the bridge node
+  3. A persistent insight card appears showing an AI-generated explanation of why the bridge connection matters, and the card stays visible until the student explicitly dismisses it
+  4. The bridge explanation is generated once by the LLM and cached -- subsequent views load the cached text without an additional LLM call
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 11: Teacher Action Loop
+**Goal**: A teacher can move from seeing a misconception cluster on their dashboard to marking a classroom intervention as done, which triggers automatic re-probing of affected students, and then see before/after resolution rates showing whether the intervention worked
+**Depends on**: Phase 8
+**Requirements**: TLOOP-01, TLOOP-02, TLOOP-03, TLOOP-04
+**Success Criteria** (what must be TRUE):
+  1. Teacher can mark a lesson plan activity as "done" with a single click from the dashboard, and the UI updates immediately to reflect the completed status
+  2. When a teacher marks an activity done, re-probe diagnostic sessions are automatically created for all students who still hold the targeted misconception
+  3. The dashboard displays before/after misconception resolution rates for completed interventions, showing the percentage of students who resolved the misconception after the teacher's intervention
+  4. The routing engine biases toward diagnose mode for students whose teacher has completed a relevant intervention, increasing the likelihood that affected students are re-probed on their next question
+**Plans**: TBD
 **UI hint**: yes
 
 ---
 
 ## Progress
 
-| Phase | Plans Complete | Status | Completed |
-|-------|----------------|--------|-----------|
-| 1. Foundation | 4/4 | Complete   | 2026-04-08 |
-| 2. Curiosity Engine | 4/4 | Complete   | 2026-04-08 |
-| 3. Knowledge Graph | 4/4 | Complete   | 2026-04-08 |
-| 4. Misconception Diagnostics | 2/2 | Complete   | 2026-04-08 |
-| 5. Teacher Dashboard | 3/3 | Complete   | 2026-04-08 |
-| 6. Demo & Deployment | 4/4 | Complete   | 2026-04-08 |
-| 7. 3D Solar System Knowledge Graph | 3/3 | Complete   | 2026-04-10 |
-| 8. Root-cause theme diagnosis and teacher remediation | 0/4 | Not Started |  |
+| Phase | Milestone | Plans Complete | Status | Completed |
+|-------|-----------|----------------|--------|-----------|
+| 1. Foundation | v1.0 | 4/4 | Complete | 2026-04-08 |
+| 2. Curiosity Engine | v1.0 | 4/4 | Complete | 2026-04-08 |
+| 3. Knowledge Graph | v1.0 | 4/4 | Complete | 2026-04-08 |
+| 4. Misconception Diagnostics | v1.0 | 2/2 | Complete | 2026-04-08 |
+| 5. Teacher Dashboard | v1.0 | 3/3 | Complete | 2026-04-08 |
+| 6. Demo & Deployment | v1.0 | 4/4 | Complete | 2026-04-08 |
+| 7. 3D Solar System | v1.0 | 3/3 | Complete | 2026-04-10 |
+| 8. Theme Diagnosis | v1.0 | 4/4 | Complete | 2026-04-13 |
+| 9. Graph Animation | v1.1 | 0/? | Not started | - |
+| 10. Bridge Discovery | v1.1 | 0/? | Not started | - |
+| 11. Teacher Action Loop | v1.1 | 0/? | Not started | - |
 
 ---
 
 ## Coverage Map
+
+<details>
+<summary>v1.0 Coverage (49/49 mapped)</summary>
 
 | Requirement | Phase |
 |-------------|-------|
@@ -202,32 +267,31 @@ Plans:
 | DEMO-05 | Phase 6 |
 | DEMO-06 | Phase 6 |
 
-**Total: 49/49 requirements mapped**
+</details>
 
-### Phase 7: 3D Solar System Knowledge Graph
+### v1.1 Coverage (16/16 mapped)
 
-**Goal:** Replace the existing 2D D3.js SVG knowledge graph with an immersive 3D WebGL solar system visualization using react-three-fiber, where concept nodes appear as glowing stars in space with constellation-style edges, OrbitControls navigation, and all existing graph functionality preserved
-**Requirements**: Enhancement phase — tracked via CONTEXT.md decisions (D-01 through D-16)
-**Depends on:** Phase 6
-**Plans:** 3/3 plans executed
+| Requirement | Phase |
+|-------------|-------|
+| GANIM-01 | Phase 9 |
+| GANIM-02 | Phase 9 |
+| GANIM-03 | Phase 9 |
+| GANIM-04 | Phase 9 |
+| GANIM-05 | Phase 9 |
+| GANIM-06 | Phase 9 |
+| GANIM-07 | Phase 9 |
+| BRIDGE-01 | Phase 10 |
+| BRIDGE-02 | Phase 10 |
+| BRIDGE-03 | Phase 10 |
+| BRIDGE-04 | Phase 10 |
+| BRIDGE-05 | Phase 10 |
+| TLOOP-01 | Phase 11 |
+| TLOOP-02 | Phase 11 |
+| TLOOP-03 | Phase 11 |
+| TLOOP-04 | Phase 11 |
 
-Plans:
-- [x] 07-01-PLAN.md — Install 3D packages, d3-force-3d layout hook, InstancedMesh nodes, Line edges
-- [x] 07-02-PLAN.md — SolarScene + SolarGraph Canvas wrapper + SSR-safe KnowledgeGraph replacement
-- [x] 07-03-PLAN.md — LOD rendering, bridge highlight integration, visual verification
-
-### Phase 8: Root-cause theme diagnosis and teacher remediation
-
-**Goal:** When a teacher opens their class dashboard, they can move from "here are the misconceptions my students hold" to "here is the underlying naive theory driving them" to "here is a structured lesson plan I can run tomorrow." The system groups individual misconceptions into ~10 hand-authored cross-domain root-cause themes, generates a per-student narrative summary of dominant themes, and produces a cached, regeneratable, Zod-validated lesson plan scaffold — all teacher-facing, with no changes to the student experience.
-**Requirements**: THME-01, THME-02, THME-03, DASH-07, DASH-08, LSPL-01, LSPL-02
-**Depends on:** Phase 7
-**Plans:** 4 plans
-
-Plans:
-- [x] 08-01-PLAN.md — Theme taxonomy authoring (themes.yaml + schema/loader extension + library backfill + CI orphan check)
-- [x] 08-02-PLAN.md — Dashboard aggregation by theme (getClassDashboardData themeClusters + getThemeDetail + getStudentThemeProfile)
-- [x] 08-03-PLAN.md — LLM prompt builders (analyze-student-themes + generate-lesson-plan with PRIV-01 audit)
-- [x] 08-04-PLAN.md — Teacher UI + theme_lesson_plans cache table + getOrGenerateLessonPlan + ThemesView/LessonPlanCard/StudentNarrativeDialog
+**Total: 16/16 v1.1 requirements mapped**
 
 ---
 *Roadmap created: 2026-04-08*
+*v1.1 phases added: 2026-04-14*
