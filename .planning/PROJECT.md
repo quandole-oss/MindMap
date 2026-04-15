@@ -14,22 +14,31 @@ Show what students actually believe, why they believe it, and how it connects to
 
 - ✓ User auth (students and teachers) with class management — Phase 1
 - ✓ Misconception library (YAML, research-backed, 40 entries across 4 domains) — Phase 1
+- ✓ Daily curiosity question interface with AI-powered rich answers — Phase 2
+- ✓ Concept extraction pipeline from student questions — Phase 2
+- ✓ Personal knowledge graph with 3D solar system visualization — Phases 3, 7
+- ✓ Node health states (healthy/misconception/unprobed/bridge) — Phase 3
+- ✓ Misconception detection and Socratic diagnostic flow — Phase 4
+- ✓ Routing engine: enrich vs. diagnose mode — Phase 4
+- ✓ Concept deduplication via pgvector + LLM disambiguation — Phase 3
+- ✓ Teacher class dashboard with misconception clusters and engagement tracking — Phase 5
+- ✓ Docker Compose self-hosted deployment — Phase 6
+- ✓ Cloud deployment support (Vercel + Neon) — Phase 6
+- ✓ Demo seed data (30-day student sessions) — Phase 6
+- ✓ Root-cause theme diagnosis and teacher lesson plans — Phase 8
 
 ### Active
 
-- [ ] Daily curiosity question interface with AI-powered rich answers
-- [ ] Concept extraction pipeline from student questions
-- [ ] Personal knowledge graph with force-directed D3.js visualization
-- [ ] Node health states (healthy/misconception/unprobed/bridge)
-- [ ] Misconception detection and Socratic diagnostic flow (probe/classify/confront/resolve)
-- [ ] Routing engine: enrich mode vs. diagnose mode based on concept + grade band
-- [ ] Concept deduplication via pgvector semantic similarity + LLM disambiguation
-- [ ] Teacher class dashboard with misconception heatmap and engagement tracking
-- [ ] Pluggable LLM layer (Anthropic first, then OpenAI/Ollama adapters)
-- [ ] Docker Compose self-hosted deployment
-- [ ] Cloud deployment support (Vercel + Neon)
-- [ ] Standards alignment (optional NGSS/CCSS tagging via YAML config)
-- [ ] Demo seed data (30-day and 60-day student sessions)
+_(See Current Milestone below)_
+
+## Current Milestone: v1.1 Value Experience
+
+**Goal:** Make the core learning experience emotionally resonant — the graph is the reward, connections feel surprising, and teachers get actionable next steps.
+
+**Target features:**
+- Graph as the main event — animate graph growth after asking, make the visual expansion the reward
+- Surface surprising connections — bridge concepts become unmissable insight moments
+- Teacher action loop — cluster → classroom activity → mark done → re-probe to measure impact
 
 ### Out of Scope
 
@@ -87,4 +96,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-08 after initialization*
+*Last updated: 2026-04-15 — Milestone v1.1 started*
