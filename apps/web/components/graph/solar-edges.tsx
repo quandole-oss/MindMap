@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
+import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { Line } from "@react-three/drei";
 import type { LayoutNode } from "./use-graph-layout";
@@ -13,8 +14,8 @@ const _colorB = new THREE.Color();
 
 /**
  * Edge color = 50/50 blend of both endpoints' domain colors.
- * Same-domain → blend = domain color (e.g., cyan+cyan = cyan).
- * Cross-domain → unique blend (e.g., cyan+pink = lavender).
+ * Same-domain -> blend = domain color (e.g., cyan+cyan = cyan).
+ * Cross-domain -> unique blend (e.g., cyan+pink = lavender).
  * Misconception edges always red.
  */
 function getEdgeColor(srcDomain: string, tgtDomain: string, edgeType: string): string {
@@ -55,14 +56,26 @@ function getEdgeStyle(
 interface SolarEdgesProps {
   layoutNodes: LayoutNode[];
   edges: GraphEdge[];
+  /** Set of edge keys ("sourceId:targetId", sorted) that should animate in */
+  newEdgeKeys?: Set<string>;
+  /** Clock time when edge animation should start (from SolarScene) */
+  edgeAnimationStartTime?: number;
 }
 
 /**
  * Renders constellation-style edges between star nodes.
  * Bridge edges render on top (sorted last) and are thicker + brighter
  * to highlight surprise cross-domain connections.
+ *
+ * D-08: New edges draw progressively from source to target over 400ms
+ * when newEdgeKeys and edgeAnimationStartTime are provided.
  */
-export function SolarEdges({ layoutNodes, edges }: SolarEdgesProps) {
+export function SolarEdges({
+  layoutNodes,
+  edges,
+  newEdgeKeys,
+  edgeAnimationStartTime,
+}: SolarEdgesProps) {
   const nodeIndex = useMemo(
     () => Object.fromEntries(layoutNodes.map((n) => [n.id, n])),
     [layoutNodes]
@@ -74,6 +87,31 @@ export function SolarEdges({ layoutNodes, edges }: SolarEdgesProps) {
     return [...edges].sort((a, b) => (order[a.edgeType] ?? 0) - (order[b.edgeType] ?? 0));
   }, [edges]);
 
+  // D-08: Track edge draw-in progress via ref for useFrame (Pitfall 2: never useState)
+  const edgeProgressRef = useRef<Map<string, number>>(new Map());
+
+  useFrame(({ clock }) => {
+    if (
+      !newEdgeKeys ||
+      newEdgeKeys.size === 0 ||
+      edgeAnimationStartTime === undefined ||
+      edgeAnimationStartTime < 0
+    ) {
+      return;
+    }
+
+    const now = clock.elapsedTime;
+    if (now < edgeAnimationStartTime) return;
+
+    const elapsed = now - edgeAnimationStartTime;
+
+    // D-08: 400ms draw-in per edge, linear easing
+    for (const key of newEdgeKeys) {
+      const progress = Math.min(elapsed / 0.4, 1);
+      edgeProgressRef.current.set(key, progress);
+    }
+  });
+
   return (
     <>
       {sortedEdges.map((edge, i) => {
@@ -83,6 +121,42 @@ export function SolarEdges({ layoutNodes, edges }: SolarEdgesProps) {
 
         const { color, opacity, lineWidth } = getEdgeStyle(edge, src.domain, tgt.domain);
 
+        // Determine if this edge is animating
+        const edgeKey =
+          edge.source < edge.target
+            ? `${edge.source}:${edge.target}`
+            : `${edge.target}:${edge.source}`;
+        const isNewEdge = newEdgeKeys?.has(edgeKey) ?? false;
+
+        if (
+          isNewEdge &&
+          edgeAnimationStartTime !== undefined &&
+          edgeAnimationStartTime >= 0
+        ) {
+          const progress = edgeProgressRef.current.get(edgeKey) ?? 0;
+          if (progress <= 0) return null; // Not yet started — hide edge
+
+          // D-08: Draw-in — interpolate end point from source toward target
+          const endX = src.x + (tgt.x - src.x) * progress;
+          const endY = src.y + (tgt.y - src.y) * progress;
+          const endZ = src.z + (tgt.z - src.z) * progress;
+
+          return (
+            <Line
+              key={i}
+              points={[
+                [src.x, src.y, src.z],
+                [endX, endY, endZ],
+              ]}
+              color={color}
+              lineWidth={lineWidth}
+              transparent
+              opacity={opacity * progress}
+            />
+          );
+        }
+
+        // Existing edge — render normally
         return (
           <Line
             key={i}

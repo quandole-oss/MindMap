@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
-import { Stars, Html } from "@react-three/drei";
+import { Stars, Html, Sparkles } from "@react-three/drei";
 import * as THREE from "three";
 import { SolarNodes, getNodeRadius } from "./solar-nodes";
 import { SolarEdges } from "./solar-edges";
@@ -40,6 +40,11 @@ interface SolarSceneProps {
  * - When highlightNodeId changes, starts a 1.5s pulse animation on that node
  * - Pulse: scale factor oscillates via sine wave (3 pulses over 1.5s)
  * - Also triggers camera fly-to so the bridge node comes into view
+ *
+ * Birth animation (D-07 through D-11):
+ * - When animateEntry=true and newNodeIds is provided, orchestrates a staggered
+ *   node scale-up, sparkle effects, edge draw-in, and camera framing sequence
+ * - All animation state lives in refs (Pitfall 2 — never useState in useFrame)
  */
 export function SolarScene({
   nodes,
@@ -67,18 +72,43 @@ export function SolarScene({
   // Pulse animation state: tracks which node is pulsing and when it started
   const pulseRef = useRef<{ nodeIndex: number; startTime: number } | null>(null);
 
-  // Reusable Object3D for matrix updates during pulse
+  // Reusable Object3D for matrix updates during pulse and birth animation
   const pulseDummy = useRef(new THREE.Object3D());
 
-  // InstancedMesh ref shared between SolarNodes and SolarScene for pulse updates
-  // We pass a callback down via onNodeHover to access the mesh — but SolarNodes
-  // owns the meshRef. Instead, we'll handle pulse via a separate overlay approach:
-  // track the pulse node index and inject it so SolarNodes can apply it in useFrame.
-  // Since SolarNodes owns the InstancedMesh, we communicate via a shared ref.
+  // InstancedMesh ref shared between SolarNodes and SolarScene
   const meshRef = useRef<THREE.InstancedMesh | null>(null);
 
   // Proximity labels: track which nodes are close enough to show labels
   const [nearbyNodes, setNearbyNodes] = useState<LayoutNode[]>([]);
+
+  // === Birth animation refs (D-07 through D-11, Pitfall 2: all refs, no useState) ===
+  const isAnimating = useRef(false);
+  const animationStartTime = useRef<number>(-1);
+  // D-16: instanceIndex -> birth clock time (negative = pending with stagger index)
+  const birthTimestamps = useRef<Map<number, number>>(new Map());
+  const edgeAnimationStart = useRef<number>(-1);
+  const animationCompleteRef = useRef(false);
+
+  // Sparkle positions — stored separately for rendering (one setState at start/end only)
+  const [sparklePositions, setSparklePositions] = useState<
+    Array<{ x: number; y: number; z: number; scale: number }>
+  >([]);
+
+  // Compute which edge keys are new (connect to at least one new node)
+  const newEdgeKeys = useMemo(() => {
+    if (!newNodeIds || newNodeIds.size === 0) return undefined;
+    const keys = new Set<string>();
+    for (const edge of edges) {
+      if (newNodeIds.has(edge.source) || newNodeIds.has(edge.target)) {
+        const key =
+          edge.source < edge.target
+            ? `${edge.source}:${edge.target}`
+            : `${edge.target}:${edge.source}`;
+        keys.add(key);
+      }
+    }
+    return keys;
+  }, [edges, newNodeIds]);
 
   // Cluster labels: find connected components via edges, label each with dominant domain
   const nebulae = useMemo(() => {
@@ -134,7 +164,6 @@ export function SolarScene({
         const misconceptionIdxs = comp.filter((i) => layoutNodes[i].status === "misconception");
         let isRedAlert = false;
         if (misconceptionIdxs.length >= 2) {
-          // BFS from each misconception node, check if another misconception is within 2 hops
           for (const startIdx of misconceptionIdxs) {
             const dist = new Map<number, number>([[startIdx, 0]]);
             const queue: number[] = [startIdx];
@@ -149,7 +178,6 @@ export function SolarScene({
                 }
               }
             }
-            // Check if any other misconception node is reachable within 2 hops
             const foundOther = misconceptionIdxs.some(
               (mi) => mi !== startIdx && dist.has(mi) && dist.get(mi)! <= 2
             );
@@ -160,7 +188,6 @@ export function SolarScene({
           }
         }
 
-        // Build a descriptive label from the most-visited concept names in this cluster
         const sorted = [...nodes].sort((a, b) => b.visitCount - a.visitCount);
         const topNames = sorted.slice(0, 2).map((n) => n.name);
         const label = topNames.join(" & ");
@@ -179,6 +206,83 @@ export function SolarScene({
   const controls = useThree((state) => state.controls) as any;
 
   /**
+   * Birth animation initialization (D-07 through D-11).
+   * Sets up staggered birth timestamps and camera framing for new nodes.
+   */
+  useEffect(() => {
+    if (!animateEntry || !newNodeIds || newNodeIds.size === 0) return;
+    if (layoutNodes.length === 0) return;
+
+    isAnimating.current = true;
+    animationStartTime.current = -1; // Will be set on first useFrame
+    animationCompleteRef.current = false;
+
+    // Find instance indices for new nodes and set up staggered birth times
+    const newIndices: number[] = [];
+    const sparkles: Array<{ x: number; y: number; z: number; scale: number }> = [];
+
+    layoutNodes.forEach((node, idx) => {
+      if (newNodeIds.has(node.id)) {
+        newIndices.push(idx);
+        sparkles.push({
+          x: node.x,
+          y: node.y,
+          z: node.z,
+          scale: getNodeRadius(node) * 2,
+        });
+      }
+    });
+
+    // Store indices for birth timestamp setup in the first useFrame call
+    birthTimestamps.current.clear();
+    newIndices.forEach((idx, i) => {
+      // Negative value = "pending, stagger index i" — resolved on first frame
+      birthTimestamps.current.set(idx, -(i + 1));
+    });
+
+    edgeAnimationStart.current = -1;
+
+    // D-10: Set sparkle positions (one setState — start of animation only)
+    setSparklePositions(sparkles);
+
+    // D-09: Camera framing — compute bounding sphere of new nodes
+    const newNodes = layoutNodes.filter((n) => newNodeIds.has(n.id));
+    if (newNodes.length > 0) {
+      let cx = 0,
+        cy = 0,
+        cz = 0;
+      for (const n of newNodes) {
+        cx += n.x;
+        cy += n.y;
+        cz += n.z;
+      }
+      cx /= newNodes.length;
+      cy /= newNodes.length;
+      cz /= newNodes.length;
+
+      let maxDist = 0;
+      for (const n of newNodes) {
+        const d = Math.sqrt(
+          (n.x - cx) ** 2 + (n.y - cy) ** 2 + (n.z - cz) ** 2
+        );
+        if (d > maxDist) maxDist = d;
+      }
+
+      const fov = (camera as THREE.PerspectiveCamera).fov ?? 60;
+      const fovRad = (fov * Math.PI) / 180;
+      const dist = Math.max((maxDist + 60) / Math.tan(fovRad / 2), 80);
+
+      targetPosition.current.set(
+        cx + dist * 0.3,
+        cy + dist * 0.2,
+        cz + dist
+      );
+      targetLookAt.current.set(cx, cy, cz);
+      isFlying.current = true;
+    }
+  }, [animateEntry, newNodeIds, layoutNodes, camera]);
+
+  /**
    * When highlightNodeId changes, find the matching layout node, start the
    * pulse animation, and fly the camera to it.
    */
@@ -192,7 +296,7 @@ export function SolarScene({
     if (nodeIndex === -1) return;
 
     // Start pulse
-    pulseRef.current = { nodeIndex, startTime: -1 }; // -1 = use clock on first frame
+    pulseRef.current = { nodeIndex, startTime: -1 };
 
     // Fly camera to the highlighted node
     const node = layoutNodes[nodeIndex];
@@ -208,10 +312,13 @@ export function SolarScene({
     if (reframeTrigger === undefined || reframeTrigger === 0) return;
     if (layoutNodes.length === 0) return;
 
-    // Compute bounding sphere center of all visible nodes
-    let cx = 0, cy = 0, cz = 0;
+    let cx = 0,
+      cy = 0,
+      cz = 0;
     for (const n of layoutNodes) {
-      cx += n.x; cy += n.y; cz += n.z;
+      cx += n.x;
+      cy += n.y;
+      cz += n.z;
     }
     cx /= layoutNodes.length;
     cy /= layoutNodes.length;
@@ -219,11 +326,12 @@ export function SolarScene({
 
     let maxDist = 0;
     for (const n of layoutNodes) {
-      const d = Math.sqrt((n.x - cx) ** 2 + (n.y - cy) ** 2 + (n.z - cz) ** 2);
+      const d = Math.sqrt(
+        (n.x - cx) ** 2 + (n.y - cy) ** 2 + (n.z - cz) ** 2
+      );
       if (d > maxDist) maxDist = d;
     }
 
-    // Position camera to encompass all nodes with margin
     const fov = (camera as THREE.PerspectiveCamera).fov ?? 60;
     const fovRad = (fov * Math.PI) / 180;
     const dist = Math.max((maxDist + 40) / Math.tan(fovRad / 2), 80);
@@ -233,22 +341,12 @@ export function SolarScene({
     isFlying.current = true;
   }, [reframeTrigger, layoutNodes, camera]);
 
-  /**
-   * Fly camera smoothly to a node. Sets target position and look-at so that
-   * the useFrame lerp loop animates the camera there over ~1 second.
-   */
-  const flyToNode = useCallback(
-    (node: LayoutNode) => {
-      targetPosition.current.set(node.x + 30, node.y + 20, node.z + 60);
-      targetLookAt.current.set(node.x, node.y, node.z);
-      isFlying.current = true;
-    },
-    []
-  );
+  const flyToNode = useCallback((node: LayoutNode) => {
+    targetPosition.current.set(node.x + 30, node.y + 20, node.z + 60);
+    targetLookAt.current.set(node.x, node.y, node.z);
+    isFlying.current = true;
+  }, []);
 
-  /**
-   * Handle click on a node — opens side panel AND flies camera to the node.
-   */
   const handleClick = useCallback(
     (nodeId: string) => {
       onNodeClick(nodeId);
@@ -262,11 +360,92 @@ export function SolarScene({
   const frameCount = useRef(0);
   const tempVec = useMemo(() => new THREE.Vector3(), []);
 
-  // Camera fly-to lerp + bridge pulse animation + proximity labels
-  useFrame(({ clock }) => {
-    // Update proximity labels every 10 frames (perf: avoid per-frame sort)
+  // Main useFrame loop: camera fly-to, birth animation, bridge pulse, proximity labels
+  useFrame(({ clock }, delta) => {
     frameCount.current++;
-    if (frameCount.current % 10 === 0 && layoutNodes.length > 0) {
+
+    // === Birth animation loop (D-07, D-16) ===
+    if (
+      isAnimating.current &&
+      meshRef.current &&
+      birthTimestamps.current.size > 0
+    ) {
+      const now = clock.elapsedTime;
+
+      // Initialize birth times on first frame
+      if (animationStartTime.current === -1) {
+        animationStartTime.current = now;
+        const entries = Array.from(birthTimestamps.current.entries());
+        birthTimestamps.current.clear();
+
+        for (const [idx, staggerMarker] of entries) {
+          // D-07: 300ms stagger between nodes
+          const staggerIndex = Math.abs(staggerMarker) - 1;
+          const birthTime = now + staggerIndex * 0.3;
+          birthTimestamps.current.set(idx, birthTime);
+        }
+      }
+
+      let allNodesComplete = true;
+
+      for (const [idx, birthTime] of birthTimestamps.current) {
+        const node = layoutNodes[idx];
+        if (!node) continue;
+
+        const elapsed = now - birthTime;
+        if (elapsed < 0) {
+          // Not yet born — keep at scale 0
+          allNodesComplete = false;
+          continue;
+        }
+
+        // D-07: 500ms scale-up with ease-out cubic (UI-SPEC)
+        const DURATION = 0.5;
+        const t = Math.min(elapsed / DURATION, 1);
+        // Ease-out cubic: 1 - (1-t)^3
+        const eased = 1 - Math.pow(1 - t, 3);
+
+        const targetRadius = getNodeRadius(node);
+        const currentScale = targetRadius * eased;
+
+        pulseDummy.current.position.set(node.x, node.y, node.z);
+        pulseDummy.current.scale.setScalar(currentScale);
+        pulseDummy.current.updateMatrix();
+        meshRef.current.setMatrixAt(idx, pulseDummy.current.matrix);
+
+        if (t < 1) allNodesComplete = false;
+      }
+
+      meshRef.current.instanceMatrix.needsUpdate = true;
+
+      // D-08: Trigger edge animation after all nodes settled
+      if (allNodesComplete && edgeAnimationStart.current === -1) {
+        edgeAnimationStart.current = now;
+      }
+
+      // Check if entire animation is complete (nodes done + edges had time to draw)
+      if (allNodesComplete && edgeAnimationStart.current > 0) {
+        const edgeElapsed = now - edgeAnimationStart.current;
+        // Allow 1s for edges to draw in (400ms per edge with some overlap)
+        if (edgeElapsed > 1.0 && !animationCompleteRef.current) {
+          animationCompleteRef.current = true;
+          isAnimating.current = false;
+          birthTimestamps.current.clear();
+          edgeAnimationStart.current = -1;
+          // Clear sparkles (one setState at end — Pitfall 2 compliant)
+          setSparklePositions([]);
+          // Signal completion to parent
+          onAnimationComplete?.();
+        }
+      }
+    }
+
+    // Pitfall 13: Suppress proximity label updates during active animation
+    if (
+      frameCount.current % 10 === 0 &&
+      layoutNodes.length > 0 &&
+      !isAnimating.current
+    ) {
       const nearby: LayoutNode[] = [];
       for (const node of layoutNodes) {
         const dist = camera.position.distanceTo(
@@ -274,7 +453,6 @@ export function SolarScene({
         );
         if (dist < 250) nearby.push(node);
       }
-      // Cap at 12 labels to avoid clutter
       nearby.sort((a, b) => {
         const da = camera.position.distanceTo(tempVec.set(a.x, a.y, a.z));
         const db = camera.position.distanceTo(tempVec.set(b.x, b.y, b.z));
@@ -282,18 +460,19 @@ export function SolarScene({
       });
       setNearbyNodes(nearby.slice(0, 12));
     }
-    // Camera fly-to
+
+    // Camera fly-to with delta-based damping (Pitfall 10: refresh-rate independent)
     if (isFlying.current) {
-      camera.position.lerp(targetPosition.current, 0.06);
+      const dampingFactor = 1 - Math.pow(0.001, delta);
+      camera.position.lerp(targetPosition.current, dampingFactor);
 
       if (controls) {
-        controls.target.lerp(targetLookAt.current, 0.06);
+        controls.target.lerp(targetLookAt.current, dampingFactor);
         controls.update();
       }
 
       if (camera.position.distanceTo(targetPosition.current) < 0.5) {
         isFlying.current = false;
-        // Snap controls target so OrbitControls orbits around the correct center
         if (controls) {
           controls.target.copy(targetLookAt.current);
           controls.update();
@@ -305,7 +484,6 @@ export function SolarScene({
     if (pulseRef.current && meshRef.current) {
       const pulse = pulseRef.current;
 
-      // Initialize startTime on first frame of pulse
       if (pulse.startTime === -1) {
         pulse.startTime = clock.elapsedTime;
       }
@@ -313,28 +491,32 @@ export function SolarScene({
       const elapsed = clock.elapsedTime - pulse.startTime;
 
       if (elapsed > 1.5) {
-        // Pulse complete — restore normal scale then clear
         const node = layoutNodes[pulse.nodeIndex];
         if (node) {
           const baseRadius = getNodeRadius(node);
           pulseDummy.current.position.set(node.x, node.y, node.z);
           pulseDummy.current.scale.setScalar(baseRadius);
           pulseDummy.current.updateMatrix();
-          meshRef.current.setMatrixAt(pulse.nodeIndex, pulseDummy.current.matrix);
+          meshRef.current.setMatrixAt(
+            pulse.nodeIndex,
+            pulseDummy.current.matrix
+          );
           meshRef.current.instanceMatrix.needsUpdate = true;
         }
         pulseRef.current = null;
       } else {
-        // Active pulse: 3 cycles over 1.5s via sine wave
         const node = layoutNodes[pulse.nodeIndex];
         if (node) {
           const baseRadius = getNodeRadius(node);
-          // sin(elapsed * PI * 4) gives 2 full cycles in 0.5s each = 3 pulses over 1.5s
-          const scaleFactor = 1 + 0.3 * Math.abs(Math.sin(elapsed * Math.PI * 4));
+          const scaleFactor =
+            1 + 0.3 * Math.abs(Math.sin(elapsed * Math.PI * 4));
           pulseDummy.current.position.set(node.x, node.y, node.z);
           pulseDummy.current.scale.setScalar(baseRadius * scaleFactor);
           pulseDummy.current.updateMatrix();
-          meshRef.current.setMatrixAt(pulse.nodeIndex, pulseDummy.current.matrix);
+          meshRef.current.setMatrixAt(
+            pulse.nodeIndex,
+            pulseDummy.current.matrix
+          );
           meshRef.current.instanceMatrix.needsUpdate = true;
         }
       }
@@ -362,61 +544,90 @@ export function SolarScene({
         meshRef={meshRef}
         newNodeIds={newNodeIds}
       />
-      <SolarEdges layoutNodes={layoutNodes} edges={edges} />
+      <SolarEdges
+        layoutNodes={layoutNodes}
+        edges={edges}
+        newEdgeKeys={newEdgeKeys}
+        edgeAnimationStartTime={edgeAnimationStart.current}
+      />
+      {/* D-10: Sparkle birth effects for new nodes */}
+      {sparklePositions.map((sparkle, i) => (
+        <Sparkles
+          key={`birth-sparkle-${i}`}
+          position={[sparkle.x, sparkle.y, sparkle.z]}
+          count={12}
+          size={0.4}
+          color="#ffffff"
+          scale={sparkle.scale}
+          speed={0.8}
+          opacity={0.8}
+        />
+      ))}
       {/* Nebula domain labels — font scales with cluster size */}
       {(() => {
         const maxCount = Math.max(...nebulae.map((n) => n.count), 1);
         return nebulae.map((neb) => {
-          // Scale font: smallest clusters get 11px, largest get 18px
           const t = neb.count / maxCount;
           const fontSize = Math.round(11 + t * 7);
           const fontWeight = t > 0.5 ? 700 : 600;
           return (
-        <Html
-          key={`label-${neb.id}`}
-          position={[neb.center[0], neb.center[1] + neb.radius + 12, neb.center[2]]}
-          center
-        >
-          <div
-            onClick={(e) => {
-              e.stopPropagation();
-              onClusterClick?.(neb.id);
-            }}
-            style={{
-              color: neb.isRedAlert ? "#fca5a5" : "rgba(255,255,255,0.95)",
-              fontSize: `${fontSize}px`,
-              fontWeight,
-              letterSpacing: "0.05em",
-              textTransform: "capitalize",
-              whiteSpace: "nowrap",
-              pointerEvents: onClusterClick ? "auto" : "none",
-              userSelect: "none",
-              cursor: onClusterClick ? "pointer" : "default",
-              textShadow: neb.isRedAlert
-                ? "0 0 12px rgba(220,38,38,0.8), 0 0 30px rgba(0,0,0,0.9)"
-                : "0 0 12px rgba(100,100,255,0.5), 0 0 30px rgba(0,0,0,0.9)",
-              background: neb.isRedAlert ? "rgba(127,29,29,0.4)" : "rgba(0,0,0,0.3)",
-              padding: "4px 12px",
-              borderRadius: "6px",
-              border: neb.isRedAlert
-                ? "1px solid rgba(220,38,38,0.5)"
-                : "1px solid rgba(255,255,255,0.1)",
-              transition: "background 0.2s, border-color 0.2s",
-            }}
-            onMouseEnter={(e) => {
-              if (!onClusterClick) return;
-              const color = neb.isRedAlert ? "220,38,38" : "99,102,241";
-              e.currentTarget.style.background = `rgba(${color},0.35)`;
-              e.currentTarget.style.borderColor = `rgba(${color},0.6)`;
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = neb.isRedAlert ? "rgba(127,29,29,0.4)" : "rgba(0,0,0,0.3)";
-              e.currentTarget.style.borderColor = neb.isRedAlert ? "rgba(220,38,38,0.5)" : "rgba(255,255,255,0.1)";
-            }}
-          >
-            {neb.label}
-          </div>
-        </Html>
+            <Html
+              key={`label-${neb.id}`}
+              position={[
+                neb.center[0],
+                neb.center[1] + neb.radius + 12,
+                neb.center[2],
+              ]}
+              center
+            >
+              <div
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onClusterClick?.(neb.id);
+                }}
+                style={{
+                  color: neb.isRedAlert
+                    ? "#fca5a5"
+                    : "rgba(255,255,255,0.95)",
+                  fontSize: `${fontSize}px`,
+                  fontWeight,
+                  letterSpacing: "0.05em",
+                  textTransform: "capitalize",
+                  whiteSpace: "nowrap",
+                  pointerEvents: onClusterClick ? "auto" : "none",
+                  userSelect: "none",
+                  cursor: onClusterClick ? "pointer" : "default",
+                  textShadow: neb.isRedAlert
+                    ? "0 0 12px rgba(220,38,38,0.8), 0 0 30px rgba(0,0,0,0.9)"
+                    : "0 0 12px rgba(100,100,255,0.5), 0 0 30px rgba(0,0,0,0.9)",
+                  background: neb.isRedAlert
+                    ? "rgba(127,29,29,0.4)"
+                    : "rgba(0,0,0,0.3)",
+                  padding: "4px 12px",
+                  borderRadius: "6px",
+                  border: neb.isRedAlert
+                    ? "1px solid rgba(220,38,38,0.5)"
+                    : "1px solid rgba(255,255,255,0.1)",
+                  transition: "background 0.2s, border-color 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  if (!onClusterClick) return;
+                  const color = neb.isRedAlert ? "220,38,38" : "99,102,241";
+                  e.currentTarget.style.background = `rgba(${color},0.35)`;
+                  e.currentTarget.style.borderColor = `rgba(${color},0.6)`;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = neb.isRedAlert
+                    ? "rgba(127,29,29,0.4)"
+                    : "rgba(0,0,0,0.3)";
+                  e.currentTarget.style.borderColor = neb.isRedAlert
+                    ? "rgba(220,38,38,0.5)"
+                    : "rgba(255,255,255,0.1)";
+                }}
+              >
+                {neb.label}
+              </div>
+            </Html>
           );
         });
       })()}
@@ -424,27 +635,28 @@ export function SolarScene({
       {nearbyNodes
         .filter((n) => !hoveredNode || n.id !== hoveredNode.id)
         .map((node) => (
-        <Html
-          key={`prox-${node.id}`}
-          position={[node.x, node.y + getNodeRadius(node) + 3, node.z]}
-          center
-          distanceFactor={80}
-        >
-          <div
-            style={{
-              color: "rgba(255,255,255,0.95)",
-              fontSize: "16px",
-              fontWeight: 500,
-              whiteSpace: "nowrap",
-              pointerEvents: "none",
-              userSelect: "none",
-              textShadow: "0 0 8px rgba(0,0,0,0.9), 0 0 20px rgba(0,0,0,0.5)",
-            }}
+          <Html
+            key={`prox-${node.id}`}
+            position={[node.x, node.y + getNodeRadius(node) + 3, node.z]}
+            center
+            distanceFactor={80}
           >
-            {node.name}
-          </div>
-        </Html>
-      ))}
+            <div
+              style={{
+                color: "rgba(255,255,255,0.95)",
+                fontSize: "16px",
+                fontWeight: 500,
+                whiteSpace: "nowrap",
+                pointerEvents: "none",
+                userSelect: "none",
+                textShadow:
+                  "0 0 8px rgba(0,0,0,0.9), 0 0 20px rgba(0,0,0,0.5)",
+              }}
+            >
+              {node.name}
+            </div>
+          </Html>
+        ))}
       {/* Hover label — only rendered for the hovered node, never for all nodes (D-11) */}
       {hoveredNode && (
         <Html
