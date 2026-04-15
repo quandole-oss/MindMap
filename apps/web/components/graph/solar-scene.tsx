@@ -16,6 +16,12 @@ interface SolarSceneProps {
   onClusterClick?: (clusterId: number) => void;
   highlightNodeId?: string | null;
   reframeTrigger?: number;
+  /** Set of node IDs that should animate in (scale from 0) */
+  newNodeIds?: Set<string>;
+  /** Whether to play the entry animation sequence */
+  animateEntry?: boolean;
+  /** Called when the entry animation sequence completes */
+  onAnimationComplete?: () => void;
 }
 
 /**
@@ -42,6 +48,9 @@ export function SolarScene({
   onClusterClick,
   highlightNodeId,
   reframeTrigger,
+  newNodeIds,
+  animateEntry,
+  onAnimationComplete,
 }: SolarSceneProps) {
   const layoutNodes = useGraphLayout(nodes, edges);
   const [hoveredNode, setHoveredNode] = useState<LayoutNode | null>(null);
@@ -351,6 +360,7 @@ export function SolarScene({
         onNodeHover={setHoveredNode}
         highlightNodeId={highlightNodeId}
         meshRef={meshRef}
+        newNodeIds={newNodeIds}
       />
       <SolarEdges layoutNodes={layoutNodes} edges={edges} />
       {/* Nebula domain labels — font scales with cluster size */}

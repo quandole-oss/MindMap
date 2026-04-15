@@ -38,6 +38,12 @@ interface KnowledgeGraphProps {
   onClusterClick?: (clusterId: number) => void;
   highlightNodeId?: string | null;
   reframeTrigger?: number;
+  /** Set of node IDs that should animate in (scale from 0) */
+  newNodeIds?: Set<string>;
+  /** Whether to play the entry animation sequence */
+  animateEntry?: boolean;
+  /** Called when the entry animation sequence completes */
+  onAnimationComplete?: () => void;
 }
 
 export function KnowledgeGraph(props: KnowledgeGraphProps) {

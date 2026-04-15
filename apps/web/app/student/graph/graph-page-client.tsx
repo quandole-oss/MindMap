@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { KnowledgeGraph } from "@/components/graph/knowledge-graph";
 import { NodeDetailPanel } from "@/components/graph/node-detail-panel";
@@ -27,6 +27,14 @@ interface GraphPageClientProps {
 export function GraphPageClient({ nodes, edges, bridgeData }: GraphPageClientProps) {
   const searchParams = useSearchParams();
   const initialNodeId = searchParams.get("node");
+
+  // D-03: Parse animation URL params
+  const animateEntry = searchParams.get("animate") === "true";
+  const newNodeIdsParam = searchParams.get("newNodes");
+  const newNodeIds = useMemo(() => {
+    if (!animateEntry || !newNodeIdsParam) return undefined;
+    return new Set(newNodeIdsParam.split(",").filter(Boolean));
+  }, [animateEntry, newNodeIdsParam]);
 
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(initialNodeId);
   const [highlightNodeId, setHighlightNodeId] = useState<string | null>(initialNodeId);
@@ -110,6 +118,8 @@ export function GraphPageClient({ nodes, edges, bridgeData }: GraphPageClientPro
         onClusterClick={setActiveCluster}
         highlightNodeId={highlightNodeId}
         reframeTrigger={reframe}
+        newNodeIds={newNodeIds}
+        animateEntry={animateEntry}
       />
       <GraphFilterBar
         availableDomains={availableDomains}

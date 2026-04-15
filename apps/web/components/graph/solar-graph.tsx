@@ -14,6 +14,12 @@ interface SolarGraphProps {
   onClusterClick?: (clusterId: number) => void;
   highlightNodeId?: string | null;
   reframeTrigger?: number;
+  /** Set of node IDs that should animate in (scale from 0) */
+  newNodeIds?: Set<string>;
+  /** Whether to play the entry animation sequence */
+  animateEntry?: boolean;
+  /** Called when the entry animation sequence completes */
+  onAnimationComplete?: () => void;
 }
 
 /**
@@ -39,6 +45,9 @@ export function SolarGraph({
   onClusterClick,
   highlightNodeId,
   reframeTrigger,
+  newNodeIds,
+  animateEntry,
+  onAnimationComplete,
 }: SolarGraphProps) {
   return (
     <div
@@ -58,6 +67,9 @@ export function SolarGraph({
             onClusterClick={onClusterClick}
             highlightNodeId={highlightNodeId}
             reframeTrigger={reframeTrigger}
+            newNodeIds={newNodeIds}
+            animateEntry={animateEntry}
+            onAnimationComplete={onAnimationComplete}
           />
         </Suspense>
         {/* makeDefault exposes controls to useThree() in child components */}

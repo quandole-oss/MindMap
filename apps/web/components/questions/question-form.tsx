@@ -65,44 +65,77 @@ export function QuestionForm({
   const [concepts, setConcepts] = useState<ConceptLink[]>(todayConcepts);
   const [diagnosticSession, setDiagnosticSession] = useState<DiagnosticSessionInfo | null>(todayDiagnostic);
   const [pollingDiagnostic, setPollingDiagnostic] = useState(false);
+  // D-02: Transition state for auto-navigate flow
+  const [transitioning, setTransitioning] = useState(false);
 
   const { completion, complete, isLoading, error } = useCompletion({
     api: "/api/ask",
     streamProtocol: "text",
     onFinish: async () => {
-      toast("New concepts added to your graph");
       setSubmitted(true);
       setPendingQuestion(null);
-      // Fetch newly created concepts for the graph link
-      try {
-        const { getTodayQuestionConcepts } = await import("@/actions/questions");
-        const newConcepts = await getTodayQuestionConcepts();
-        if (newConcepts.length > 0) setConcepts(newConcepts);
-      } catch {
-        // Non-critical — button will still link to graph without a specific node
-      }
-      // Poll for diagnostic session (server creates it async after stream ends)
-      setPollingDiagnostic(true);
-      try {
-        const { getActiveSession } = await import("@/actions/diagnostic");
-        for (let i = 0; i < 3; i++) {
-          await new Promise((r) => setTimeout(r, 2000));
-          const session = await getActiveSession();
-          if (session) {
-            setDiagnosticSession({
-              id: session.id,
-              stage: session.stage,
-              outcome: session.outcome,
-              misconceptionName: session.misconceptionName,
-            });
-            break;
+      setTransitioning(true);
+
+      // D-06: Start concept polling and transition delay in parallel
+      let foundConcepts: ConceptLink[] = [];
+
+      const pollPromise = (async () => {
+        try {
+          const { getTodayQuestionConcepts } = await import("@/actions/questions");
+          // D-04: Poll every 2s, max 5 attempts (D-05)
+          for (let i = 0; i < 5; i++) {
+            const newConcepts = await getTodayQuestionConcepts();
+            if (newConcepts.length > 0) {
+              foundConcepts = newConcepts;
+              setConcepts(newConcepts);
+              break;
+            }
+            if (i < 4) await new Promise((r) => setTimeout(r, 2000));
           }
+        } catch {
+          // Non-critical — navigate without animation
         }
-      } catch {
-        // Non-critical — diagnostic is a bonus feature
-      } finally {
-        setPollingDiagnostic(false);
+      })();
+
+      // D-01: Minimum 2s delay for transition message visibility
+      const delayPromise = new Promise((r) => setTimeout(r, 2000));
+
+      // Wait for both polling and delay
+      await Promise.all([pollPromise, delayPromise]);
+
+      // D-03: Navigate with animation params
+      if (foundConcepts.length > 0) {
+        const nodeIds = foundConcepts.map((c) => c.id).join(",");
+        router.push(`/student/graph?animate=true&newNodes=${nodeIds}`);
+      } else {
+        // D-05: Silent fallback — navigate without animation
+        router.push("/student/graph");
       }
+
+      // Poll for diagnostic session in background (non-blocking)
+      setPollingDiagnostic(true);
+      (async () => {
+        try {
+          const { getActiveSession } = await import("@/actions/diagnostic");
+          for (let i = 0; i < 3; i++) {
+            await new Promise((r) => setTimeout(r, 2000));
+            const session = await getActiveSession();
+            if (session) {
+              setDiagnosticSession({
+                id: session.id,
+                stage: session.stage,
+                outcome: session.outcome,
+                misconceptionName: session.misconceptionName,
+              });
+              break;
+            }
+          }
+        } catch {
+          // Non-critical — diagnostic is a bonus feature
+        } finally {
+          setPollingDiagnostic(false);
+        }
+      })();
     },
     onError: () => {
       // Toast is secondary — the inline error UI is the primary feedback
@@ -166,8 +199,28 @@ export function QuestionForm({
           <AnswerDisplay markdown={displayAnswer} isStreaming={false} />
         )}
 
-        {/* Explore on Graph button */}
-        {displayAnswer && (
+        {/* D-02: Transition message during auto-navigate */}
+        {transitioning && (
+          <div className="bg-muted rounded-xl p-4" role="status" aria-live="polite">
+            <div className="flex items-center justify-center gap-2">
+              <Sparkles className="size-4 text-muted-foreground" />
+              <p className="text-[14px] text-muted-foreground">
+                Your graph is growing...
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* D-04: Concept readiness polling indicator */}
+        {transitioning && concepts.length === 0 && (
+          <div className="flex items-center justify-center gap-2 py-2" aria-live="polite">
+            <Loader2 className="size-3.5 animate-spin text-white/40" />
+            <p className="text-[13px] text-white/40">Preparing your graph...</p>
+          </div>
+        )}
+
+        {/* Explore on Graph button (D-01: remains as fallback) */}
+        {displayAnswer && !transitioning && (
           <Button
             variant="outline"
             className="w-full h-11 border-white/10 bg-white/5 hover:bg-white/10 text-white gap-2"
@@ -182,7 +235,7 @@ export function QuestionForm({
         )}
 
         {/* Diagnostic CTA — shown when a misconception session exists */}
-        {diagnosticSession && (
+        {diagnosticSession && !transitioning && (
           <Button
             variant="outline"
             className="w-full h-11 border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-amber-200 gap-2"
@@ -196,7 +249,7 @@ export function QuestionForm({
         )}
 
         {/* Polling indicator while checking for diagnostic session */}
-        {pollingDiagnostic && !diagnosticSession && (
+        {pollingDiagnostic && !diagnosticSession && !transitioning && (
           <div className="flex items-center justify-center gap-2 py-2">
             <Loader2 className="size-3.5 animate-spin text-white/40" />
             <p className="text-[13px] text-white/40">Analyzing your understanding...</p>
@@ -268,8 +321,28 @@ export function QuestionForm({
             </div>
           )}
 
-          {/* Explore on Graph — shown after streaming completes */}
-          {submitted && !isLoading && (
+          {/* D-02: Transition message during auto-navigate */}
+          {transitioning && (
+            <div className="bg-muted rounded-xl p-4" role="status" aria-live="polite">
+              <div className="flex items-center justify-center gap-2">
+                <Sparkles className="size-4 text-muted-foreground" />
+                <p className="text-[14px] text-muted-foreground">
+                  Your graph is growing...
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* D-04: Concept readiness polling indicator */}
+          {transitioning && concepts.length === 0 && (
+            <div className="flex items-center justify-center gap-2 py-2" aria-live="polite">
+              <Loader2 className="size-3.5 animate-spin text-white/40" />
+              <p className="text-[13px] text-white/40">Preparing your graph...</p>
+            </div>
+          )}
+
+          {/* Explore on Graph — shown after streaming completes (D-01: fallback) */}
+          {submitted && !isLoading && !transitioning && (
             <Button
               variant="outline"
               className="w-full h-11 border-white/10 bg-white/5 hover:bg-white/10 text-white gap-2"
@@ -284,7 +357,7 @@ export function QuestionForm({
           )}
 
           {/* Diagnostic CTA — shown after streaming when a session is found */}
-          {submitted && !isLoading && diagnosticSession && (
+          {submitted && !isLoading && diagnosticSession && !transitioning && (
             <Button
               variant="outline"
               className="w-full h-11 border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-amber-200 gap-2"
@@ -296,7 +369,7 @@ export function QuestionForm({
           )}
 
           {/* Polling indicator */}
-          {pollingDiagnostic && !diagnosticSession && (
+          {pollingDiagnostic && !diagnosticSession && !transitioning && (
             <div className="flex items-center justify-center gap-2 py-2">
               <Loader2 className="size-3.5 animate-spin text-white/40" />
               <p className="text-[13px] text-white/40">Analyzing your understanding...</p>
