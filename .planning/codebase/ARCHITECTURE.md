@@ -1,255 +1,355 @@
 # Architecture
 
-**Analysis Date:** 2026-04-09
+**Analysis Date:** 2026-04-14
 
 ## Pattern Overview
 
-**Overall:** Full-stack monorepo with layered service architecture: Next.js app wrapping domain-specific packages communicating via TypeScript interfaces and async message passing. Knowledge graph owned by database layer (Drizzle ORM), pedagogical state machine (enrich/diagnose routing) owned by middleware layer (`@mindmap/router`), LLM orchestration isolated in `@mindmap/llm`, misconception library version-controlled in YAML in `@mindmap/misconceptions`.
+**Overall:** Full-stack monorepo with layered service architecture. A single Next.js 15 App Router application (`apps/web`) depends on four domain-specific TypeScript packages (`@mindmap/db`, `@mindmap/llm`, `@mindmap/misconceptions`, `@mindmap/router`). Server Actions and Route Handlers form the RPC surface between client and server. LLM orchestration is isolated behind an adapter interface. Knowledge graph state lives in PostgreSQL with pgvector for semantic deduplication. Misconceptions are version-controlled YAML with Zod validation.
 
 **Key Characteristics:**
-- Monorepo with Turborepo orchestration across 4 packages + 1 app
-- Strict separation of concerns: each package exports a public API surface
-- Server-centric data flow: Server Actions in Next.js, streaming responses via Vercel AI SDK
-- Type safety across boundaries: Zod schemas validate at every trust boundary (client → server, LLM outputs, database reads)
-- No global client state: React `useState` for transient UI only (graph zoom, selected node); database is source of truth
+- Turborepo monorepo with 4 packages + 1 app, pnpm workspaces
+- Server-centric: all business logic in Server Actions or Route Handlers; client components own only transient UI state
+- Type safety across all boundaries: Zod schemas validate LLM outputs, API inputs, YAML library entries, and form submissions
+- Two LLM providers: Anthropic Claude (text generation/diagnostics) and OpenAI (embeddings only)
+- Streaming responses via Vercel AI SDK for both enrichment and diagnostic conversations
+- No global client state management library; React `useState`/`useReducer` for component-local state only
+
+## Package/Module Boundaries
+
+| Package | Responsibility | Public API | Depends On |
+|---------|---------------|------------|------------|
+| `@mindmap/db` | PostgreSQL schema (Drizzle), connection pool, typed query helpers | `db`, `schema`, `findSimilarConcepts()`, `createConceptEdges()`, `getEdgeCoOccurrences()`, `deleteExpiredUsers()` | `drizzle-orm`, `pg`, `pgvector`, `@neondatabase/serverless` |
+| `@mindmap/llm` | LLM adapter factory, prompt builders, concept extraction, embedding generation | `createLLMAdapter()`, `extractConcepts()`, `generateEmbedding()`, `buildEnrichSystemPrompt()`, `buildProbeSystemPrompt()`, `buildConfrontSystemPrompt()`, `evaluateResolution()`, `generateLessonPlan()`, `analyzeStudentThemes()` | `ai` (Vercel AI SDK), `@ai-sdk/anthropic`, `@ai-sdk/openai`, `zod` |
+| `@mindmap/misconceptions` | YAML misconception library loader, Zod validation, in-memory cache | `loadLibrary()`, `loadThemes()`, `getMisconceptionsByDomainAndBand()`, `getMisconceptionById()`, `getMisconceptionsByTheme()`, `getThemeById()` | `js-yaml`, `zod` |
+| `@mindmap/router` | Concept routing decision engine (enrich vs diagnose) | `routeQuestion()`, `semanticFallback()`, `gradeLevelToGradeBand()` | `@mindmap/misconceptions`, `ai`, `zod` |
+| `apps/web` | Next.js application: pages, API routes, Server Actions, components | HTTP endpoints, rendered pages | All four packages above |
+
+**Dependency graph (strictly unidirectional):**
+```
+apps/web → @mindmap/db
+apps/web → @mindmap/llm
+apps/web → @mindmap/misconceptions
+apps/web → @mindmap/router → @mindmap/misconceptions
+```
+
+The `@mindmap/db` package has NO dependency on `@mindmap/llm`. The `LessonPlanJson` type in `packages/db/src/schema/theme-lesson-plans.ts` is a structural mirror declared locally to avoid a db-to-llm dependency.
 
 ## Layers
 
 **Presentation (Next.js App Router):**
-- Purpose: Server-rendered pages, streaming responses, client form handling
-- Location: `/apps/web/app`
+- Purpose: Server-rendered pages, streaming responses, client-side form handling
+- Location: `apps/web/app/`
 - Contains: Route handlers (`route.ts`), layout components (`layout.tsx`), page components (`page.tsx`), client components
 - Depends on: All four packages + `lib/auth`, `lib/graph`, `actions/*`
 - Used by: Browser clients (students, teachers)
-- Boundary: Middleware (`middleware.ts`) enforces auth redirect for `/student/*` and `/teacher/*`
+- Boundary: Middleware (`apps/web/middleware.ts`) enforces auth redirect for `/student/*` and `/teacher/*` via NextAuth edge-safe config
 
-**Server Actions & API Endpoints:**
-- Purpose: Secure RPC layer for client-server communication
-- Location: `/apps/web/actions/*.ts` (Server Actions) and `/apps/web/app/api/**/*.ts` (Route Handlers)
-- Contains: Database queries, LLM calls, business logic not exposed to client
-- Depends on: Database, LLM, Router packages; auth context from session
-- Used by: Client components via `useAction` hook or `fetch()`
-- Boundary: `"use server"` pragma enforces server-only execution; auth checks at function entry
+**Server Actions:**
+- Purpose: Secure RPC for data-reading operations callable from Server Components or client components
+- Location: `apps/web/actions/*.ts`
+- Files: `auth.ts`, `questions.ts`, `graph.ts`, `diagnostic.ts`, `dashboard.ts`, `class.ts`, `themes.ts`
+- Pattern: Every function starts with `auth()` session check; userId always from session, never from client params
+- Used by: Page components (Server Components via `await`) and client components (via import)
+
+**API Route Handlers:**
+- Purpose: Streaming LLM interactions that require Vercel AI SDK stream response format
+- Location: `apps/web/app/api/`
+- Endpoints: `POST /api/ask` (question enrichment), `POST /api/diagnose` (diagnostic conversation), `GET /api/cron/cleanup` (COPPA TTL)
+- Pattern: Route Handlers for streaming; Server Actions for non-streaming data operations
 
 **Database & Query Layer:**
-- Purpose: PostgreSQL schema definition, Drizzle ORM setup, typed query helpers
-- Location: `/packages/db/src/`
-- Contains: Drizzle schema (auth, questions, concepts, edges), query builders, seed data
-- Depends on: `drizzle-orm`, `pg`, `pgvector`, `@neondatabase/serverless`
-- Used by: All server code (API routes, Server Actions, edge endpoints)
-- Boundary: `db` singleton exported from `/packages/db/src/index.ts`, schema types drive all queries
+- Purpose: PostgreSQL schema, Drizzle ORM, typed query helpers
+- Location: `packages/db/src/`
+- Schema files: `schema/auth.ts`, `schema/questions.ts`, `schema/classes.ts`, `schema/diagnostic-sessions.ts`, `schema/theme-lesson-plans.ts`
+- Query helpers: `queries/concepts.ts` (pgvector ANN search, edge creation, co-occurrence), `queries/cleanup.ts` (COPPA TTL)
+- Connection: `drizzle(new Pool({ connectionString: DATABASE_URL }), { schema })`
+- Exports: `db` singleton, `schema` namespace, query functions
 
 **LLM Orchestration:**
-- Purpose: Anthropic Claude integration, prompt engineering, concept extraction, misconception diagnosis
-- Location: `/packages/llm/src/`
-- Contains: Adapter factory, Anthropic adapter, prompt builders (enrich/probe/confront/resolve), extraction schema
-- Depends on: `ai` (Vercel AI SDK), `@ai-sdk/anthropic`, Zod
-- Used by: API routes (`/api/ask`, `/api/diagnose`) and Router package for semantic fallback
-- Boundary: Typed exports of `extractConcepts()`, `buildProbeSystemPrompt()`, etc.; adapters are swappable
+- Purpose: Anthropic Claude integration, prompt engineering, concept extraction, embedding generation
+- Location: `packages/llm/src/`
+- Adapter pattern: `adapters/factory.ts` returns `AnthropicAdapter` (currently the only provider)
+- Prompt builders: `prompts/enrich.ts`, `prompts/extract.ts`, `prompts/disambiguate.ts`, `prompts/diagnose-probe.ts`, `prompts/diagnose-confront.ts`, `prompts/diagnose-resolve.ts`, `prompts/generate-lesson-plan.ts`, `prompts/analyze-student-themes.ts`
+- Embeddings: `embeddings.ts` uses OpenAI `text-embedding-3-small` (1536 dimensions) via Vercel AI SDK
+- Model: `claude-sonnet-4-20250514` hardcoded in `adapters/anthropic.ts`
 
 **Routing & Decision Engine:**
-- Purpose: Route extracted concepts to enrich or diagnose mode; semantic fallback for LLM disambiguation
-- Location: `/packages/router/src/`
-- Contains: String-match router (`routeQuestion`), semantic fallback (`semanticFallback`), grade-to-band converter
-- Depends on: Misconceptions package for library queries, AI SDK for LLM calls
-- Used by: POST `/api/ask` to decide primary misconception to diagnose
-- Boundary: Pure functions + deterministic decision export; stateless except for library caching
+- Purpose: Route concepts to enrich or diagnose mode
+- Location: `packages/router/src/`
+- Two-stage routing: string matching (`routeQuestion()`) then LLM semantic fallback (`semanticFallback()`)
+- Stateless: receives model instance from caller, does not create its own adapter
+- Confidence threshold: semantic matches require > 0.6 confidence
 
 **Misconceptions Library:**
-- Purpose: Version-controlled YAML registry of student misconceptions, Zod validation
-- Location: `/packages/misconceptions/src/` and `/packages/misconceptions/library/`
-- Contains: Loader (filesystem → YAML → Zod validation), schema definitions, in-memory cache
-- Depends on: `js-yaml`, Zod
-- Used by: Router (string/semantic matching), API endpoints (probe/confront/resolve lookups)
-- Boundary: Singleton loader with cache reset function; misconceptions keyed by domain + grade band + ID
+- Purpose: Version-controlled YAML registry of K-12 misconceptions with themes
+- Location: `packages/misconceptions/library/` (YAML) and `packages/misconceptions/src/` (loader/schema)
+- Domains covered: physics, biology, math, history
+- Theme system: `library/themes.yaml` defines root-cause themes; misconceptions link to themes via `themes` array field
+- Caching: singleton loader with `resetLibraryCache()` / `resetThemeCache()` for testing
 
 **Component & UI Layer:**
-- Purpose: React UI components, form handling, graph visualization
-- Location: `/apps/web/components/`
-- Contains: shadcn/ui primitives, domain components (auth, dashboard, graph, diagnostic), layout
-- Depends on: React 19, Tailwind CSS v4, react-hook-form, D3.js, Three.js, sonner toast
-- Used by: Page components in Next.js App Router
-- Boundary: Client components (`"use client"`) for interactivity; Server Components where possible for data fetching
+- Purpose: React components organized by feature domain
+- Location: `apps/web/components/`
+- Subdirectories: `auth/`, `class/`, `dashboard/`, `diagnostic/`, `graph/`, `layout/`, `questions/`, `ui/`
+- Graph rendering: D3.js 2D force simulation in `graph/knowledge-graph.tsx`, Three.js 3D solar system in `graph/solar-graph.tsx` / `graph/solar-scene.tsx`
+- UI primitives: shadcn/ui in `ui/` (button, card, input, form, etc.)
+
+**Utility Layer:**
+- Purpose: Shared helpers, type definitions, graph algorithms
+- Location: `apps/web/lib/`
+- Auth: `lib/auth.ts` (NextAuth instance), `lib/auth.config.ts` (edge-safe config)
+- Graph: `lib/graph/centrality.ts` (Brandes betweenness), `lib/graph/clusters.ts`, `lib/graph/domain-colors.ts`
+- Dashboard: `lib/dashboard-types.ts`, `lib/theme-aggregation.ts`, `lib/theme-cache-hash.ts`
 
 ## Data Flow
 
-**A. Student Asks a Question (Enrich Path):**
+**A. Student Asks a Question (Enrich + Concept Extraction):**
 
-1. Student submits question via `QuestionForm` (client component)
-2. Form posts to `/api/ask` (Route Handler, Server Action wrapper)
-3. Route Handler validates input with Zod, checks one-per-day constraint, extracts userId from session
-4. LLM calls Claude via Vercel AI SDK with `buildEnrichSystemPrompt(gradeLevel)`
-5. Claude streams response; on finish callback:
-   - Insert Question record in DB
-   - Extract concepts via `extractConcepts(question, response)` (LLM call with Zod schema)
-   - Route each concept: `routeQuestion(conceptName, gradeLevel, domain)` (string match + semantic fallback)
-   - For each concept: generate embedding, search pgvector for duplicates, merge or create new
-   - Create `concept_questions` join records
-   - Create `curiosity_link` edges between all concepts from this question
-   - If diagnose mode → create `diagnosticSessions` record at stage "probe"
-6. Response streams to client; client shows AI answer
+1. Student submits question via `QuestionForm` client component
+2. Client POSTs to `/api/ask` (Route Handler)
+3. Route Handler: Zod validates input, checks auth via `auth()`, enforces one-per-day UTC constraint
+4. Route Handler: checks `ANTHROPIC_API_KEY` exists (503 if missing)
+5. Route Handler: gets student grade level from most recent class enrollment
+6. Route Handler: calls `streamText()` with `buildEnrichSystemPrompt(gradeLevel)` — streams response to client
+7. `onFinish` callback (server-side, after stream completes):
+   a. Insert Question record in DB with `routingMode: "enrich"`
+   b. Call `extractConcepts(question, aiResponse)` — LLM extracts 2-4 concepts with domains using `generateText()` + Zod schema output
+   c. Route each concept: `routeQuestion(conceptName, gradeLevel, domain)` — string match against misconception library
+   d. Collect unmatched concepts → batch LLM `semanticFallback()` — single call for all unmatched
+   e. Merge string matches + semantic matches; pick highest-confidence diagnose decision
+   f. Update question record with final routing mode and misconception ID
+   g. For each concept: generate 1536-dim OpenAI embedding → pgvector ANN search for duplicates → auto-merge (>0.92 similarity), LLM disambiguate (0.85-0.92), or create new (<0.85)
+   h. Create `concept_questions` join records
+   i. Create `curiosity_link` edges between all concepts from this question
+   j. If diagnose mode: validate misconception ID against library, set concept status to "misconception", create `diagnosticSessions` record at stage "probe"
 
-**B. Student Enters Diagnostic Flow (Diagnose Path):**
+**B. Diagnostic Conversation (Probe → Confront → Resolve):**
 
-1. Diagnostic session created in `/api/ask` onFinish (server-side, cannot be faked by client)
-2. Session state machine in `/api/diagnose`:
-   - **probe stage**: LLM asks probe question from misconception library
-   - **classify stage** (transient): LLM reads probe response, decides if misconception is evident
-   - **confront stage**: LLM presents confrontation scenario to trigger cognitive conflict
-   - **resolve stage** (terminal): LLM evaluates if misconception was resolved; concept status updated
-3. Each stage message (role, content) persisted in `diagnosticSessions.messages` array (JSONB)
-4. Client polls `/api/diagnose` with sessionId; server loads session, streams next stage prompt
-5. On final stage completion, concept status changes: `misconception` → `healthy` (resolved) or stays `misconception`
+1. Session created server-side in `/api/ask` `onFinish` (cannot be triggered by client)
+2. Client sends POST to `/api/diagnose` with `{ sessionId, message }`
+3. Server loads session with ownership check (`userId` from auth, not from request)
+4. State machine stages:
+   - **probe** (no messages): Build probe system prompt from misconception library's `probe_questions[0]`, stream initial probe question to student
+   - **probe/classify** (with student response): Build confrontation prompt using `misconceptionEntry.confrontation_scenarios[0]`, transition to `classify` then `confront`, stream confrontation
+   - **confront** (with student final response): Call `evaluateResolution()` — LLM evaluates if misconception was resolved, update concept status (`misconception` → `healthy` if resolved), build resolve reveal message, stream final response
+   - **resolve** (terminal): Return JSON `{ stage, outcome, misconceptionName }` — no more streaming
+5. Each stage persists full message history to `diagnosticSessions.messages` (JSONB array)
+6. `convertToModelMessages()` (AI SDK v6) is always awaited — it is async
 
-**C. Teacher Views Dashboard:**
+**C. Teacher Dashboard:**
 
 1. Teacher navigates to `/teacher/classes/[classId]/dashboard`
-2. Server Action `getDashboardData()` aggregates:
-   - Class roster (students, enrollment dates, grade levels)
-   - Student query counts (questions per day, streaks)
-   - Misconception clusters (frequency by domain, by student)
-   - Curiosity patterns (most common concepts by grade band)
-3. Dashboard renders charts (D3-powered bar charts, heatmaps) using aggregated data
-4. Data refreshes on page load; no real-time subscriptions
+2. Server Action `getClassDashboardData(classId)` in `actions/dashboard.ts`:
+   - Auth + class ownership check (teacher must own class)
+   - Batch fetch: enrollments → all concepts → all edges → all questions → all diagnostic sessions (no N+1 queries)
+   - Compute per-student: streak, breadth score, inactivity status, mini graph data
+   - Aggregate: concept heatmap (by name, cross-student), misconception clusters (by misconception ID), theme clusters (via `buildThemeClusters()`)
+3. Theme clusters computed by JS-side Map join: project diagnostic_sessions through misconception library's `themes` field — NO extra DB query, NO theme column on sessions
+4. Dashboard renders tabs: Overview, Students, Concepts, Misconceptions, Themes
 
-**D. Student Explores Knowledge Graph:**
+**D. Theme Lesson Plan Generation:**
+
+1. Teacher clicks "Generate Lesson Plan" for a theme in `actions/themes.ts`
+2. Server computes `dataHash` (SHA-256 of misconception counts per theme)
+3. Cache check: look for existing `theme_lesson_plans` row with matching `(classId, themeId, dataHash)`, ordered by `generatedAt DESC`
+4. Cache miss: call `generateLessonPlan()` from `@mindmap/llm`, INSERT new row (never UPDATE — append-only history)
+5. Force regenerate: skip cache lookup, always INSERT new row
+
+**E. Student Knowledge Graph:**
 
 1. Student navigates to `/student/graph`
-2. Server Action `getGraphData()` queries:
-   - All concepts for userId with status, embedding, visit count
-   - All concept_edges for userId with co-occurrence weight (derived from concept_questions joins)
-   - Bridge connection data (semantically similar concept pairs across different curiosity contexts)
-3. `GraphPageClient` (client component) receives nodes + edges, passes to D3.js force simulation
-4. D3 renders 4 node types (healthy=teal, unprobed=white, misconception=coral, bridge=gold)
-5. Client interactions (drag, hover, zoom) handled by D3; no server calls during interaction
+2. Server Action `getGraphData()` in `actions/graph.ts`:
+   - Fetch all concepts for userId (name, domain, status, visitCount)
+   - Fetch all edges (source, target, type) where either endpoint belongs to user
+   - Compute degree, betweenness centrality (Brandes algorithm in `lib/graph/centrality.ts`), bridge detection
+   - Compute edge weights: 30% co-occurrence + 50% endpoint importance + 20% edge type bonus
+   - Compute node importance: 35% degree + 30% betweenness + 25% visitCount + 10% bridge bonus
+3. Client renders D3.js force-directed graph (2D) or Three.js 3D solar system
+4. Node health states: `unprobed` (white/default), `healthy` (teal), `misconception` (coral), bridge (gold)
+5. LLM-powered node search via `searchNodes()` — sends concept names to Claude for fuzzy matching
 
 **State Management:**
-- Database: Canonical source for knowledge graph, questions, sessions, user roles
-- Session: Auth state in NextAuth v5 session cookie
-- Component state: Transient UI state (selected node, graph zoom, form input) in React hooks only
-- No Redux, Zustand, or context API for domain state
+- **Server state:** PostgreSQL is canonical source for all domain data (questions, concepts, edges, sessions, classes)
+- **Client state:** React `useState` for transient UI (selected node, graph zoom, form inputs, tab selection)
+- **Session state:** NextAuth v5 JWT session cookie — user ID and role stored in JWT via callbacks
+- **Caching:** Misconception YAML loaded once per process, cached in module-level variable; lesson plan cache in DB with data hash
 
 ## Key Abstractions
 
-**LLMAdapter:**
-- Purpose: Abstract Claude client behind interface; factory enables provider swapping
-- Examples: `/packages/llm/src/adapters/anthropic.ts`, factory in `/packages/llm/src/adapters/factory.ts`
-- Pattern: Factory function returns adapter instance; adapter has `getModel()` and `getModelId()` methods
+**LLMAdapter (Factory Pattern):**
+- Purpose: Abstract LLM provider behind a common interface
+- Factory: `packages/llm/src/adapters/factory.ts` — `createLLMAdapter()` reads `LLM_PROVIDER` env var
+- Implementation: `packages/llm/src/adapters/anthropic.ts` — wraps `@ai-sdk/anthropic` provider
+- Interface: `getModel()` returns Vercel AI SDK model instance; `getModelId()` returns model string
+- Extension: Add new adapter file, register in factory switch statement
 
-**RoutingDecision:**
-- Purpose: Type-safe enum for concept routing outcome
-- Examples: `{ mode: "enrich" }` or `{ mode: "diagnose"; misconceptionId: string; probability: number }`
-- Usage: Returned by `routeQuestion()`, merged with semantic matches, used to create diagnostic sessions
+**RoutingDecision (Discriminated Union):**
+- Definition: `packages/router/src/index.ts`
+- Shape: `{ mode: "enrich" }` | `{ mode: "diagnose"; misconceptionId: string; probability: number }`
+- Used in: `/api/ask` onFinish to determine whether to create a diagnostic session
 
 **DiagnosticSession State Machine:**
-- Purpose: Enforce valid stage transitions (probe → classify → confront → resolve)
-- States: `probe` (initial), `classify` (transient), `confront`, `resolve` (terminal)
-- Pattern: Server-side stage validation in `/api/diagnose` before proceeding; stage updates persisted to DB
+- States: `probe` → `classify` (transient) → `confront` → `resolve` (terminal)
+- Outcomes: `resolved` | `unresolved` | `incomplete`
+- Persistence: `stage` and `outcome` columns on `diagnostic_sessions` table; `messages` as JSONB array
+- Transitions: Controlled exclusively by `/api/diagnose` Route Handler; client cannot manipulate stage
 
-**ConceptDeduplication Pipeline (GRPH-02):**
-- Purpose: Prevent concept name duplicates while allowing semantic equivalence
-- Stages: 
-  1. Generate embedding for extracted concept name via OpenAI
-  2. pgvector HNSW ANN search for similar existing concepts (cosine similarity >= 0.85)
-  3. If similarity > 0.92 → auto-merge (increment visitCount)
-  4. If 0.85-0.92 → LLM disambiguation (ask if names refer to same concept)
-  5. If no match or LLM says different → create new concept with embedding
-- Pattern: Run in POST `/api/ask` onFinish; single concept per concept_questions join
+**Concept Deduplication Pipeline (GRPH-02):**
+- Location: `apps/web/app/api/ask/route.ts` lines 183-295
+- Three-tier decision:
+  1. Similarity > 0.92 → auto-merge (increment visitCount on existing concept)
+  2. Similarity 0.85-0.92 → LLM disambiguation via `disambiguateConcept()`
+  3. Similarity < 0.85 or no match → create new concept with embedding
+- Fallback: If embedding generation fails entirely, insert concept without embedding
 
-**Misconception Library Cache:**
-- Purpose: Load YAML once, validate against Zod, cache in memory
-- Examples: `/packages/misconceptions/src/loader.ts`
-- Pattern: Singleton with `resetLibraryCache()` for testing; loaded from filesystem at startup or on-demand
+**Theme Aggregation (THME-03):**
+- Location: `apps/web/lib/theme-aggregation.ts`
+- Pattern: Pure JS functions — no DB access, no auth imports — testable under Vitest
+- Projection: Maps diagnostic_sessions rows through misconception library's `themes` field at query time
+- No denormalized theme column on sessions table
+
+**Lesson Plan Cache (LSPL-02):**
+- Table: `theme_lesson_plans` in `packages/db/src/schema/theme-lesson-plans.ts`
+- Cache key: `(classId, themeId, dataHash)` — dataHash is SHA-256 of misconception counts
+- Append-only: never UPDATE rows; force regenerate creates new row with same cache key
+- Index: non-unique (allows multiple rows per cache key for history)
 
 ## Entry Points
 
-**POST /api/ask:**
-- Location: `/apps/web/app/api/ask/route.ts`
-- Triggers: Student question submission from QuestionForm
-- Responsibilities: Stream AI enrichment response, extract concepts, route to enrich/diagnose, create diagnostic session if needed, handle embedding/deduplication
+**POST /api/ask** — Question Enrichment:
+- Location: `apps/web/app/api/ask/route.ts`
+- Triggers: Student question submission from `QuestionForm`
+- Auth: Session check, userId from `auth()`
+- Responsibilities: Stream AI response, extract concepts, route to enrich/diagnose, embed/deduplicate concepts, create edges, optionally create diagnostic session
 
-**POST /api/diagnose:**
-- Location: `/apps/web/app/api/diagnose/route.ts`
-- Triggers: Diagnostic session message or stage advancement
-- Responsibilities: Load session with ownership check, execute stage-appropriate system prompt, stream response, persist messages and stage transitions
+**POST /api/diagnose** — Diagnostic Conversation:
+- Location: `apps/web/app/api/diagnose/route.ts`
+- Triggers: Diagnostic chat messages from `DiagnosticChat` component
+- Auth: Session check, session ownership verification
+- Responsibilities: Execute stage-appropriate prompt, stream response, persist messages, transition stages, evaluate resolution
 
-**GET /student/graph:**
-- Location: `/apps/web/app/student/graph/page.tsx`
-- Triggers: Student navigation to graph view
-- Responsibilities: Fetch graph data (nodes, edges, bridge connections), render via D3.js
+**GET /api/cron/cleanup** — COPPA TTL Enforcement:
+- Location: `apps/web/app/api/cron/cleanup/route.ts`
+- Triggers: Vercel Cron or system cron with `CRON_SECRET` bearer token
+- Auth: Bearer token check (not NextAuth)
+- Responsibilities: Delete expired users (cascades to all child data)
 
-**GET /student/page:**
-- Location: `/apps/web/app/student/page.tsx`
-- Triggers: Student dashboard (daily curiosity prompt)
-- Responsibilities: Check if student asked today, fetch today's question/response, render QuestionForm
+**GET|POST /api/auth/[...nextauth]** — Auth Endpoints:
+- Location: `apps/web/app/api/auth/[...nextauth]/route.ts`
+- Triggers: NextAuth sign-in/sign-out/session flows
+- Responsibilities: Delegate to NextAuth handlers
 
-**GET /teacher/page:**
-- Location: `/apps/web/app/teacher/page.tsx`
-- Triggers: Teacher home (class list)
-- Responsibilities: List teacher's classes, link to class dashboards
+**/ (Landing Page):**
+- Location: `apps/web/app/page.tsx`
+- Client component with login/signup views
+- Public access (no auth required)
 
-**GET /teacher/classes/[classId]/dashboard:**
-- Location: `/apps/web/app/teacher/classes/[classId]/dashboard/page.tsx`
-- Triggers: Teacher opens class dashboard
-- Responsibilities: Fetch and render aggregated misconception data, curiosity patterns, engagement metrics
+**/student (Student Dashboard):**
+- Location: `apps/web/app/student/page.tsx`
+- Server Component: fetches hasAskedToday, todayQuestion, gradeLevel, todayConcepts, todayDiagnostic
+- Renders `QuestionForm` with pre-fetched data
+
+**/student/graph (Knowledge Graph):**
+- Location: `apps/web/app/student/graph/page.tsx`
+- Server data fetch via `getGraphData()`, client-side D3/Three.js rendering
+
+**/student/diagnose/[sessionId] (Diagnostic Session):**
+- Location: `apps/web/app/student/diagnose/[sessionId]/page.tsx`
+- Renders `DiagnosticChat` for active diagnostic conversation
+
+**/teacher (Teacher Home):**
+- Location: `apps/web/app/teacher/page.tsx`
+- Lists teacher's classes with join codes and links
+
+**/teacher/classes/[classId]/dashboard (Class Dashboard):**
+- Location: `apps/web/app/teacher/classes/[classId]/dashboard/page.tsx`
+- Full dashboard with tabs: overview, students, concepts, misconceptions, themes
 
 ## Error Handling
 
-**Strategy:** Fail open (graceful degradation) for non-critical features; fail closed for auth/data integrity.
+**Strategy:** Fail open (graceful degradation) for non-critical AI features; fail closed for auth and data integrity.
 
 **Patterns:**
 
-- **Embedding failure**: If OpenAI embedding call fails, concept inserted without embedding; deduplication skipped for that concept
-  - Code: `/apps/web/app/api/ask/route.ts` line 263-277
-  - Impact: Knowledge graph less precise but still functional
+- **Missing API keys:** Return HTTP 503 with user-facing message before any LLM call
+  - Files: `apps/web/app/api/ask/route.ts` line 69-75, `apps/web/app/api/diagnose/route.ts` line 49-55
 
-- **Semantic fallback failure**: If LLM semantic matching fails, returns empty array; concepts remain in enrich mode
-  - Code: `/packages/router/src/semantic-fallback.ts` line 67-70
-  - Impact: Some misconceptions not detected; misconception entry rejected if not in library
+- **Embedding failure:** Concept inserted without embedding; deduplication skipped; graph less precise but functional
+  - File: `apps/web/app/api/ask/route.ts` lines 263-284 (catch block with fallback insert)
+  - Includes one retry with 500ms delay before falling back
 
-- **Missing API keys**: Return 503 immediately with user-facing message
-  - Code: `/apps/web/app/api/ask/route.ts` line 69-75, `/apps/web/app/api/diagnose/route.ts` line 49-55
-  - Impact: Student sees "AI features require configuration" rather than silent hang
+- **Semantic fallback failure:** Returns empty array; concepts remain in enrich mode
+  - File: `packages/router/src/semantic-fallback.ts` lines 64-70 (try/catch wrapping entire function)
 
-- **Invalid misconception ID**: LLM-generated misconception IDs rejected; validated against library before creating session
-  - Code: `/apps/web/app/api/ask/route.ts` line 301-327
-  - Impact: Prevents fabricated misconceptions from entering graph
+- **Invalid misconception ID from LLM:** Validated against library before creating session; fabricated IDs rejected silently
+  - File: `apps/web/app/api/ask/route.ts` lines 301-327
 
-- **Session ownership violation**: Return 404 (not 403) for unauthorized session access
-  - Code: `/apps/web/app/api/diagnose/route.ts` line 58-71
-  - Impact: Students cannot discover other students' sessions via error messages (INFR-07 / T-04-05)
+- **Session ownership violation:** Return 404 (not 403) to prevent information leakage
+  - File: `apps/web/app/api/diagnose/route.ts` lines 58-71
+
+- **One-per-day rate limit:** UTC date range query; return 429 if question exists
+  - File: `apps/web/app/api/ask/route.ts` lines 49-67
+
+- **Concept extraction failure in onFinish:** Caught and logged; question still saved even if concept extraction fails
+  - File: `apps/web/app/api/ask/route.ts` line 338 (outer try/catch)
 
 ## Cross-Cutting Concerns
 
 **Logging:**
-- Approach: `console.log` / `console.error` in server code; structured logging for routing/deduplication decisions
-- Pattern: Prefixed logs: `[router]`, `[dedup]`, `[diagnose]` for easy grep
-- Location: `/apps/web/app/api/ask/route.ts` lines 186-261, `/packages/router/src/semantic-fallback.ts` line 68
+- `console.log` / `console.error` / `console.warn` in server code
+- Prefixed for easy filtering: `[router]`, `[dedup]`, `[diagnose]`, `[cleanup]`, `[semanticFallback]`
+- Key decision points logged: merge vs new concept, routing mode, diagnostic session creation
 
 **Validation:**
-- Approach: Zod schemas at every boundary; Drizzle ORM column types enforce DB constraints
-- Pattern: `safeParse()` for user input; `.parse()` for trusted internal data; custom refinements for business logic
-- Examples: 
-  - `questionSchema` (POST body) in `/apps/web/app/api/ask/route.ts`
-  - `misconceptionLibrarySchema` in `/packages/misconceptions/src/schema.ts`
-  - `conceptExtractionSchema` in `/packages/llm/src/prompts/extract.ts`
+- Zod schemas at every trust boundary:
+  - Client → Server: `questionSchema` in `apps/web/app/api/ask/route.ts`, `signUpSchema` in `apps/web/actions/auth.ts`, `createClassSchema` / `joinClassSchema` in `apps/web/actions/class.ts`
+  - LLM → App: `conceptExtractionSchema` in `packages/llm/src/prompts/extract.ts`, `semanticRouteSchema` in `packages/router/src/semantic-fallback.ts`, `lessonPlanSchema` in `packages/llm/src/prompts/generate-lesson-plan.ts`
+  - YAML → App: `misconceptionLibrarySchema`, `themeLibrarySchema` in `packages/misconceptions/src/schema.ts`
+  - DB JSONB → App: `uiMessageSchema` for diagnostic session messages in `apps/web/app/api/diagnose/route.ts`
 
 **Authentication:**
-- Approach: NextAuth v5 with email/password provider; session-based, checked at middleware + endpoint entry
-- Pattern: `auth()` Server Action returns session with user.id; compared against DB records; 401/404 on mismatch
-- Scope: All `/student/*` and `/teacher/*` routes protected by middleware; public routes (login, signup, /) accessible to all
-- Location: Middleware `/apps/web/middleware.ts`, auth config `/apps/web/lib/auth.config.ts`, auth setup `/apps/web/lib/auth.ts`
+- NextAuth v5 (beta) with Credentials provider (email/password, bcrypt 12 rounds)
+- Session strategy: JWT (not database sessions)
+- DrizzleAdapter connects NextAuth to the users/accounts/sessions/verificationTokens tables
+- Split config: `lib/auth.config.ts` (edge-safe, no Node imports) for middleware; `lib/auth.ts` (full config with providers) for server
+- Middleware protects `/student/*` and `/teacher/*` routes
+- All Server Actions and Route Handlers call `auth()` and extract `userId` from session
 
 **Data Privacy (PRIV-01):**
-- Approach: Only question text + gradeLevel sent to Claude; no PII, no user names, no enrollment data
-- Pattern: Comments in code mark PII boundaries; explicit parameter lists prevent accidental data leakage
-- Location: `/apps/web/app/api/ask/route.ts` line 84-87 (enrichment), `/apps/web/app/api/diagnose/route.ts` line 96 (diagnostic)
+- Only question text + gradeLevel sent to LLM — no student name, email, userId, or enrollment data
+- `StudentThemeProfile` type in `lib/dashboard-types.ts` explicitly excludes all PII fields
+- PRIV-01 audit script: `scripts/priv-01-audit.sh`
+- Comments throughout codebase mark PII boundaries
+
+**Authorization:**
+- Role-based: `student` and `teacher` roles on user record
+- Class ownership: dashboard/roster actions verify `classes.teacherId === session.user.id`
+- Data scoping: all concept/question/session queries include `userId` filter from auth session
+- Cross-user prevention: concept detail, diagnostic session access include ownership check
 
 **Rate Limiting:**
-- Approach: One question per calendar day per student (UTC time range check)
-- Pattern: Query questions created between startOfDay and startOfTomorrow; return 429 if found
-- Location: `/apps/web/app/api/ask/route.ts` line 49-67
+- One question per calendar day per student (UTC range query)
+- File: `apps/web/app/api/ask/route.ts` lines 49-67
+
+## Deployment Architecture
+
+**Development:**
+- `pnpm dev` → Turborepo runs `next dev` for `apps/web`
+- Docker Compose (`docker-compose.yml`) provides PostgreSQL 16 + pgvector locally
+- Environment: `.env` file with `DATABASE_URL`, `AUTH_SECRET`, `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`
+
+**Production (Vercel + Neon):**
+- Next.js deployed to Vercel with `output: "standalone"` and `outputFileTracingRoot` set to monorepo root
+- PostgreSQL hosted on Neon (serverless, `@neondatabase/serverless` driver available)
+- Workspace packages transpiled via `transpilePackages` in `next.config.ts`
+- `pg` marked as `serverExternalPackages` to avoid bundling native bindings
+- COPPA cleanup via Vercel Cron calling `/api/cron/cleanup`
+
+**Production (Self-Hosted Docker):**
+- Multi-stage `Dockerfile` at project root
+- `docker-compose.yml` for PostgreSQL + pgvector + Next.js standalone
+- Swap `@ai-sdk/anthropic` for `ollama-ai-provider` for air-gap deployments
 
 ---
 
-*Architecture analysis: 2026-04-09*
+*Architecture analysis: 2026-04-14*

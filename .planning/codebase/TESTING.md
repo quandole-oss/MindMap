@@ -1,43 +1,45 @@
 # Testing Patterns
 
-**Analysis Date:** 2026-04-09
+**Analysis Date:** 2026-04-14
 
 ## Test Framework
 
 **Runner:**
 - Vitest 4.1.3
-- Config files per package: `vitest.config.ts` in each workspace
+- Config files per package: `vitest.config.ts` in each workspace that has tests
 - Turbo task: `turbo test` runs all packages in dependency order
 
 **Configuration:**
-- Minimal config: `globals: true` enables describe/it without imports in most packages
-- Web app config allows test discovery in `__tests__/**/*.test.ts` pattern
-- Path aliases configured to match app tsconfig.json (e.g., `@/*` → project root)
+
+| Package | Config | Globals | Notes |
+|---------|--------|---------|-------|
+| `packages/llm` | `packages/llm/vitest.config.ts` | `true` | Minimal config |
+| `packages/misconceptions` | `packages/misconceptions/vitest.config.ts` | `true` | Minimal config |
+| `packages/router` | `packages/router/vitest.config.ts` | `true` | Minimal config |
+| `apps/web` | `apps/web/vitest.config.ts` | not set | Explicit `__tests__/**/*.test.ts` include pattern; `@/` path alias configured |
 
 **Assertion Library:**
-- Vitest built-in `expect()` API (compatible with Jest)
-- No additional assertion library needed
+- Vitest built-in `expect()` API (Jest-compatible)
 
 **Run Commands:**
 ```bash
-turbo test              # Run all tests across all packages
-turbo test --filter web # Run tests in web app only
-vitest                  # Run tests in current package (when in package dir)
-vitest --watch         # Watch mode
-vitest --coverage      # Coverage report (if configured)
+turbo test                     # Run all tests across all packages
+turbo test --filter web        # Run tests in web app only
+turbo test --filter @mindmap/llm  # Run tests in LLM package only
+cd packages/llm && vitest      # Run tests in current package directly
+vitest --watch                 # Watch mode (in package dir)
+vitest --coverage              # Coverage report (requires @vitest/coverage-*)
 ```
 
 ## Test File Organization
 
 **Location:**
-- Co-located with source files in `__tests__/` subdirectory within `src/`
-- Example: `src/__tests__/adapter.test.ts` sits next to `src/adapters/`
+- `__tests__/` subdirectory co-located with the source being tested
+- NOT a flat top-level test directory -- tests live near their source
 
-**Naming Convention:**
-- Filename matches source being tested with `.test.ts` suffix
-- Example: `adapter.test.ts` tests the adapter factory / adapter classes
-- Example: `prompts.test.ts` tests prompt generation functions
-- Example: `library.test.ts` tests misconception library loading
+**Naming:**
+- `{descriptive-name}.test.ts` suffix (always `.ts`, never `.tsx` -- no component rendering tests)
+- Name describes the module or feature tested, not the file being tested
 
 **Directory Structure:**
 ```
@@ -46,21 +48,41 @@ packages/llm/
 │   ├── adapters/
 │   ├── prompts/
 │   ├── __tests__/
-│   │   ├── adapter.test.ts
-│   │   └── prompts.test.ts
+│   │   ├── adapter.test.ts           (50 lines)
+│   │   ├── prompts.test.ts           (155 lines)
+│   │   ├── analyze-student-themes.test.ts  (142 lines)
+│   │   └── generate-lesson-plan.test.ts    (194 lines)
+│   └── index.ts
+
+packages/misconceptions/
+├── src/
+│   ├── __tests__/
+│   │   └── library.test.ts           (125 lines)
+│   └── loader.ts
+
+packages/router/
+├── src/
+│   ├── __tests__/
+│   │   └── router.test.ts            (106 lines)
 │   └── index.ts
 
 apps/web/
+├── __tests__/
+│   └── actions/
+│       ├── themes.test.ts            (315 lines)
+│       └── dashboard.test.ts         (226 lines)
 ├── components/
-│   ├── graph/
-│   │   └── __tests__/
-│   │       └── graph-filters.test.ts
+│   └── graph/
+│       └── __tests__/
+│           └── graph-filters.test.ts (397 lines)
 ├── lib/
 │   └── graph/
 │       └── __tests__/
-│           ├── domain-colors.test.ts
-│           └── clusters.test.ts
+│           ├── domain-colors.test.ts (118 lines)
+│           └── clusters.test.ts      (273 lines)
 ```
+
+**Test Count:** 11 test files, 2101 total lines of test code
 
 ## Test Structure
 
@@ -69,305 +91,370 @@ apps/web/
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
 describe("Feature or function name", () => {
-  // Setup
   beforeEach(() => {
-    // Reset state before each test
+    // Reset caches, mocks, etc.
   });
 
-  // Cleanup
-  afterEach(() => {
-    // Restore mocks, clean up side effects
-  });
-
-  // Individual test cases
-  it("should do something specific", () => {
-    // Arrange
-    const input = "test input";
-    
-    // Act
+  it("describes specific behavior in plain English", () => {
     const result = functionUnderTest(input);
-    
-    // Assert
-    expect(result).toBe("expected output");
+    expect(result).toBe(expected);
   });
 
-  // Nested describe blocks for related functionality
-  describe("edge cases", () => {
-    it("should handle empty input", () => {
-      // ...
-    });
+  describe("sub-feature or edge cases", () => {
+    it("handles edge case", () => { /* ... */ });
   });
 });
 ```
 
-**Patterns observed:**
+**Conventions:**
+- Import `describe`, `it`, `expect`, `vi` explicitly from `"vitest"` (even when `globals: true`)
+- Test names are descriptive sentences: `"returns a Zod-valid LessonPlan"`, `"matching is case-insensitive"`
+- Ticket/requirement IDs included in describe blocks: `describe("generateLessonPlan (LSPL-01, D-15)", () => {`
+- One logical assertion per test (multiple `expect` calls only when verifying a single logical property)
 
 **Setup/Teardown:**
-- `beforeEach()` for test isolation (e.g., resetting library cache before each test)
-  - Example from `library.test.ts`:
-    ```typescript
-    beforeEach(() => {
-      resetLibraryCache();  // Fresh cache for each test
-    });
-    ```
-
-- `afterEach()` for cleanup (e.g., restoring environment variables)
-  - Example from `adapter.test.ts`:
-    ```typescript
-    const originalEnv = process.env.LLM_PROVIDER;
-    afterEach(() => {
-      if (originalEnv === undefined) {
-        delete process.env.LLM_PROVIDER;
-      } else {
-        process.env.LLM_PROVIDER = originalEnv;
-      }
-    });
-    ```
-
-**Assertion Pattern:**
-- Single assertion per test, or related assertions for one logical check
-- Test name describes the expected behavior, not the implementation
-- Example: `it("returns an adapter when LLM_PROVIDER is not set (defaults to anthropic)")`
-
-## Mocking
-
-**Framework:** Vitest's built-in `vi` module
-
-**Patterns:**
-
-**Environment variables:**
-- Save original, modify in test, restore in afterEach
-  - Example from `adapter.test.ts`:
-    ```typescript
-    beforeEach(() => {
-      const originalEnv = process.env.LLM_PROVIDER;
-    });
-
-    it("test case", () => {
-      process.env.LLM_PROVIDER = "anthropic";
-      // ... test assertions
-    });
-
-    afterEach(() => {
-      // Restore original
-    });
-    ```
-
-**Module reloading:**
-- Use `vi.resetModules()` when module-level state needs reset
-- Import module dynamically in test after reset
-  - Example from `domain-colors.test.ts`:
-    ```typescript
-    async function freshModule() {
-      vi.resetModules();
-      return import("../domain-colors");
-    }
-
-    it("test with fresh module state", async () => {
-      const { getDomainColor } = await freshModule();
-      // ... use function with clean state
-    });
-    ```
-
-**What to Mock:**
-- Environment variables (for conditional behavior)
-- Module-level state when testing state mutations
-- File system operations (if reading real files in tests)
-- External API calls (not done yet in codebase, but pattern would be: `vi.mock("ai", { ... })`)
-
-**What NOT to Mock:**
-- Pure functions — call them directly
-- Database queries — use actual test database or fixtures
-- Validation schemas (Zod) — validate real data
-- Routes/logic of internal modules — test the real implementation
-
-## Fixtures and Factories
-
-**Test Data:**
-- No dedicated fixture factory pattern found yet
-- Test data embedded inline within test blocks
-- Example from `router.test.ts`:
+- `beforeEach()` for cache resets:
   ```typescript
-  it('returns "enrich" for a concept with no misconception match', () => {
-    const result = routeQuestion("gravity", 5, "physics");
-    expect(result.mode).toBe("enrich");
+  // packages/misconceptions/src/__tests__/library.test.ts
+  beforeEach(() => {
+    resetLibraryCache();
+  });
+  ```
+- `afterEach()` for environment variable restoration:
+  ```typescript
+  // packages/llm/src/__tests__/adapter.test.ts
+  const originalEnv = process.env.LLM_PROVIDER;
+  afterEach(() => {
+    if (originalEnv === undefined) {
+      delete process.env.LLM_PROVIDER;
+    } else {
+      process.env.LLM_PROVIDER = originalEnv;
+    }
   });
   ```
 
+## Mocking
+
+**Framework:** Vitest built-in `vi` module
+
+**LLM Call Mocking (primary pattern):**
+```typescript
+// Mock the AI SDK's generateText at module level (hoisted)
+vi.mock("ai", async () => {
+  const actual = await vi.importActual<typeof import("ai")>("ai");
+  return {
+    ...actual,
+    generateText: vi.fn(),
+  };
+});
+
+// Mock the adapter factory to return a fake model
+vi.mock("../adapters/factory", () => ({
+  createLLMAdapter: () => ({
+    getModel: () => ({ __mock: "model" }),
+    getModelId: () => "mock-model",
+  }),
+}));
+
+// In tests: control the mock return value
+import { generateText } from "ai";
+
+beforeEach(() => {
+  vi.mocked(generateText).mockReset();
+});
+
+it("returns valid output", async () => {
+  vi.mocked(generateText).mockResolvedValue({
+    experimental_output: validFixture,
+  } as never);
+
+  const result = await functionUnderTest(params);
+  expect(result).toBeDefined();
+});
+```
+
+Used in: `packages/llm/src/__tests__/analyze-student-themes.test.ts`, `packages/llm/src/__tests__/generate-lesson-plan.test.ts`
+
+**Module Reloading (for module-level mutable state):**
+```typescript
+// apps/web/lib/graph/__tests__/domain-colors.test.ts
+async function freshModule() {
+  vi.resetModules();
+  return import("../domain-colors");
+}
+
+it("assigns distinct colors per domain", async () => {
+  const { getDomainColor } = await freshModule();
+  // Each test gets a clean module-level Map
+});
+```
+
+**Environment Variable Mocking:**
+```typescript
+// packages/llm/src/__tests__/adapter.test.ts
+it("returns AnthropicAdapter when LLM_PROVIDER=anthropic", () => {
+  process.env.LLM_PROVIDER = "anthropic";
+  const adapter = createLLMAdapter();
+  expect(adapter).toBeInstanceOf(AnthropicAdapter);
+});
+```
+
+**What to Mock:**
+- LLM SDK calls (`generateText`, `generateObject`) -- always mock, never call real APIs in tests
+- Adapter factory (`createLLMAdapter`) -- return lightweight stub
+- Module-level singletons when testing state accumulation
+
+**What NOT to Mock:**
+- Pure functions -- test the real implementation directly
+- Zod schemas -- validate against real schema objects
+- Misconception library YAML loading -- tests load and validate real YAML files
+- Router logic -- tests run the actual routing algorithm
+
+## Fixtures and Factories
+
+**Inline Fixture Pattern:**
+- Fixture objects declared as `const` at describe-block scope
+- Named descriptively with `Fixture` or `fixture` suffix:
+  ```typescript
+  const fixtureParams = {
+    gradeBand: "6-8" as const,
+    themeCounts: { "substance-based-reasoning": 3 },
+    misconceptionIds: ["phys-003", "phys-004"],
+    sessionOutcomes: ["unresolved", "resolved"] as Array<"resolved" | "unresolved">,
+  };
+
+  const validLessonPlanFixture: LessonPlan = {
+    theme: "Substance-based reasoning",
+    commonMisunderstanding: "Students treat heat...",
+    // ...
+  };
+  ```
+
+**Helper Factory Functions:**
+- Lightweight factory functions defined within test files:
+  ```typescript
+  // apps/web/lib/graph/__tests__/clusters.test.ts
+  function node(id: string, name: string, visitCount = 1, overrides: Partial<GraphNode> = {}): GraphNode {
+    return { id, name, domain: "science", status: "unprobed", visitCount, isBridge: false, ...overrides };
+  }
+
+  function edge(source: string, target: string, edgeType = "related"): GraphEdge {
+    return { source, target, edgeType };
+  }
+  ```
+
+  ```typescript
+  // apps/web/__tests__/actions/themes.test.ts
+  function session(userId: string, misconceptionId: string, outcome: ThemeAggregatableSession["outcome"]): ThemeAggregatableSession {
+    return { userId, misconceptionId, outcome };
+  }
+  ```
+
+**Local Type Mirrors:**
+- When testing pure helpers that are co-located near `"use server"` code, tests define local type mirrors to avoid importing from server action modules:
+  ```typescript
+  // Avoids importing the "use server" actions/graph module which pulls in DB/auth
+  interface GraphNode {
+    id: string;
+    name: string;
+    domain: string;
+    status: "unprobed" | "healthy" | "misconception";
+    visitCount: number;
+    isBridge: boolean;
+  }
+  ```
+
 **Location:**
-- No `__fixtures__/` directory; test data created in describe blocks or test functions
-- Reusable test helpers defined in test files (e.g., `freshModule()` helper in `domain-colors.test.ts`)
+- No `__fixtures__/` directory -- all test data is inline in test files
+- No shared test utility package
 
 ## Coverage
 
-**Requirements:** Not enforced (no coverage config in vitest files)
+**Requirements:** Not enforced (no coverage thresholds configured)
 
-**Current State:**
-- No coverage threshold configured
-- Packages have varying test coverage (observed: good coverage for core library, llm, router; missing for some web components)
+**Coverage tooling:** Not installed (`@vitest/coverage-*` not in devDependencies)
 
 **View Coverage:**
 ```bash
-vitest --coverage              # Generate coverage report (if configured)
-# Note: Requires @vitest/coverage-* package to be installed
+# Would require installing @vitest/coverage-v8 first
+pnpm add -D @vitest/coverage-v8 --filter web
+vitest --coverage
 ```
 
 ## Test Types
 
-**Unit Tests:**
-- Scope: Individual functions and modules in isolation
-- Examples:
-  - `adapter.test.ts`: Tests LLM adapter factory and adapter classes
-  - `prompts.test.ts`: Tests prompt generation (text output validation)
-  - `library.test.ts`: Tests YAML loading and schema validation
-  - `router.test.ts`: Tests question routing logic
+**Unit Tests (all 11 files):**
+- Test pure functions in isolation
+- No database, no network, no auth
+- Fast execution (sub-second per suite)
 
-- Approach:
-  - Call function with test input
-  - Assert output matches expected behavior
-  - Test both happy path and edge cases
+| Package | File | Tests |
+|---------|------|-------|
+| `@mindmap/llm` | `adapter.test.ts` | LLM adapter factory, provider selection |
+| `@mindmap/llm` | `prompts.test.ts` | Prompt generation, Zod schema validation, PII guard |
+| `@mindmap/llm` | `analyze-student-themes.test.ts` | Theme analysis LLM call shape, schema constraints |
+| `@mindmap/llm` | `generate-lesson-plan.test.ts` | Lesson plan generation, anti-hallucination checks |
+| `@mindmap/misconceptions` | `library.test.ts` | YAML loading, domain coverage, theme integrity |
+| `@mindmap/router` | `router.test.ts` | Question routing, grade band mapping, semantic fallback |
+| `apps/web` | `themes.test.ts` | Theme profile aggregation, PRIV-01 structural guard, cache hash |
+| `apps/web` | `dashboard.test.ts` | Theme cluster building, ranking, edge cases |
+| `apps/web` | `graph-filters.test.ts` | Domain group expansion, filter chain logic |
+| `apps/web` | `domain-colors.test.ts` | Color assignment determinism, palette cycling |
+| `apps/web` | `clusters.test.ts` | Graph clustering (union-find), label generation |
 
-**Integration Tests:**
-- Scope: Multiple modules working together, data flow across layers
-- Example: None explicitly named, but `library.test.ts` validates full YAML parsing + schema
-- Example: `router.test.ts` integrates with loaded misconception library
+**Integration Tests:** Not present as a separate category. Some tests integrate multiple modules:
+- `library.test.ts` loads real YAML files and validates against Zod schemas
+- `router.test.ts` calls `routeQuestion()` which loads the misconception library internally
 
-**E2E Tests:**
-- Status: Not implemented
-- Would cover: Student question → AI response → concept extraction → routing → graph update
-- Likely would test API endpoints and full request/response cycle
+**E2E Tests:** Not implemented. No Playwright, Cypress, or similar framework configured.
 
-## Common Patterns
+**Component Rendering Tests:** Not implemented. No `@testing-library/react` in dependencies.
 
-**Parameterized tests (mapped):**
-- Test loop over multiple inputs
-  - Example from `router.test.ts`:
-    ```typescript
-    for (const level of [0, 1, 5, 6, 8, 9, 12]) {
-      // Test grade level mapping
-      expect(gradeLevelToGradeBand(level)).toBe(...);
-    }
-    ```
+## Test-Isolation Pattern (Critical)
 
-**Async testing:**
-- Used for async functions and server actions
-- `async/await` in test body
-  - Example from `domain-colors.test.ts`:
-    ```typescript
-    it("test async function", async () => {
-      const { getDomainColor } = await freshModule();
-      const color = await getDomainColor("physics");
-      expect(color).toMatch(/^#[0-9a-fA-F]{6}$/);
-    });
-    ```
+The codebase uses a deliberate pattern to make server-side logic testable without DB or auth dependencies:
 
-**Error testing:**
-- Check that functions throw with specific error messages
-  - Example from `adapter.test.ts`:
-    ```typescript
-    it("throws when LLM_PROVIDER is an unknown value", () => {
-      process.env.LLM_PROVIDER = "invalid-provider";
-      expect(() => createLLMAdapter()).toThrow("Unknown LLM provider: invalid-provider");
-    });
-    ```
+1. **Extract pure logic** into `lib/` files that do NOT import `"use server"`, DB, or auth modules
+2. **Server actions** import these pure helpers after resolving auth/ownership
+3. **Tests** import only the pure helpers
 
-- Validation with `expect().not.toThrow()`
-  - Example from `library.test.ts`:
-    ```typescript
-    it("loads without schema errors", () => {
-      expect(() => loadLibrary()).not.toThrow();
-    });
-    ```
+**Example chain:**
+- Pure helper: `apps/web/lib/theme-aggregation.ts` -- exports `buildThemeClusters()`, `buildStudentThemeProfile()`
+- Server action: `apps/web/actions/dashboard.ts` -- calls `buildThemeClusters()` after DB query
+- Test: `apps/web/__tests__/actions/dashboard.test.ts` -- imports only from `lib/theme-aggregation`
 
-**Regex matching in assertions:**
-- Used for pattern validation (e.g., hex colors, format validation)
-  - Example from `prompts.test.ts`:
-    ```typescript
-    expect(prompt.toLowerCase()).toMatch(/follow.up|thought.provoking|question/i);
-    expect(prompt).not.toMatch(/\{name\}|\{email\}/i);
-    ```
+**When adding new server actions:**
+1. Extract the pure computation into a `lib/` file
+2. Keep DB queries and auth checks in the server action
+3. Test the pure computation directly
+4. Document the boundary in a comment block at the top of the test file
 
-**Type safety in tests:**
-- Test code is TypeScript; caught by compiler
-- Example: `type LoginFormValues = z.infer<typeof loginSchema>` ensures test data matches schema
+## Common Test Patterns
 
-## Testing Patterns by Feature
+**Zod Schema Validation:**
+```typescript
+it("validates a valid concepts array", () => {
+  const result = conceptExtractionSchema.safeParse({
+    concepts: [{ name: "gravity", domain: "physics" }],
+  });
+  expect(result.success).toBe(true);
+});
 
-**Schema validation (Zod):**
-- Load YAML, parse with schema, validate all entries
-  - Example from `library.test.ts`:
-    ```typescript
-    it("covers all 4 required domains", () => {
-      const library = loadLibrary();
-      const domains = new Set(library.map((e) => e.domain));
-      expect(domains).toEqual(new Set(["physics", "biology", "math", "history"]));
-    });
-    ```
+it("rejects a truly invalid domain", () => {
+  const result = conceptExtractionSchema.safeParse({
+    concepts: [{ name: "sourdough", domain: "cooking" }],
+  });
+  expect(result.success).toBe(false);
+});
+```
 
-**Adapter pattern (LLM providers):**
-- Test factory returns correct adapter for each provider
-- Test adapter has required methods/interfaces
-  - Example from `adapter.test.ts`:
-    ```typescript
-    it("returns an AnthropicAdapter when LLM_PROVIDER=anthropic", () => {
-      process.env.LLM_PROVIDER = "anthropic";
-      const adapter = createLLMAdapter();
-      expect(adapter).toBeInstanceOf(AnthropicAdapter);
-    });
-    ```
+**PRIV-01 Structural Guard (privacy):**
+```typescript
+it("returns ONLY the four anonymized keys", () => {
+  const result = buildStudentThemeProfile(sessions, 7, library);
+  expect(Object.keys(result).sort()).toEqual([
+    "gradeBand", "misconceptionIds", "sessionOutcomes", "themeCounts",
+  ]);
+  // Double-check: no identifier fields
+  const asUnknown = result as unknown as Record<string, unknown>;
+  expect(asUnknown.studentId).toBeUndefined();
+  expect(asUnknown.userId).toBeUndefined();
+});
 
-**String matching and normalization:**
-- Test case-insensitivity and whitespace handling
-  - Example from `router.test.ts`:
-    ```typescript
-    it("matching is case-insensitive", () => {
-      const lower = routeQuestion("heavier objects fall faster", 5, "physics");
-      const upper = routeQuestion("HEAVIER OBJECTS FALL FASTER", 5, "physics");
-      const mixed = routeQuestion("Heavier Objects Fall Faster", 5, "physics");
-      expect(lower.mode).toBe("diagnose");
-      expect(upper.mode).toBe("diagnose");
-      expect(mixed.mode).toBe("diagnose");
-    });
-    ```
+it("does NOT leak userId in serialized output", () => {
+  const result = buildStudentThemeProfile(sessions, 7, library);
+  expect(JSON.stringify(result)).not.toContain("super-secret-user-id-xyz");
+});
+```
 
-**Component filters and grouping:**
-- Test domain grouping expansion and filter logic
-  - Example from `graph-filters.test.ts`:
-    ```typescript
-    it("expands 'science' to a Set containing its seven child domains", () => {
-      const result = expandDomainQuery("science");
-      expect(result).toEqual(new Set([...]));
-    });
-    ```
+**Anti-Hallucination Checks (LLM output):**
+```typescript
+it("every referencedMisconceptionId is in the input (anti-hallucination)", async () => {
+  vi.mocked(generateText).mockResolvedValue({ experimental_output: fixture } as never);
+  const result = await generateLessonPlan(params);
+  const validIds = new Set(params.constituentMisconceptions.map((c) => c.id));
+  const referenced = result.suggestedActivities.flatMap((a) => a.referencedMisconceptionIds);
+  const hallucinated = referenced.filter((id) => !validIds.has(id));
+  expect(hallucinated).toEqual([]);
+});
+```
+
+**Error/Throw Testing:**
+```typescript
+it("throws when LLM_PROVIDER is an unknown value", () => {
+  process.env.LLM_PROVIDER = "invalid-provider";
+  expect(() => createLLMAdapter()).toThrow("Unknown LLM provider: invalid-provider");
+});
+
+it("loads without schema errors", () => {
+  expect(() => loadLibrary()).not.toThrow();
+});
+```
+
+**Prompt Content Assertions:**
+```typescript
+it("prompt includes grade band and anti-hallucination rule", async () => {
+  await functionUnderTest(params);
+  const call = vi.mocked(generateText).mock.calls[0]![0] as { prompt: string };
+  expect(call.prompt).toContain("6-8");
+  expect(call.prompt.toLowerCase()).toMatch(/do not invent|must come from/i);
+});
+```
+
+**PII Guard Assertions:**
+```typescript
+it("PRIV-01: does NOT contain PII placeholders like {name}", () => {
+  const prompt = buildEnrichSystemPrompt(5);
+  expect(prompt).not.toMatch(/\{name\}/i);
+  expect(prompt).not.toMatch(/\{email\}/i);
+  expect(prompt).not.toMatch(/\{userId\}/i);
+});
+```
+
+**Async Testing:**
+```typescript
+it("SHA-256 is deterministic", async () => {
+  const a = await sha256Hex("canonical-input");
+  const b = await sha256Hex("canonical-input");
+  expect(a).toBe(b);
+});
+```
 
 ## Coverage Gaps
 
-**Identified untested areas:**
+**Untested server actions:**
+- `apps/web/actions/auth.ts` -- signup/login/logout flows (DB writes, password hashing, redirect)
+- `apps/web/actions/class.ts` -- class CRUD and enrollment
+- `apps/web/actions/diagnostic.ts` -- diagnostic session management
+- `apps/web/actions/graph.ts` -- graph data fetching, bridge detection, AI search
+- `apps/web/actions/questions.ts` -- streak calculation, question history
 
-**Web app components:**
-- `login-form.tsx`: Component rendering, form submission, error handling not tested
-- `question-form.tsx`: Streaming response, error message generation not tested
-- `spiral-background.tsx`: Canvas animation logic untested
-- Graph visualization components: D3.js rendering untested
-- Dashboard pages: Server-side data fetching untested
+**Untested API routes:**
+- `apps/web/app/api/ask/route.ts` -- full question->answer pipeline
+- `apps/web/app/api/diagnose/route.ts` -- diagnostic chat streaming
+- `apps/web/app/api/cron/cleanup/route.ts` -- cleanup cron job
 
-**Server actions:**
-- `auth.ts` actions: Password hashing, database writes, redirect behavior untested
-- `questions.ts` streak calculation: Complex date logic has potential edge cases (untested)
-- `graph.ts` graph operations: Node/edge creation and updates untested
-- `class.ts` class management: Untested
+**Untested UI components (no component rendering tests exist):**
+- All 50 component files -- no `@testing-library/react` tests
+- Form submission flows, error states, loading states, conditional rendering
 
-**Database layer:**
-- `queries/concepts.ts`: Query building and filtering untested
-- Schema migrations: No test coverage
-- Database transactions: No integration tests
+**Untested database layer:**
+- `packages/db/src/queries/concepts.ts` -- query building (would need test DB)
+- `packages/db/src/queries/cleanup.ts` -- cleanup queries
+- Schema migrations -- no migration tests
 
-**Recommendation:** Add integration tests for:
-1. Full request cycle (question → response → graph update)
-2. Database operations (CRUD, constraints)
-3. Authentication flow (signup, login, session)
-4. Server action error scenarios
+**Untested infrastructure:**
+- Docker Compose deployment
+- Authentication middleware / route protection
+- `packages/db` has no test script at all (no vitest dependency)
+
+**Priority recommendations:**
+1. **High** -- Add integration tests for `apps/web/actions/questions.ts` streak logic (complex date math, high bug risk)
+2. **High** -- Add tests for `apps/web/actions/graph.ts` pure computation (betweenness centrality, importance scoring) by extracting to `lib/`
+3. **Medium** -- Add component rendering tests for critical flows (question submission, diagnostic chat)
+4. **Medium** -- Add `packages/db` to the test pipeline with a test database
+5. **Low** -- Add E2E tests for the full question-to-graph pipeline
 
 ---
 
-*Testing analysis: 2026-04-09*
+*Testing analysis: 2026-04-14*
