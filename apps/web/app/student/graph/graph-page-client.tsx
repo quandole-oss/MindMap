@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { KnowledgeGraph } from "@/components/graph/knowledge-graph";
 import { NodeDetailPanel } from "@/components/graph/node-detail-panel";
 import { BridgeToast } from "@/components/graph/bridge-toast";
 import { GraphFilterBar } from "@/components/graph/graph-filter-bar";
 import { useGraphFilters } from "@/components/graph/use-graph-filters";
+import { GrowthSummaryOverlay } from "@/components/graph/growth-summary-overlay";
 import { searchNodes } from "@/actions/graph";
 import type { GraphNode, GraphEdge } from "@/actions/graph";
 import { HealthLegend } from "@/components/graph/health-legend";
@@ -26,6 +27,7 @@ interface GraphPageClientProps {
 
 export function GraphPageClient({ nodes, edges, bridgeData }: GraphPageClientProps) {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const initialNodeId = searchParams.get("node");
 
   // D-03: Parse animation URL params
@@ -39,6 +41,44 @@ export function GraphPageClient({ nodes, edges, bridgeData }: GraphPageClientPro
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(initialNodeId);
   const [highlightNodeId, setHighlightNodeId] = useState<string | null>(initialNodeId);
   const [searching, setSearching] = useState(false);
+
+  // D-19: Check prefers-reduced-motion preference
+  const [reducedMotion, setReducedMotion] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setReducedMotion(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setReducedMotion(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+
+  // D-12: Growth summary overlay state
+  const [showGrowthSummary, setShowGrowthSummary] = useState(false);
+
+  // Count new concepts and connections for the overlay
+  const newConceptCount = newNodeIds?.size ?? 0;
+  const newConnectionCount = useMemo(() => {
+    if (!newNodeIds || newNodeIds.size === 0) return 0;
+    return edges.filter(
+      (e) => newNodeIds.has(e.source) || newNodeIds.has(e.target)
+    ).length;
+  }, [edges, newNodeIds]);
+
+  // Called when animation sequence completes (from SolarScene via prop chain)
+  const handleAnimationComplete = useCallback(() => {
+    setShowGrowthSummary(true);
+    // Clean up URL params
+    router.replace("/student/graph", { scroll: false });
+  }, [router]);
+
+  // D-19: If reduced motion, show growth summary immediately (no animation)
+  useEffect(() => {
+    if (reducedMotion && animateEntry && newNodeIds && newNodeIds.size > 0) {
+      setShowGrowthSummary(true);
+      // Clean up URL params
+      router.replace("/student/graph", { scroll: false });
+    }
+  }, [reducedMotion, animateEntry, newNodeIds, router]);
 
   // Clear initial highlight after animation
   useEffect(() => {
@@ -118,8 +158,9 @@ export function GraphPageClient({ nodes, edges, bridgeData }: GraphPageClientPro
         onClusterClick={setActiveCluster}
         highlightNodeId={highlightNodeId}
         reframeTrigger={reframe}
-        newNodeIds={newNodeIds}
-        animateEntry={animateEntry}
+        newNodeIds={reducedMotion ? undefined : newNodeIds}
+        animateEntry={reducedMotion ? false : animateEntry}
+        onAnimationComplete={handleAnimationComplete}
       />
       <GraphFilterBar
         availableDomains={availableDomains}
@@ -134,6 +175,14 @@ export function GraphPageClient({ nodes, edges, bridgeData }: GraphPageClientPro
         onSearchTextChange={setSearchText}
         onSearch={handleSearch}
       />
+      {/* D-12: Growth summary overlay */}
+      {showGrowthSummary && newConceptCount > 0 && (
+        <GrowthSummaryOverlay
+          conceptCount={newConceptCount}
+          connectionCount={newConnectionCount}
+          onDismiss={() => setShowGrowthSummary(false)}
+        />
+      )}
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 bg-black/50 backdrop-blur-md border border-white/10 rounded-lg px-5 py-2.5">
         <HealthLegend />
       </div>
