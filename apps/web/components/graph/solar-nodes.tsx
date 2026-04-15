@@ -36,6 +36,9 @@ export function getNodeRadius(node: GraphNode): number {
   return MIN + t * t * (MAX - MIN);
 }
 
+/** D-15: Over-allocate by this many instances beyond current count */
+const GROWTH_BUFFER = 20;
+
 interface SolarNodesProps {
   layoutNodes: LayoutNode[];
   onNodeClick: (nodeId: string) => void;
@@ -43,6 +46,8 @@ interface SolarNodesProps {
   highlightNodeId?: string | null;
   /** Optional shared ref — when provided, SolarScene uses it for pulse animation */
   meshRef?: React.MutableRefObject<THREE.InstancedMesh | null>;
+  /** Set of node IDs that are newly added and should start at scale 0 */
+  newNodeIds?: Set<string>;
 }
 
 /**
@@ -51,6 +56,11 @@ interface SolarNodesProps {
  * Each instance has its own matrix (position + scale via getNodeRadius) and
  * color (via getNodeColor). Node scale is fixed — no LOD, so nodes maintain
  * consistent size at all camera distances.
+ *
+ * D-15: InstancedMesh buffer is over-allocated by GROWTH_BUFFER instances.
+ * mesh.count is set to the visible node count. The key prop is based on
+ * buffer capacity (not node count), so remounts only happen when the buffer
+ * is exhausted — not on every node addition.
  *
  * - Single draw call via InstancedMesh
  * - meshBasicMaterial + toneMapped={false} for Bloom-compatible self-luminous rendering
@@ -63,6 +73,7 @@ export function SolarNodes({
   onNodeHover,
   highlightNodeId,
   meshRef: externalMeshRef,
+  newNodeIds,
 }: SolarNodesProps) {
   const internalMeshRef = useRef<THREE.InstancedMesh>(null!);
   // meshRef always points to the internal ref for internal logic
@@ -74,13 +85,29 @@ export function SolarNodes({
   // Track when the mesh ref is available so useEffect can depend on it
   const [meshReady, setMeshReady] = useState(false);
 
+  // D-15: Track buffer capacity. Only remount when buffer is exhausted.
+  const bufferCapacity = useRef(0);
+
+  // Compute required capacity — only grow, never shrink
+  const requiredCapacity = layoutNodes.length + GROWTH_BUFFER;
+  if (bufferCapacity.current === 0 || layoutNodes.length > bufferCapacity.current) {
+    bufferCapacity.current = requiredCapacity;
+  }
+
   // Initial matrix + color setup whenever layout or mesh changes
   useEffect(() => {
     if (!meshRef.current || layoutNodes.length === 0) return;
 
+    // D-15: Set visible count to actual node count (not buffer size)
+    meshRef.current.count = layoutNodes.length;
+
     layoutNodes.forEach((node, i) => {
+      // If this is a new node, start at scale 0 (animation will scale it up in SolarScene)
+      const isNew = newNodeIds?.has(node.id) ?? false;
+      const scale = isNew ? 0 : getNodeRadius(node);
+
       dummy.position.set(node.x, node.y, node.z);
-      dummy.scale.setScalar(getNodeRadius(node));
+      dummy.scale.setScalar(scale);
       dummy.updateMatrix();
       meshRef.current.setMatrixAt(i, dummy.matrix);
       meshRef.current.setColorAt(i, getNodeColor(node));
@@ -93,7 +120,7 @@ export function SolarNodes({
     // Required for raycasting to work on InstancedMesh
     meshRef.current.computeBoundingBox();
     meshRef.current.computeBoundingSphere();
-  }, [layoutNodes, dummy, meshReady]);
+  }, [layoutNodes, dummy, meshReady, newNodeIds]);
 
   // Callback ref: populates both internalMeshRef and optional externalMeshRef
   // Must be declared before any conditional return (Rules of Hooks)
@@ -115,9 +142,9 @@ export function SolarNodes({
 
   return (
     <instancedMesh
-      key={layoutNodes.length}
+      key={bufferCapacity.current}
       ref={setMeshRef}
-      args={[undefined, undefined, layoutNodes.length]}
+      args={[undefined, undefined, bufferCapacity.current]}
       onClick={(e) => {
         e.stopPropagation();
         const node = layoutNodes[e.instanceId!];
