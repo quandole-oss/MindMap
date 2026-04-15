@@ -2,7 +2,8 @@
 
 import { auth } from "@/lib/auth";
 import { db, schema } from "@mindmap/db";
-import { and, eq, gte, lt, desc } from "drizzle-orm";
+import { and, eq, gte, lt, inArray } from "drizzle-orm";
+import { calculateStreak } from "@/lib/streak";
 
 export async function hasAskedToday(): Promise<boolean> {
   const session = await auth();
@@ -55,6 +56,36 @@ export async function getQuestionHistory() {
   });
 }
 
+export async function getTodayQuestionConcepts(): Promise<
+  Array<{ id: string; name: string }>
+> {
+  const session = await auth();
+  if (!session?.user?.id) return [];
+  const now = new Date();
+  const startOfDay = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const startOfTomorrow = new Date(startOfDay.getTime() + 86_400_000);
+  const question = await db.query.questions.findFirst({
+    where: and(
+      eq(schema.questions.userId, session.user.id),
+      gte(schema.questions.createdAt, startOfDay),
+      lt(schema.questions.createdAt, startOfTomorrow),
+    ),
+  });
+  if (!question) return [];
+  const links = await db.query.conceptQuestions.findMany({
+    where: eq(schema.conceptQuestions.questionId, question.id),
+  });
+  if (links.length === 0) return [];
+  const concepts = await db.query.concepts.findMany({
+    where: and(
+      inArray(schema.concepts.id, links.map((l) => l.conceptId)),
+      eq(schema.concepts.userId, session.user.id),
+    ),
+    columns: { id: true, name: true },
+  });
+  return concepts;
+}
+
 export async function getStreak(): Promise<number> {
   const session = await auth();
   if (!session?.user?.id) return 0;
@@ -65,46 +96,6 @@ export async function getStreak(): Promise<number> {
     limit: 365,
   });
 
-  if (rows.length === 0) return 0;
-
-  // Deduplicate to unique UTC dates (one question per day max anyway, but be safe)
-  const uniqueDates: Date[] = [];
-  const seenDates = new Set<string>();
-  for (const row of rows) {
-    const d = new Date(row.createdAt!);
-    d.setUTCHours(0, 0, 0, 0);
-    const key = d.toISOString();
-    if (!seenDates.has(key)) {
-      seenDates.add(key);
-      uniqueDates.push(d);
-    }
-  }
-
-  // Start from today; if today has no question, allow starting from yesterday
-  // (streak doesn't break until the day passes without a question)
-  const today = new Date();
-  today.setUTCHours(0, 0, 0, 0);
-  const yesterday = new Date(today.getTime() - 86_400_000);
-
-  const mostRecentDate = uniqueDates[0];
-  if (
-    mostRecentDate.getTime() !== today.getTime() &&
-    mostRecentDate.getTime() !== yesterday.getTime()
-  ) {
-    return 0;
-  }
-
-  // Count consecutive days backward from the most recent question date
-  let streak = 0;
-  let checkDate = new Date(mostRecentDate);
-  for (const date of uniqueDates) {
-    if (date.getTime() === checkDate.getTime()) {
-      streak++;
-      checkDate.setUTCDate(checkDate.getUTCDate() - 1);
-    } else {
-      break;
-    }
-  }
-
-  return streak;
+  const dates = rows.map((r) => r.createdAt!);
+  return calculateStreak(dates);
 }

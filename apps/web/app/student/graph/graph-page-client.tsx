@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import { KnowledgeGraph } from "@/components/graph/knowledge-graph";
 import { NodeDetailPanel } from "@/components/graph/node-detail-panel";
 import { BridgeToast } from "@/components/graph/bridge-toast";
@@ -24,9 +25,20 @@ interface GraphPageClientProps {
 }
 
 export function GraphPageClient({ nodes, edges, bridgeData }: GraphPageClientProps) {
-  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-  const [highlightNodeId, setHighlightNodeId] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+  const initialNodeId = searchParams.get("node");
+
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(initialNodeId);
+  const [highlightNodeId, setHighlightNodeId] = useState<string | null>(initialNodeId);
   const [searching, setSearching] = useState(false);
+
+  // Clear initial highlight after animation
+  useEffect(() => {
+    if (initialNodeId) {
+      const timer = setTimeout(() => setHighlightNodeId(null), 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [initialNodeId]);
 
   const {
     filters,

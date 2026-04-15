@@ -1,9 +1,15 @@
 "use client";
 
+import { useState, useRef, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { Components } from "react-markdown";
 import { Separator } from "@/components/ui/separator";
+import { ChevronDown, ChevronUp } from "lucide-react";
+import { extractSocraticFollowUp } from "./extract-socratic-follow-up";
+
+// Re-export so consumers can import from either location
+export { extractSocraticFollowUp } from "./extract-socratic-follow-up";
 
 interface AnswerDisplayProps {
   markdown: string;
@@ -52,53 +58,77 @@ const markdownComponents: Components = {
   ),
 };
 
-/**
- * Extracts the Socratic follow-up from the streamed answer.
- * The Socratic follow-up is the last paragraph ending with "?".
- */
-function extractSocraticFollowUp(markdown: string): { body: string; followUp: string | null } {
-  // Split on double newlines to get paragraphs
-  const paragraphs = markdown.split(/\n\n+/).map((p) => p.trim()).filter(Boolean);
-
-  if (paragraphs.length === 0) return { body: markdown, followUp: null };
-
-  const last = paragraphs[paragraphs.length - 1];
-
-  // Check if last paragraph is a question (ends with ?)
-  if (last.endsWith("?")) {
-    const body = paragraphs.slice(0, -1).join("\n\n");
-    return { body, followUp: last };
-  }
-
-  return { body: markdown, followUp: null };
-}
+const COLLAPSED_HEIGHT = 200; // px
 
 export function AnswerDisplay({ markdown, isStreaming }: AnswerDisplayProps) {
   const { body, followUp } = extractSocraticFollowUp(markdown);
+  const [expanded, setExpanded] = useState(false);
+  const [needsCollapse, setNeedsCollapse] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  // Measure content height after render to decide if collapse is needed
+  useEffect(() => {
+    if (!isStreaming && contentRef.current) {
+      setNeedsCollapse(contentRef.current.scrollHeight > COLLAPSED_HEIGHT + 40);
+    }
+  }, [isStreaming, markdown]);
+
+  const isCollapsed = needsCollapse && !expanded && !isStreaming;
 
   const content = (
     <div className="bg-card rounded-xl border border-border p-6 mt-4">
-      {/* Main answer body */}
-      <div className="prose prose-sm max-w-none">
-        <ReactMarkdown
-          remarkPlugins={[remarkGfm]}
-          components={markdownComponents}
+      {/* Main answer body — collapsible */}
+      <div className="relative">
+        <div
+          ref={contentRef}
+          className="prose prose-sm max-w-none overflow-hidden transition-[max-height] duration-300"
+          style={{
+            maxHeight: isCollapsed ? `${COLLAPSED_HEIGHT}px` : "none",
+          }}
         >
-          {body || markdown}
-        </ReactMarkdown>
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            components={markdownComponents}
+          >
+            {body || markdown}
+          </ReactMarkdown>
+
+          {/* Socratic follow-up — only show when not streaming and a follow-up exists */}
+          {!isStreaming && followUp && (
+            <>
+              <Separator className="my-4" />
+              <div className="pl-4 border-l-2 border-primary bg-muted rounded-r-md py-3 pr-3">
+                <p className="text-[14px] font-semibold text-muted-foreground mb-1">
+                  Think about this:
+                </p>
+                <p className="text-[16px] font-semibold leading-[1.6]">{followUp}</p>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Fade overlay when collapsed */}
+        {isCollapsed && (
+          <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-card to-transparent pointer-events-none" />
+        )}
       </div>
 
-      {/* Socratic follow-up — only show when not streaming and a follow-up exists */}
-      {!isStreaming && followUp && (
-        <>
-          <Separator className="my-4" />
-          <div className="pl-4 border-l-2 border-primary bg-muted rounded-r-md py-3 pr-3">
-            <p className="text-[14px] font-semibold text-muted-foreground mb-1">
-              Think about this:
-            </p>
-            <p className="text-[16px] font-semibold leading-[1.6]">{followUp}</p>
-          </div>
-        </>
+      {/* Show more / less toggle */}
+      {needsCollapse && !isStreaming && (
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="flex items-center gap-1 text-[14px] text-muted-foreground hover:text-foreground mt-3 transition-colors"
+        >
+          {expanded ? (
+            <>
+              Show less <ChevronUp className="size-4" />
+            </>
+          ) : (
+            <>
+              Read more <ChevronDown className="size-4" />
+            </>
+          )}
+        </button>
       )}
 
       {/* Streaming indicator — show while content is arriving */}

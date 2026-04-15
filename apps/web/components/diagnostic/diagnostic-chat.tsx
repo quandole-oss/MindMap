@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
-import { Loader2, Send, RefreshCw, AlertCircle } from "lucide-react";
+import Link from "next/link";
+import { Loader2, Send, RefreshCw, AlertCircle, ArrowLeft, Sparkles } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { DiagnosticBubble } from "./diagnostic-bubble";
@@ -15,6 +16,7 @@ interface DiagnosticChatProps {
   stage: "probe" | "classify" | "confront" | "resolve";
   outcome?: "resolved" | "unresolved" | "incomplete" | null;
   misconceptionName: string;
+  conceptId?: string;
 }
 
 export function DiagnosticChat({
@@ -23,6 +25,7 @@ export function DiagnosticChat({
   stage: initialStage,
   outcome: initialOutcome,
   misconceptionName,
+  conceptId,
 }: DiagnosticChatProps) {
   const [input, setInput] = useState("");
   // Track whether probe has been initiated (to avoid double-init on Strict Mode)
@@ -244,10 +247,28 @@ export function DiagnosticChat({
 
         {/* Terminal state footer — session complete */}
         {isTerminal && (
-          <div className="border-t border-border px-6 py-4 bg-muted/50">
+          <div className="border-t border-border px-6 py-4 bg-muted/50 space-y-3">
             <p className="text-[13px] text-muted-foreground text-center">
               This diagnostic session is complete.
             </p>
+            <div className="flex gap-2">
+              <Link
+                href="/student"
+                className="flex-1 inline-flex items-center justify-center gap-2 h-10 rounded-md border border-border bg-background text-[13px] font-medium text-foreground hover:bg-muted transition-colors"
+              >
+                <ArrowLeft className="size-3.5" />
+                Dashboard
+              </Link>
+              {conceptId && (
+                <Link
+                  href={`/student/graph?node=${conceptId}`}
+                  className="flex-1 inline-flex items-center justify-center gap-2 h-10 rounded-md border border-border bg-background text-[13px] font-medium text-foreground hover:bg-muted transition-colors"
+                >
+                  <Sparkles className="size-3.5" />
+                  View on graph
+                </Link>
+              )}
+            </div>
           </div>
         )}
       </div>

@@ -2,7 +2,7 @@
 
 import { auth } from "@/lib/auth";
 import { db, schema } from "@mindmap/db";
-import { and, eq, isNull, desc } from "drizzle-orm";
+import { and, eq, isNull, desc, gte, lt } from "drizzle-orm";
 
 /**
  * Returns the most recent incomplete (outcome IS NULL) diagnostic session for the current user.
@@ -47,6 +47,38 @@ export async function getSessionById(sessionId: string) {
     where: and(
       eq(schema.diagnosticSessions.id, sessionId),
       eq(schema.diagnosticSessions.userId, userId)
+    ),
+  });
+}
+
+/**
+ * Returns the diagnostic session linked to today's question, if one exists.
+ * Scoped to the current day (UTC) for precision.
+ */
+export async function getTodayDiagnosticSession() {
+  const session = await auth();
+  if (!session?.user?.id) return null;
+
+  const userId = session.user.id;
+  const now = new Date();
+  const startOfDay = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const startOfTomorrow = new Date(startOfDay.getTime() + 86_400_000);
+
+  // Find today's question first
+  const todayQuestion = await db.query.questions.findFirst({
+    where: and(
+      eq(schema.questions.userId, userId),
+      gte(schema.questions.createdAt, startOfDay),
+      lt(schema.questions.createdAt, startOfTomorrow),
+    ),
+  });
+
+  if (!todayQuestion) return null;
+
+  return db.query.diagnosticSessions.findFirst({
+    where: and(
+      eq(schema.diagnosticSessions.userId, userId),
+      eq(schema.diagnosticSessions.questionId, todayQuestion.id),
     ),
   });
 }

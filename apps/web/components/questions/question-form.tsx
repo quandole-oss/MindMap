@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useCompletion } from "@ai-sdk/react";
-import { Loader2, RefreshCw } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Loader2, RefreshCw, Sparkles, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 
 import { Textarea } from "@/components/ui/textarea";
@@ -14,10 +15,24 @@ interface TodayQuestion {
   aiResponse: string | null;
 }
 
+interface ConceptLink {
+  id: string;
+  name: string;
+}
+
+interface DiagnosticSessionInfo {
+  id: string;
+  stage: string;
+  outcome?: string | null;
+  misconceptionName: string;
+}
+
 interface QuestionFormProps {
   hasAskedToday: boolean;
   todayQuestion?: TodayQuestion | null;
   gradeLevel: number;
+  todayConcepts?: ConceptLink[];
+  todayDiagnostic?: DiagnosticSessionInfo | null;
 }
 
 function getErrorMessage(error: Error | undefined): string {
@@ -39,19 +54,55 @@ export function QuestionForm({
   hasAskedToday,
   todayQuestion,
   gradeLevel,
+  todayConcepts = [],
+  todayDiagnostic = null,
 }: QuestionFormProps) {
+  const router = useRouter();
   const [question, setQuestion] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [localQuestion, setLocalQuestion] = useState<string | null>(null);
   const [pendingQuestion, setPendingQuestion] = useState<string | null>(null);
+  const [concepts, setConcepts] = useState<ConceptLink[]>(todayConcepts);
+  const [diagnosticSession, setDiagnosticSession] = useState<DiagnosticSessionInfo | null>(todayDiagnostic);
+  const [pollingDiagnostic, setPollingDiagnostic] = useState(false);
 
   const { completion, complete, isLoading, error } = useCompletion({
     api: "/api/ask",
     streamProtocol: "text",
-    onFinish: () => {
+    onFinish: async () => {
       toast("New concepts added to your graph");
       setSubmitted(true);
       setPendingQuestion(null);
+      // Fetch newly created concepts for the graph link
+      try {
+        const { getTodayQuestionConcepts } = await import("@/actions/questions");
+        const newConcepts = await getTodayQuestionConcepts();
+        if (newConcepts.length > 0) setConcepts(newConcepts);
+      } catch {
+        // Non-critical — button will still link to graph without a specific node
+      }
+      // Poll for diagnostic session (server creates it async after stream ends)
+      setPollingDiagnostic(true);
+      try {
+        const { getActiveSession } = await import("@/actions/diagnostic");
+        for (let i = 0; i < 3; i++) {
+          await new Promise((r) => setTimeout(r, 2000));
+          const session = await getActiveSession();
+          if (session) {
+            setDiagnosticSession({
+              id: session.id,
+              stage: session.stage,
+              outcome: session.outcome,
+              misconceptionName: session.misconceptionName,
+            });
+            break;
+          }
+        }
+      } catch {
+        // Non-critical — diagnostic is a bonus feature
+      } finally {
+        setPollingDiagnostic(false);
+      }
     },
     onError: () => {
       // Toast is secondary — the inline error UI is the primary feedback
@@ -113,6 +164,43 @@ export function QuestionForm({
         {/* Show the answer — either streamed or previously stored */}
         {displayAnswer && (
           <AnswerDisplay markdown={displayAnswer} isStreaming={false} />
+        )}
+
+        {/* Explore on Graph button */}
+        {displayAnswer && (
+          <Button
+            variant="outline"
+            className="w-full h-11 border-white/10 bg-white/5 hover:bg-white/10 text-white gap-2"
+            onClick={() => {
+              const nodeParam = concepts.length > 0 ? `?node=${concepts[0].id}` : "";
+              router.push(`/student/graph${nodeParam}`);
+            }}
+          >
+            <Sparkles className="size-4" />
+            Explore on your graph
+          </Button>
+        )}
+
+        {/* Diagnostic CTA — shown when a misconception session exists */}
+        {diagnosticSession && (
+          <Button
+            variant="outline"
+            className="w-full h-11 border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-amber-200 gap-2"
+            onClick={() => router.push(`/student/diagnose/${diagnosticSession.id}`)}
+          >
+            <MessageCircle className="size-4" />
+            {diagnosticSession.stage === "resolve"
+              ? "View your diagnostic results"
+              : "Let\u2019s explore your thinking on this..."}
+          </Button>
+        )}
+
+        {/* Polling indicator while checking for diagnostic session */}
+        {pollingDiagnostic && !diagnosticSession && (
+          <div className="flex items-center justify-center gap-2 py-2">
+            <Loader2 className="size-3.5 animate-spin text-white/40" />
+            <p className="text-[13px] text-white/40">Analyzing your understanding...</p>
+          </div>
         )}
       </div>
     );
@@ -177,6 +265,41 @@ export function QuestionForm({
               <div className="h-4 bg-muted rounded animate-pulse w-full" />
               <div className="h-4 bg-muted rounded animate-pulse w-5/6" />
               <div className="h-4 bg-muted rounded animate-pulse w-4/6" />
+            </div>
+          )}
+
+          {/* Explore on Graph — shown after streaming completes */}
+          {submitted && !isLoading && (
+            <Button
+              variant="outline"
+              className="w-full h-11 border-white/10 bg-white/5 hover:bg-white/10 text-white gap-2"
+              onClick={() => {
+                const nodeParam = concepts.length > 0 ? `?node=${concepts[0].id}` : "";
+                router.push(`/student/graph${nodeParam}`);
+              }}
+            >
+              <Sparkles className="size-4" />
+              Explore on your graph
+            </Button>
+          )}
+
+          {/* Diagnostic CTA — shown after streaming when a session is found */}
+          {submitted && !isLoading && diagnosticSession && (
+            <Button
+              variant="outline"
+              className="w-full h-11 border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-amber-200 gap-2"
+              onClick={() => router.push(`/student/diagnose/${diagnosticSession.id}`)}
+            >
+              <MessageCircle className="size-4" />
+              Let&apos;s explore your thinking on this...
+            </Button>
+          )}
+
+          {/* Polling indicator */}
+          {pollingDiagnostic && !diagnosticSession && (
+            <div className="flex items-center justify-center gap-2 py-2">
+              <Loader2 className="size-3.5 animate-spin text-white/40" />
+              <p className="text-[13px] text-white/40">Analyzing your understanding...</p>
             </div>
           )}
         </div>

@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
@@ -33,11 +34,13 @@ export default async function GraphPage() {
           </p>
         </div>
       ) : (
-        <GraphPageClient
-          nodes={graphData.nodes}
-          edges={graphData.edges}
-          bridgeData={bridgeData}
-        />
+        <Suspense>
+          <GraphPageClient
+            nodes={graphData.nodes}
+            edges={graphData.edges}
+            bridgeData={bridgeData}
+          />
+        </Suspense>
       )}
     </div>
   );

@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { hasAskedToday, getTodayQuestion, getStudentGradeLevel } from "@/actions/questions";
+import { hasAskedToday, getTodayQuestion, getStudentGradeLevel, getTodayQuestionConcepts } from "@/actions/questions";
+import { getTodayDiagnosticSession } from "@/actions/diagnostic";
 import { QuestionForm } from "@/components/questions/question-form";
 import { SpiralBackground } from "@/components/ui/spiral-background";
 
@@ -11,10 +12,12 @@ export default async function StudentDashboard() {
     redirect("/login");
   }
 
-  const [askedToday, todayQuestion, gradeLevel] = await Promise.all([
+  const [askedToday, todayQuestion, gradeLevel, todayConcepts, todayDiagnostic] = await Promise.all([
     hasAskedToday(),
     getTodayQuestion(),
     getStudentGradeLevel(),
+    getTodayQuestionConcepts(),
+    getTodayDiagnosticSession(),
   ]);
 
   return (
@@ -43,6 +46,17 @@ export default async function StudentDashboard() {
                     : null
                 }
                 gradeLevel={gradeLevel}
+                todayConcepts={todayConcepts}
+                todayDiagnostic={
+                  todayDiagnostic
+                    ? {
+                        id: todayDiagnostic.id,
+                        stage: todayDiagnostic.stage,
+                        outcome: todayDiagnostic.outcome,
+                        misconceptionName: todayDiagnostic.misconceptionName,
+                      }
+                    : null
+                }
               />
             </div>
           </div>
