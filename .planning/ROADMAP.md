@@ -158,7 +158,12 @@ Plans:
   3. New nodes spawn with a particle birth effect (sparkles) that transitions into their final health-state appearance
   4. A growth summary overlay appears after animation completes showing how many concepts and connections were added (e.g., "+3 concepts, +2 connections")
   5. When the user has `prefers-reduced-motion` enabled, all new content appears instantly with no animation or motion effects (WCAG 2.1 compliance)
-**Plans**: TBD
+**Plans**: 4 plans
+Plans:
+- [ ] 09-01-PLAN.md — Incremental graph layout + InstancedMesh buffer over-allocation
+- [ ] 09-02-PLAN.md — Auto-navigate flow with concept polling + URL animation params
+- [ ] 09-03-PLAN.md — Node birth animation, sparkles, edge draw-in, camera sequence
+- [ ] 09-04-PLAN.md — Growth summary overlay + prefers-reduced-motion + URL cleanup
 **UI hint**: yes
 
 ### Phase 10: Bridge Discovery
@@ -199,7 +204,7 @@ Plans:
 | 6. Demo & Deployment | v1.0 | 4/4 | Complete | 2026-04-08 |
 | 7. 3D Solar System | v1.0 | 3/3 | Complete | 2026-04-10 |
 | 8. Theme Diagnosis | v1.0 | 4/4 | Complete | 2026-04-13 |
-| 9. Graph Animation | v1.1 | 0/? | Not started | - |
+| 9. Graph Animation | v1.1 | 0/4 | Planned | - |
 | 10. Bridge Discovery | v1.1 | 0/? | Not started | - |
 | 11. Teacher Action Loop | v1.1 | 0/? | Not started | - |
 
