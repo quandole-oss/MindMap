@@ -1,437 +1,490 @@
-# Architecture Research
+# Architecture Integration: v1.1 Value Experience Features
 
-**Domain:** AI-powered K-12 educational knowledge graph tool
-**Researched:** 2026-04-08
-**Confidence:** HIGH (primary choices well-established; routing/diagnostic state machine is novel synthesis)
+**Project:** MindMap v1.1
+**Researched:** 2026-04-14
+**Scope:** How 3 features integrate with existing architecture, component-level changes, data flow additions, build order
 
-## Standard Architecture
+## Feature Integration Map
 
-### System Overview
+### Feature 1: Graph-as-Hero (Animate Graph Growth After Question Submission)
 
-```
-┌──────────────────────────────────────────────────────────────────────┐
-│                         Presentation Layer                           │
-│  ┌──────────────┐  ┌───────────────────────┐  ┌──────────────────┐  │
-│  │  Daily Input │  │  D3 Knowledge Graph   │  │ Teacher Dashboard│  │
-│  │  (question)  │  │  (force-directed SVG) │  │ (heatmap, stats) │  │
-│  └──────┬───────┘  └──────────┬────────────┘  └────────┬─────────┘  │
-└─────────┼────────────────────┼─────────────────────────┼────────────┘
-          │                    │ (graph JSON)             │
-          │ (POST /api/ask)    │                          │ (GET /api/teacher/*)
-┌─────────▼────────────────────▼─────────────────────────▼────────────┐
-│                         API / Server Actions Layer                   │
-│  ┌──────────────┐  ┌───────────────────────┐  ┌──────────────────┐  │
-│  │  /api/ask    │  │  /api/graph/[userId]  │  │  /api/teacher/*  │  │
-│  │  (main flow) │  │  (graph queries)      │  │  (class metrics) │  │
-│  └──────┬───────┘  └───────────────────────┘  └──────────────────┘  │
-└─────────┼────────────────────────────────────────────────────────────┘
-          │
-┌─────────▼────────────────────────────────────────────────────────────┐
-│                       @mindmap/router Package                        │
-│                                                                      │
-│   Input: { concept, gradeband, questionText }                        │
-│   Logic: misconception YAML lookup → probability score               │
-│   Output: { mode: "enrich" | "diagnose", misconceptionId? }          │
-└─────────┬──────────────────────┬───────────────────────────────────  ┘
-          │ enrich               │ diagnose
-┌─────────▼──────────┐  ┌───────▼──────────────────────────────────┐
-│ @mindmap/llm       │  │ @mindmap/llm (Diagnostic flow)           │
-│ Enrich adapter     │  │ probe → classify → confront → resolve    │
-│ (rich answer +     │  │ (Socratic state machine, multi-turn)     │
-│  concept list)     │  └───────┬──────────────────────────────────┘
-└─────────┬──────────┘          │ classified misconception
-          │                     │
-┌─────────▼─────────────────────▼──────────────────────────────────┐
-│                  Concept Extraction Pipeline                       │
-│  1. Raw concept list from LLM response                            │
-│  2. Embed each concept → pgvector (text-embedding-3-small)        │
-│  3. Similarity search: cosine > 0.92 threshold → candidate match  │
-│  4. LLM disambiguation if borderline (0.85-0.92 band)            │
-│  5. Upsert canonical concept / create new node                    │
-└─────────┬──────────────────────────────────────────────────────── ┘
-          │
-┌─────────▼────────────────────────────────────────────────────────┐
-│                    @mindmap/db Package                             │
-│  PostgreSQL + pgvector (Neon / Docker Compose)                    │
-│                                                                   │
-│  Tables: users, students, teachers, classes                       │
-│          concepts (embedding vector<1536>)                        │
-│          concept_connections (source, target, strength)           │
-│          daily_questions, answers                                 │
-│          misconception_events                                     │
-│          node_health_states                                       │
-│                                                                   │
-│  Indexes: HNSW on concepts.embedding                              │
-└───────────────────────────────────────────────────────────────── ┘
-          ↑
-┌─────────┴────────────────────────────────────────────────────────┐
-│               @mindmap/misconceptions Package                     │
-│  YAML files (35+ entries, 4 domains)                              │
-│  Loader: validates schema, exports typed MisconceptionLibrary     │
-│  Used by: router (routing rules) + llm (prompt injection)         │
-└───────────────────────────────────────────────────────────────── ┘
-```
+**Goal:** After a student submits a question and the AI answers, the student's knowledge graph grows visually on-screen. The graph expansion IS the reward -- the student sees new nodes and edges appear.
 
-### Component Responsibilities
-
-| Component | Responsibility | Package |
-|-----------|----------------|---------|
-| `apps/web` | Next.js app: UI, API routes, server actions, auth | `apps/web` |
-| `@mindmap/llm` | LLM adapter abstraction, prompt templates, response parsers | `packages/llm` |
-| `@mindmap/router` | Decides enrich vs. diagnose mode; reads misconception YAML routing rules | `packages/router` |
-| `@mindmap/misconceptions` | YAML library loader, schema validation, typed exports | `packages/misconceptions` |
-| `@mindmap/db` | Drizzle ORM schema, migrations, pgvector queries, connection pool | `packages/db` |
-| Concept pipeline | Orchestration layer (inside `apps/web` API route) calling `llm` + `db` + pgvector | `apps/web/lib/pipeline` |
-| D3 graph renderer | Client-only React component wrapping D3 force simulation; receives graph JSON | `apps/web/components/graph` |
-| Teacher dashboard | Server-rendered Next.js page with aggregated concept/misconception queries | `apps/web/app/teacher` |
-
-## Recommended Project Structure
-
-```
-mindmap/
-├── apps/
-│   └── web/                         # Next.js 14+ App Router
-│       ├── app/
-│       │   ├── (auth)/              # login / signup routes
-│       │   ├── student/             # daily question, graph view
-│       │   ├── teacher/             # class dashboard
-│       │   └── api/
-│       │       ├── ask/route.ts     # main pipeline entrypoint
-│       │       ├── graph/route.ts   # graph data fetch
-│       │       └── teacher/route.ts # teacher metrics
-│       ├── components/
-│       │   ├── graph/               # D3 force graph (client component)
-│       │   ├── diagnostic/          # Socratic dialogue UI
-│       │   └── dashboard/           # teacher charts
-│       └── lib/
-│           └── pipeline/            # concept extraction orchestration
-├── packages/
-│   ├── llm/                         # @mindmap/llm
-│   │   ├── src/
-│   │   │   ├── adapters/
-│   │   │   │   ├── anthropic.ts
-│   │   │   │   ├── openai.ts
-│   │   │   │   └── ollama.ts
-│   │   │   ├── prompts/             # enrich.ts, diagnose.ts, extract.ts
-│   │   │   └── index.ts             # LLMAdapter interface + factory
-│   ├── router/                      # @mindmap/router
-│   │   ├── src/
-│   │   │   ├── rules.ts             # routing rule evaluator
-│   │   │   └── index.ts             # route(concept, gradeband) → RoutingDecision
-│   ├── misconceptions/              # @mindmap/misconceptions
-│   │   ├── library/                 # YAML files by domain
-│   │   │   ├── physics.yaml
-│   │   │   ├── biology.yaml
-│   │   │   ├── math.yaml
-│   │   │   └── chemistry.yaml
-│   │   └── src/
-│   │       ├── schema.ts            # Zod validation
-│   │       └── index.ts             # loadLibrary(), getMisconception()
-│   └── db/                          # @mindmap/db
-│       ├── src/
-│       │   ├── schema/              # Drizzle table definitions
-│       │   ├── queries/             # typed query helpers
-│       │   └── migrations/
-│       └── index.ts
-├── docker-compose.yml
-├── turbo.json
-└── pnpm-workspace.yaml
-```
-
-### Structure Rationale
-
-- **`packages/llm`:** Isolating the LLM adapter behind an interface means swapping Anthropic → OpenAI → Ollama requires touching one file. Prompts live here — not in the web app — so they can be tested independently.
-- **`packages/router`:** Decoupled from LLM so routing logic (which is pure function: concept + gradeband → mode) can be unit tested without mocking LLM calls.
-- **`packages/misconceptions`:** YAML-based library that any package can import. Community contributions come as YAML PRs; CI validates schema automatically without needing to run the app.
-- **`packages/db`:** All database access in one place. pgvector queries (concept deduplication) live here with typed wrappers, preventing direct SQL scattered across the app.
-- **`apps/web/lib/pipeline`:** The concept extraction pipeline is app-layer orchestration — it calls `llm`, `db`, and `misconceptions` packages. This is NOT a standalone package because it is deployment-coupled (it runs inside Next.js API routes).
-
-## Architectural Patterns
-
-### Pattern 1: LLM Adapter Interface
-
-**What:** Define a `LLMAdapter` interface with methods `enrich()`, `diagnose()`, `extractConcepts()`, `embed()`. Each provider (Anthropic, OpenAI, Ollama) implements it. A factory function selects the active adapter from env config.
-
-**When to use:** Any time the system calls an LLM — always go through the adapter, never call provider SDKs directly from `apps/web`.
-
-**Trade-offs:** Adds one layer of indirection. Worth it: switching providers for cost/availability requires no refactoring.
-
-**Example:**
-```typescript
-// packages/llm/src/index.ts
-export interface LLMAdapter {
-  enrich(question: string, gradeband: string): Promise<EnrichResult>;
-  diagnose(state: DiagnosticState): Promise<DiagnosticTurn>;
-  extractConcepts(text: string): Promise<string[]>;
-  embed(text: string): Promise<number[]>;
-}
-
-export function createLLMAdapter(provider: "anthropic" | "openai" | "ollama"): LLMAdapter {
-  switch (provider) {
-    case "anthropic": return new AnthropicAdapter();
-    case "openai":    return new OpenAIAdapter();
-    case "ollama":    return new OllamaAdapter();
-  }
-}
-```
-
-### Pattern 2: Two-Stage Concept Deduplication
-
-**What:** When a new concept string arrives, use a fast pgvector ANN (approximate nearest neighbor) query to find candidates with cosine similarity above 0.92. If a match exists, merge. If similarity is in the ambiguous band (0.85–0.92), invoke LLM disambiguation. Below 0.85, create a new node. This prevents "gravity (physics)" and "gravity (baking)" from incorrectly merging.
-
-**When to use:** Every time the extraction pipeline produces a concept string before writing to the database.
-
-**Trade-offs:** The LLM disambiguation call adds ~500ms latency for borderline cases. Accept this — correctness matters more than speed for graph integrity. HNSW indexing keeps the vector search under 10ms even at 100k+ nodes.
-
-**Example:**
-```typescript
-async function deduplicateConcept(
-  rawConcept: string,
-  contextText: string,
-  db: Database,
-  llm: LLMAdapter
-): Promise<ConceptId> {
-  const embedding = await llm.embed(rawConcept);
-  const candidates = await db.findSimilarConcepts(embedding, { threshold: 0.85, limit: 5 });
-
-  const exact = candidates.find(c => c.similarity >= 0.92);
-  if (exact) return exact.id;
-
-  const borderline = candidates.filter(c => c.similarity >= 0.85);
-  if (borderline.length > 0) {
-    const merged = await llm.disambiguate(rawConcept, contextText, borderline);
-    if (merged) return merged.id;
-  }
-
-  return db.createConcept(rawConcept, embedding);
-}
-```
-
-### Pattern 3: Router State Machine (Enrich vs. Diagnose)
-
-**What:** The router evaluates a concept against the misconception library and grade band to produce a deterministic `RoutingDecision`. The routing is stateless and pure — given the same inputs it returns the same output. The Socratic diagnostic flow is a separate state machine tracking probe → classify → confront → resolve across turns.
-
-**When to use:** Every question submission runs through the router first. Diagnostic state is stored in the database (not in-memory), so sessions survive page reloads.
-
-**Trade-offs:** Storing diagnostic state in PostgreSQL means slightly higher latency than in-memory sessions. Correct trade-off for a school context where browser crashes are common.
-
-```typescript
-// packages/router/src/index.ts
-export type RoutingDecision =
-  | { mode: "enrich" }
-  | { mode: "diagnose"; misconceptionId: string; probability: number };
-
-export function routeQuestion(
-  concept: string,
-  gradeband: "K-5" | "6-8" | "9-12",
-  library: MisconceptionLibrary
-): RoutingDecision { ... }
-
-// Diagnostic state machine stages
-export type DiagnosticStage = "probe" | "classify" | "confront" | "resolve";
-```
-
-## Data Flow
-
-### Primary Request Flow: Student Asks a Question
+#### Current Flow (What Exists)
 
 ```
 Student submits question
-    ↓
-POST /api/ask (Next.js API route)
-    ↓
-Auth middleware → verify JWT, get userId + gradeband
-    ↓
-@mindmap/router.routeQuestion(concept, gradeband, library)
-    ↓
-        ┌─── mode: "enrich" ─────────────────────────────────────┐
-        │    LLMAdapter.enrich() → { richAnswer, rawConcepts }   │
-        │    Concept extraction pipeline (per concept):          │
-        │      embed → deduplicate → upsert node → add edge      │
-        │    Write daily_question + answer rows                  │
-        │    Return { mode, answer, graphDelta }                 │
-        └────────────────────────────────────────────────────────┘
-        ┌─── mode: "diagnose" ───────────────────────────────────┐
-        │    Create misconception_event row (stage: "probe")     │
-        │    LLMAdapter.diagnose({ stage, misconceptionId })     │
-        │    Return { mode, firstProbeQuestion, misconceptionId } │
-        └────────────────────────────────────────────────────────┘
-    ↓
-Client renders answer OR enters Socratic dialogue UI
-    ↓ (D3 graph)
-GET /api/graph/[userId] → query concepts + connections → graph JSON
-D3 force simulation re-renders with new nodes
+  -> QuestionForm (client) POST /api/ask
+    -> streamText() streams answer to QuestionForm
+    -> onFinish callback (server):
+        extract concepts -> deduplicate -> create edges -> [maybe diagnostic session]
+  -> QuestionForm shows "Explore on your graph" button
+    -> router.push('/student/graph?node=xxx')
+    -> Graph page loads completely fresh (full page navigation)
 ```
 
-### Diagnostic Turn Flow (multi-turn Socratic dialogue)
+The current experience is **two separate pages with a full navigation break**. The student asks, sees the answer, then clicks a button to visit a completely different page. The graph renders with all nodes already present -- there is no growth animation, no visual moment of "your graph just expanded."
+
+#### Integration Architecture
+
+**Option A: Embed a Mini-Graph in the Student Page (FULL VISION)**
+
+Add an inline, lightweight graph visualization directly in the student question page (`/student`) that shows graph growth in real-time after the `onFinish` callback completes.
+
+**Components Modified:**
+
+| Component | Change Type | What Changes |
+|-----------|-------------|-------------|
+| `apps/web/app/student/page.tsx` | MODIFIED | Fetch graph data server-side alongside existing data; pass to QuestionForm |
+| `components/questions/question-form.tsx` | MODIFIED | After `onFinish`, fetch new graph data, render growth animation inline |
+| `actions/graph.ts` | MODIFIED | Add `getGraphDataLight()` -- lighter version returning just nodes/edges without full centrality/betweenness computation |
+
+**New Components:**
+
+| Component | Purpose |
+|-----------|---------|
+| `components/graph/graph-growth-animation.tsx` | Client component that renders a mini 3D graph and animates new nodes/edges appearing. Uses R3F Canvas (same as solar-graph) but with a smaller viewport and auto-orbit camera. |
+
+**Data Flow Change:**
 
 ```
-Student answers probe question
-    ↓
-POST /api/ask/diagnose { sessionId, studentResponse }
-    ↓
-Load diagnostic state from DB (current stage)
-    ↓
-LLMAdapter.diagnose({ stage, priorTurns, studentResponse, misconception })
-    ↓
-Advance state machine: probe → classify → confront → resolve
-    ↓
-If stage = "resolve":
-    Mark node_health_state = "misconception" (or "resolved")
-    Write concept connections from resolved understanding
-    ↓
-Return next question OR resolution summary
+BEFORE:
+  student/page.tsx -> QuestionForm -> (answer) -> button -> /student/graph (full nav)
+
+AFTER:
+  student/page.tsx (server: fetch initial graphData)
+    -> QuestionForm receives initialGraphData prop
+    -> User asks question -> stream answer
+    -> onFinish fires
+    -> QuestionForm calls getTodayQuestionConcepts() (existing)
+    -> QuestionForm calls getGraphDataLight() (NEW)
+    -> Compare initialGraphData vs newGraphData to identify new nodes/edges
+    -> Render GraphGrowthAnimation with { existingNodes, newNodes, existingEdges, newEdges }
+    -> Animation: existing graph fades in at 0.3 opacity, then new nodes/edges
+       appear one-by-one with scale-up + glow, camera auto-orbits slowly
+    -> "Explore full graph" button below animation
 ```
 
-### Graph Data Flow (read path)
+**Why this approach:**
+- No navigation break -- the student stays on one page and sees the reward
+- Re-uses the existing R3F + Three.js infrastructure (SolarNodes, SolarEdges patterns)
+- `getGraphDataLight()` skips betweenness centrality (O(V*E)) -- only needs node positions and basic data for the mini view
+- The animation component is self-contained and does not pollute the existing full graph page
 
-```
-GET /api/graph/[userId]
-    ↓
-db.getConceptGraph(userId)  ← concepts + concept_connections tables
-    ↓
-Transform to D3 format: { nodes: [{ id, label, health, size }], links: [...] }
-    ↓
-Client: D3 useEffect initializes/updates force simulation
-Node color = health state (healthy=green, misconception=red, unprobed=grey, bridge=gold)
-```
+**Server Action Addition:**
 
-### Teacher Dashboard Flow
-
-```
-GET /api/teacher/class/[classId]
-    ↓
-Parallel queries:
-  - misconception_events aggregate (misconception counts by concept)
-  - node_health_states aggregate (health distribution per student)
-  - daily_questions count (engagement/streak data)
-    ↓
-Return { misconceptionHeatmap, engagementMatrix, conceptClusters }
-    ↓
-Server-rendered page with chart components (recharts or similar)
+```typescript
+// actions/graph.ts -- NEW
+export async function getGraphDataLight(): Promise<{ nodes: LightGraphNode[]; edges: LightGraphEdge[] }>
 ```
 
-## Build Order (Dependency Graph)
+This returns nodes with `{ id, name, domain, status }` and edges with `{ source, target, edgeType }` -- no centrality, no importance scores, no co-occurrence queries. Fast enough to call in the onFinish polling loop.
 
-The packages have a strict dependency direction. Build in this order:
+**Schema Changes:** None. All data already exists.
+
+**Option B: Navigate to Graph with Growth Animation State (SIMPLER)**
+
+Instead of embedding a mini-graph, pass "new concept IDs" as URL params to the graph page and animate them appearing there.
 
 ```
-Layer 0 (no internal deps):
-  @mindmap/misconceptions   ← only imports YAML + Zod
-
-Layer 1 (depends on Layer 0):
-  @mindmap/db               ← imports nothing internal
-  @mindmap/router           ← imports @mindmap/misconceptions
-
-Layer 2 (depends on Layer 1):
-  @mindmap/llm              ← imports nothing internal (provider SDKs only)
-
-Layer 3 (depends on Layers 0-2):
-  apps/web                  ← imports all packages
+router.push('/student/graph?newNodes=id1,id2,id3&animate=true')
 ```
 
-**Implementation phases implied by this order:**
+The existing `GraphPageClient` would detect `animate=true`, hold new nodes invisible initially, then animate them in with scale+glow over 2 seconds.
 
-1. **`@mindmap/db` schema first** — everything persists data; need schema before writing any logic
-2. **`@mindmap/misconceptions` second** — YAML library + schema validation; no code dependencies; can be done alongside db
-3. **`@mindmap/llm` adapter third** — enrich and embed are needed for the happy path; diagnostic prompts can come later
-4. **`@mindmap/router` fourth** — needs misconceptions library to be loadable
-5. **Concept pipeline in `apps/web`** — wires packages together; proves end-to-end works
-6. **D3 graph UI** — needs graph data from db; unblocked after pipeline works
-7. **Diagnostic flow** — builds on the pipeline; adds the state machine + multi-turn UI
-8. **Teacher dashboard** — depends on real data existing from the pipeline
+**Tradeoff:** Simpler to implement (no new component, no duplicate R3F canvas) but still requires a full page navigation, which weakens the "graph is the reward" emotional punch. The student clicks a button, waits for page load, THEN sees animation -- the dopamine loop is interrupted.
 
-## Anti-Patterns
+**Recommendation: Start with Option B, upgrade to Option A if time permits.** Option B is a 60% emotional improvement with 30% of the effort. Option A is the full vision but requires more work on the mini-graph component.
 
-### Anti-Pattern 1: LLM Calls Directly in React Components
+---
 
-**What people do:** Call Anthropic SDK directly from a `useEffect` or `onClick` in a React component.
+### Feature 2: Surprising Connections (Bridge Concept Discovery UX)
 
-**Why it's wrong:** Exposes API keys in client bundle. No server-side validation. Bypasses the router and pipeline.
+**Goal:** Bridge concepts (nodes connecting two different knowledge domains) become unmissable "aha!" moments, not just a weekly toast.
 
-**Do this instead:** All LLM calls go through `POST /api/ask` (API route). Client only sees the response.
+#### Current Flow (What Exists)
 
-### Anti-Pattern 2: Skipping the Deduplication Stage
+```
+Graph page loads
+  -> Server: getBridgeConnection() finds top bridge node
+  -> Client: BridgeToast fires a Sonner toast (8s duration, 7-day cooldown via localStorage)
+  -> Toast has "Explore" action that flies camera to the bridge node + 1.5s pulse animation
+```
 
-**What people do:** Write extracted concepts directly to the DB without embedding and similarity check, trusting exact string match instead.
+**Problems with current UX:**
+1. Toast is easy to miss (auto-dismisses in 8s)
+2. 7-day cooldown means new bridges discovered mid-week are invisible until next week
+3. No context about WHY the connection is surprising (just says "X connects domain A and domain B")
+4. No persistent UI -- once toast dismisses, the insight is gone
 
-**Why it's wrong:** "Gravity (physics)" and "gravity" become two nodes. Graph fragments rather than connects. This is the stated hard problem of the project.
+#### Integration Architecture
 
-**Do this instead:** Every concept, even if it looks unique, runs through the two-stage dedup (embed → ANN → optional LLM disambiguate) before insertion.
+**Components Modified:**
 
-### Anti-Pattern 3: Storing Diagnostic Session State Client-Side
+| Component | Change Type | What Changes |
+|-----------|-------------|-------------|
+| `components/graph/bridge-toast.tsx` | REPLACED by new component | Current toast is too ephemeral; replace with a persistent discovery card |
+| `components/graph/graph-page-client.tsx` | MODIFIED | Add bridge discovery panel/card instead of just toast; handle "new bridge since last visit" detection |
+| `actions/graph.ts` | MODIFIED | Enhance `getBridgeConnection()` to return multiple bridges ranked by betweenness, plus the questions that created the connection |
 
-**What people do:** Track Socratic dialogue stage in React state (useState) or localStorage.
+**New Components:**
 
-**Why it's wrong:** Students lose progress on browser crash, tab switch, or device change. Teachers cannot see mid-session diagnostic state for intervention.
+| Component | Purpose |
+|-----------|---------|
+| `components/graph/bridge-discovery-card.tsx` | Persistent card UI (not a toast) that appears at top of graph page when bridge nodes exist. Shows bridge name, connected domains, the question that created the link, and a "Fly there" button. Dismissible but re-accessible via a toolbar icon. |
+| `components/graph/bridge-insight-panel.tsx` | Extended panel (Sheet from shadcn/ui) showing all bridge connections with explanations of why each is surprising. LLM-generated one-liner explanation of the cross-domain connection. |
 
-**Do this instead:** Write diagnostic state to `misconception_events` table after every turn. The client is stateless — it reads stage from the API.
+**Data Flow Change:**
 
-### Anti-Pattern 4: Putting Graph Rendering Logic in API Routes
+```
+BEFORE:
+  getBridgeConnection() -> single bridge { nodeId, name, domainA, domainB }
+  -> BridgeToast (7-day cooldown, auto-dismiss)
 
-**What people do:** Generate SVG or run D3 simulation server-side, return HTML.
+AFTER:
+  getBridgeConnections() -> Array<BridgeConnection>
+    where BridgeConnection = {
+      nodeId, name, domainA, domainB,
+      betweenness: number,
+      connectingQuestions: string[], // question texts that created the link
+      isNew: boolean // appeared since user's last graph visit
+    }
+  -> BridgeDiscoveryCard (persistent, dismissible, for the TOP bridge)
+  -> BridgeInsightPanel (Sheet, lists ALL bridges with explanations)
+```
 
-**Why it's wrong:** D3 force simulation is interactive and physics-based; it must run in the browser. Server-side rendering it produces a static snapshot with no drag/zoom/hover.
+**Server Action Changes:**
 
-**Do this instead:** API returns pure graph data JSON (nodes + links). The D3 component is a client-only React component (`"use client"`) that initializes the simulation in a `useEffect`.
+```typescript
+// actions/graph.ts -- MODIFIED (rename + enhance)
+export async function getBridgeConnections(): Promise<BridgeConnection[]>
+```
 
-### Anti-Pattern 5: Monolithic Prompt Strings in API Routes
+The enhanced version:
+1. Finds ALL bridge nodes (not just the top one) via `findTopBridgeNode` variant
+2. For each bridge, queries `conceptQuestions` join + `questions` table to find the question texts that created the cross-domain link
+3. Checks a `lastGraphVisit` timestamp (new field or localStorage comparison) to flag `isNew` bridges
 
-**What people do:** Inline prompt templates as string literals inside API route handlers.
+**Schema Changes:**
 
-**Why it's wrong:** Prompts cannot be tested in isolation. Adapter swap requires hunting through `apps/web`. Misconception context injection becomes entangled with HTTP handling.
+**Recommended: No schema change.** Track "last graph visit" in `localStorage` on the client. When graph page loads, compare bridge node `createdAt` against stored timestamp. Simple, no migration. The bridge "newness" detection is a UX nicety, not a data integrity concern.
 
-**Do this instead:** All prompts live in `packages/llm/src/prompts/`. They are typed functions that accept structured inputs and return strings. Tested independently of the web layer.
+**LLM Integration for Bridge Explanations:**
 
-## Integration Points
+Add a new prompt in `packages/llm/src/prompts/explain-bridge.ts`:
 
-### External Services
+```typescript
+export async function explainBridgeConnection(
+  bridgeConceptName: string,
+  domainA: string,
+  domainB: string,
+  connectingQuestions: string[]
+): Promise<string>
+```
 
-| Service | Integration Pattern | Notes |
-|---------|---------------------|-------|
-| Anthropic Claude API | `AnthropicAdapter` in `@mindmap/llm`; env var `LLM_PROVIDER=anthropic` | Primary provider; streaming via SSE for long responses |
-| OpenAI API | `OpenAIAdapter` in `@mindmap/llm`; same interface | Fallback; also source of `text-embedding-3-small` embeddings |
-| Ollama (local) | `OllamaAdapter` in `@mindmap/llm`; points to `http://localhost:11434` | For self-hosted deployments with no cloud LLM dependency |
-| Neon (cloud Postgres) | `DATABASE_URL` env var; `@mindmap/db` uses standard `pg` driver | pgvector extension must be enabled via `CREATE EXTENSION vector` |
-| Docker Compose Postgres | Same driver, different `DATABASE_URL`; pgvector via `ankane/pgvector` image | Self-hosted path |
+This generates a 1-2 sentence "aha!" explanation like: "You discovered that *photosynthesis* connects biology and chemistry! When you asked about plant food, you were really asking about chemical reactions powered by light."
 
-### Internal Boundaries
+**Call this lazily** -- only when the student opens the BridgeInsightPanel, not on page load (avoids unnecessary LLM calls).
 
-| Boundary | Communication | Notes |
-|----------|---------------|-------|
-| `apps/web` ↔ `@mindmap/llm` | Direct import; async function calls | Never use HTTP between internal packages |
-| `apps/web` ↔ `@mindmap/db` | Direct import; async query functions | Connection pool initialized once at app startup |
-| `apps/web` ↔ `@mindmap/router` | Direct import; pure synchronous function | Router has no I/O; can be called inline |
-| `@mindmap/router` ↔ `@mindmap/misconceptions` | Direct import; in-memory YAML data | Library loaded once at startup and cached |
-| D3 component ↔ API | HTTP GET `/api/graph/[userId]` | Client component fetches graph JSON; not a direct package import |
-| Diagnostic UI ↔ API | HTTP POST `/api/ask/diagnose` | Multi-turn; stateless client, stateful server |
+---
 
-## Scaling Considerations
+### Feature 3: Teacher Action Loop (Cluster -> Activity -> Mark Done -> Re-Probe)
 
-| Scale | Architecture Adjustments |
-|-------|--------------------------|
-| 0-500 users (capstone demo) | Single Next.js instance on Vercel, single Neon branch, no caching layer needed. Vercel edge functions for API routes. |
-| 500-10k users | Add Redis (Upstash) for session caching and API response caching. HNSW index on `concepts.embedding` becomes critical. Consider read replica for teacher dashboard queries. |
-| 10k+ users | Separate concept extraction pipeline from request path (use a queue: BullMQ or Inngest). Graph queries may need materialized views. Consider dedicated embedding service cache to reduce redundant embed API calls. |
+**Goal:** Teachers see misconception clusters, generate targeted classroom activities, mark them as "addressed," and the system re-probes affected students to measure whether the activity worked.
 
-### Scaling Priorities for MindMap Specifically
+#### Current Flow (What Exists)
 
-1. **First bottleneck:** LLM API latency. Every `/api/ask` call waits for an LLM response. Mitigation: stream responses to the client with SSE rather than waiting for the full response.
-2. **Second bottleneck:** pgvector ANN query performance at scale. HNSW index handles this well to ~1M vectors; beyond that, partitioning by domain becomes necessary.
-3. **Third bottleneck:** Teacher dashboard aggregate queries. These scan across all students in a class. Mitigation: pre-aggregate on question submission, store summary rows, not just raw events.
+```
+Teacher dashboard -> Misconceptions tab -> "By Root Theme" view
+  -> ThemesView shows ThemeCluster cards (name, naive theory, stats)
+  -> "Drill down" expands: constituent misconceptions + affected students
+  -> "Generate Lesson Plan" button -> LLM generates plan -> LessonPlanCard
+  -> LessonPlanCard shows: common misunderstanding, target understanding,
+     suggested activities, discussion prompts, confrontation approaches
+  -> "Regenerate" re-generates the plan
+```
+
+**What is missing:**
+1. No "Mark as addressed" -- teacher runs the activity but system does not know
+2. No re-probe -- after marking addressed, system should re-assess affected students
+3. No before/after comparison -- no way to see if the activity actually worked
+4. No activity-level tracking -- the lesson plan exists but individual activities are not trackable
+
+#### Integration Architecture
+
+**Schema Changes (REQUIRED):**
+
+```sql
+-- NEW TABLE: teacher_interventions
+CREATE TABLE teacher_interventions (
+  id TEXT PRIMARY KEY,
+  class_id TEXT NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
+  theme_id TEXT NOT NULL,           -- library slug (same as theme_lesson_plans)
+  lesson_plan_id TEXT REFERENCES theme_lesson_plans(id),
+  activity_title TEXT NOT NULL,     -- which activity from the plan was used
+  status TEXT NOT NULL DEFAULT 'planned',  -- 'planned' | 'in_progress' | 'completed'
+  addressed_at TIMESTAMPTZ,         -- when teacher marked it complete
+  notes TEXT,                       -- optional teacher notes
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- NEW TABLE: reprobe_sessions
+CREATE TABLE reprobe_sessions (
+  id TEXT PRIMARY KEY,
+  intervention_id TEXT NOT NULL REFERENCES teacher_interventions(id) ON DELETE CASCADE,
+  student_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  diagnostic_session_id TEXT REFERENCES diagnostic_sessions(id),
+  misconception_id TEXT NOT NULL,   -- library slug
+  previous_outcome TEXT NOT NULL,   -- 'resolved' | 'unresolved' | 'incomplete'
+  reprobe_outcome TEXT NOT NULL DEFAULT 'pending',  -- 'resolved' | 'unresolved' | 'incomplete' | 'pending'
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+**Why two tables:** The intervention tracks the teacher's action. The reprobe sessions track per-student outcomes. Separating them enables "show me the impact of each intervention" queries without complex joins.
+
+**Components Modified:**
+
+| Component | Change Type | What Changes |
+|-----------|-------------|-------------|
+| `components/dashboard/themes-view.tsx` | MODIFIED | Add intervention tracking UI below each theme card |
+| `components/dashboard/lesson-plan-card.tsx` | MODIFIED | Each activity gets a "Plan this activity" button |
+| `components/dashboard/dashboard-tabs.tsx` | MODIFIED | Add new tab or sub-view for intervention history |
+| `actions/themes.ts` | MODIFIED | Add intervention CRUD actions |
+
+**New Components:**
+
+| Component | Purpose |
+|-----------|---------|
+| `components/dashboard/intervention-tracker.tsx` | Shows active/completed interventions for a theme. "Mark addressed" button triggers intervention record creation + re-probe scheduling. |
+| `components/dashboard/reprobe-results.tsx` | Before/after comparison view: for each affected student, shows previous outcome vs re-probe outcome. "Resolved" count change is the headline metric. |
+| `components/dashboard/intervention-history.tsx` | Timeline of all interventions for a class, with impact metrics per intervention. |
+
+**New Server Actions:**
+
+```typescript
+// actions/interventions.ts -- NEW FILE
+export async function createIntervention(
+  classId: string,
+  themeId: string,
+  activityTitle: string,
+  lessonPlanId?: string
+): Promise<Intervention>
+
+export async function markInterventionComplete(
+  interventionId: string,
+  notes?: string
+): Promise<void>
+// This triggers the re-probe scheduling:
+// 1. Find all students affected by this theme's constituent misconceptions
+// 2. For each student with unresolved outcomes, create a reprobe_sessions row with status 'pending'
+// 3. Create a diagnostic_session at stage 'probe' for each pending reprobe
+
+export async function getInterventionResults(
+  interventionId: string
+): Promise<InterventionResults>
+// Returns before/after comparison for all reprobe sessions
+
+export async function getClassInterventions(
+  classId: string
+): Promise<Intervention[]>
+```
+
+**Data Flow -- Complete Action Loop:**
+
+```
+1. Teacher views theme cluster (existing)
+2. Teacher generates lesson plan (existing)
+3. Teacher picks an activity from the plan
+4. Teacher clicks "Plan this activity" -> createIntervention()
+   -> Stores intervention with status='planned'
+5. Teacher runs the activity in class (real world)
+6. Teacher clicks "Mark as addressed" -> markInterventionComplete()
+   -> Sets status='completed', addressedAt=now
+   -> For each affected student with unresolved misconceptions in this theme:
+      a. Snapshot their current diagnostic outcome into reprobe_sessions.previousOutcome
+      b. Create a new diagnostic_session at stage='probe' (re-probe)
+      c. Link reprobe_sessions.diagnosticSessionId to the new session
+7. Students see a new diagnostic probe next time they visit /student
+   -> This reuses the EXISTING diagnostic flow completely
+   -> The /api/diagnose endpoint already handles probe->classify->confront->resolve
+8. As students complete re-probes, their outcomes update
+9. Teacher views "Intervention Results" -> getInterventionResults()
+   -> Shows: "Before: 8 unresolved / After: 3 unresolved = 62.5% improvement"
+```
+
+**Critical Integration Point -- How Re-Probes Reach Students:**
+
+The existing `getTodayDiagnosticSession()` Server Action in `actions/diagnostic.ts` finds active (non-resolved) diagnostic sessions for the logged-in student. When `markInterventionComplete` creates new diagnostic sessions, they automatically appear via the existing code path. **No changes to the student-facing diagnostic flow.**
+
+However, currently diagnostic sessions are only created in `/api/ask` `onFinish` -- tied to a question submission. Re-probe sessions would be created by a teacher action, which is a new creation path. Need to ensure:
+1. The new sessions have a valid `conceptId` and `misconceptionId` (use the original from the student's existing diagnostic session)
+2. The new sessions have `questionId: null` (no associated question -- this is already nullable in the schema)
+3. Student's "active session" detection works with teacher-created sessions (it should -- it queries by userId + stage != 'resolve')
+
+**Schema Compatibility Check:**
+- `diagnosticSessions.questionId` is already nullable (FK with `onDelete: "set null"`) -- re-probes with `questionId: null` are safe
+- `diagnosticSessions.conceptId` is NOT NULL -- must provide the original concept ID from the student's prior session
+- `diagnosticSessions.stage` defaults to `'probe'` -- correct for re-probes
+- No `classId` on `diagnosticSessions` -- this is a known limitation (documented in themes.ts). Re-probe sessions are scoped by student, not by class. Acceptable for v1.1.
+
+---
+
+## New Package/File Summary
+
+### New Files
+
+| Path | Type | Purpose |
+|------|------|---------|
+| `packages/db/src/schema/interventions.ts` | Schema | `teacher_interventions` and `reprobe_sessions` tables |
+| `apps/web/actions/interventions.ts` | Server Actions | CRUD for interventions + re-probe scheduling |
+| `apps/web/components/graph/graph-growth-animation.tsx` | Client Component | Animated mini-graph showing new nodes appearing |
+| `apps/web/components/graph/bridge-discovery-card.tsx` | Client Component | Persistent bridge discovery UI (replaces toast) |
+| `apps/web/components/graph/bridge-insight-panel.tsx` | Client Component | Sheet showing all bridge connections with explanations |
+| `apps/web/components/dashboard/intervention-tracker.tsx` | Client Component | Intervention creation/status tracking per theme |
+| `apps/web/components/dashboard/reprobe-results.tsx` | Client Component | Before/after comparison for re-probe outcomes |
+| `apps/web/components/dashboard/intervention-history.tsx` | Client Component | Class-wide intervention timeline |
+| `packages/llm/src/prompts/explain-bridge.ts` | LLM Prompt | Generates "aha!" explanation for bridge connections |
+| `apps/web/lib/intervention-types.ts` | Types | TypeScript interfaces for intervention data |
+
+### Modified Files
+
+| Path | Change Summary |
+|------|---------------|
+| `apps/web/app/student/page.tsx` | Add initial graph data fetch for growth animation |
+| `components/questions/question-form.tsx` | After onFinish, render graph growth animation inline; add getGraphDataLight call |
+| `apps/web/app/student/graph/page.tsx` | Fetch bridge connections (plural), pass to client |
+| `components/graph/graph-page-client.tsx` | Replace BridgeToast with BridgeDiscoveryCard; add BridgeInsightPanel |
+| `components/graph/bridge-toast.tsx` | DEPRECATED (replaced by bridge-discovery-card.tsx) |
+| `actions/graph.ts` | Add getGraphDataLight(); enhance getBridgeConnection -> getBridgeConnections |
+| `components/dashboard/themes-view.tsx` | Add intervention tracker below each theme card |
+| `components/dashboard/lesson-plan-card.tsx` | Add "Plan this activity" button per activity item |
+| `components/dashboard/dashboard-tabs.tsx` | Add interventions/history view (either new tab or sub-view in misconceptions) |
+| `actions/themes.ts` | Import intervention actions; wire lesson plan to intervention creation |
+| `packages/db/src/schema/index.ts` | Export new intervention tables |
+| `packages/llm/src/index.ts` | Export explainBridgeConnection |
+| `apps/web/lib/dashboard-types.ts` | Add intervention-related types to ClassDashboardData |
+| `actions/dashboard.ts` | Fetch active interventions in getClassDashboardData |
+| `actions/diagnostic.ts` | Ensure getTodayDiagnosticSession and getActiveSession work for reprobe sessions |
+
+---
+
+## Dependency Graph (Build Order)
+
+```
+                    +---------------------------+
+                    |  DB Schema: interventions  |  (Phase A - Foundation)
+                    |  + migration               |
+                    +-------------+-------------+
+                                  |
+              +-------------------+-------------------+
+              |                   |                    |
+              v                   v                    v
+    +------------------+  +--------------+  +-------------------+
+    |  Feature 2:      |  |  Feature 1:  |  |  Feature 3:       |
+    |  Bridge          |  |  Graph-as-   |  |  Teacher Action    |
+    |  Discovery UX    |  |  Hero        |  |  Loop              |
+    |  (no schema      |  |  (no schema  |  |  (NEEDS schema)    |
+    |   dependency)    |  |   dependency)|  |                    |
+    +------------------+  +--------------+  +-------------------+
+```
+
+### Suggested Build Order
+
+**Phase A: Database Foundation (if doing Feature 3)**
+1. Create `packages/db/src/schema/interventions.ts` with both tables
+2. Export from `packages/db/src/schema/index.ts`
+3. Run migration: `pnpm --filter @mindmap/db db:generate && db:push`
+4. Create `apps/web/lib/intervention-types.ts` with TypeScript interfaces
+
+**Phase B: Feature 2 -- Surprising Connections (build first)**
+Rationale: Smallest scope, no schema changes, self-contained, delivers visible UX improvement immediately.
+
+1. Enhance `getBridgeConnection` -> `getBridgeConnections` in `actions/graph.ts`
+2. Create `bridge-discovery-card.tsx` (persistent card, replaces toast)
+3. Create `bridge-insight-panel.tsx` (Sheet with all bridges)
+4. Create `packages/llm/src/prompts/explain-bridge.ts` (lazy LLM explanation)
+5. Update `graph-page-client.tsx` to use new components
+6. Deprecate `bridge-toast.tsx`
+
+**Phase C: Feature 1 -- Graph-as-Hero (build second)**
+Rationale: Depends on existing graph infrastructure. Option B (navigate with animation) has no dependencies on other features. Option A (inline mini-graph) is more complex but still independent.
+
+**Option B (simpler, do first):**
+1. Add `animate` and `newNodes` search params handling in `graph-page-client.tsx`
+2. Modify `SolarScene` to support "appear animation" for nodes flagged as new
+3. Update QuestionForm to pass new concept IDs in the router.push URL
+4. Add entrance animation (scale from 0, glow burst) for new nodes in SolarNodes
+
+**Option A (full vision, do if time permits):**
+1. Create `getGraphDataLight()` in `actions/graph.ts`
+2. Modify `student/page.tsx` to fetch initial graph data
+3. Pass `initialGraphData` to QuestionForm
+4. Create `graph-growth-animation.tsx` component
+5. Integrate into QuestionForm's post-onFinish flow
+6. Add "Explore full graph" button below animation
+
+**Phase D: Feature 3 -- Teacher Action Loop (build last)**
+Rationale: Largest scope, requires schema migration, depends on understanding the re-probe flow, touches the most files. Build last because Phases B and C deliver student-facing value while this is teacher-facing.
+
+1. Create `actions/interventions.ts` with all CRUD operations
+2. Create `intervention-tracker.tsx` component
+3. Integrate into `themes-view.tsx` (add tracker below each theme card)
+4. Add "Plan this activity" button to `lesson-plan-card.tsx` activity items
+5. Implement `markInterventionComplete` with re-probe session creation logic
+6. Create `reprobe-results.tsx` component
+7. Create `intervention-history.tsx` component
+8. Wire into dashboard (new tab or sub-view)
+9. Test re-probe flow: teacher marks complete -> student sees new diagnostic -> completes -> teacher sees results
+
+---
+
+## Risk Assessment
+
+### High Risk
+
+**Re-probe session creation (Feature 3):** Creating diagnostic sessions from teacher actions (not from `/api/ask`) is a new creation path. The existing `getTodayDiagnosticSession()` and `getActiveSession()` in `actions/diagnostic.ts` must work with these teacher-created sessions. Test thoroughly that:
+- Sessions appear for the correct students
+- The `conceptId` is valid and belongs to the student
+- Multiple active sessions do not conflict (student might have one from today's question AND a re-probe)
+- The diagnostic flow (`/api/diagnose`) handles sessions without a `questionId`
+
+### Medium Risk
+
+**R3F mini-graph performance (Feature 1, Option A):** Running two R3F Canvas instances (one on `/student`, one on `/student/graph`) could cause WebGL context issues on mobile. The spec says `dpr={[1, 2]}` -- two canvases means two WebGL contexts. Most mobile browsers support 8-16 contexts, but older devices may struggle. Mitigation: keep the mini-graph canvas small (300x300 px or similar) and dispose it before navigating to the full graph.
+
+**Bridge explanation LLM costs (Feature 2):** Each bridge explanation is an LLM call. If a student has many bridges and opens the insight panel, that is N LLM calls. Mitigation: cache explanations in localStorage (they are student-facing only, no privacy concern). Generate lazily (only when panel opens and explanation not cached).
+
+### Low Risk
+
+**Schema migration (Feature 3):** Two new tables with no changes to existing tables. Clean migration, no data transformation needed. Standard pattern matching existing `theme_lesson_plans` table.
+
+---
+
+## Architecture Principles Preserved
+
+1. **Server-centric:** All new business logic in Server Actions. Client components handle only UI state (selected intervention, animation state, panel open/closed).
+
+2. **Type safety:** New Zod schemas for intervention creation. New TypeScript interfaces in `intervention-types.ts`.
+
+3. **No global state:** Intervention state flows through Server Actions, not client-side stores. Animation state is component-local.
+
+4. **Auth boundary:** All new Server Actions start with `auth()` check. Class ownership verified for all teacher actions. Student data scoped by userId from session.
+
+5. **PRIV-01:** Bridge explanations use only concept name, domain, and question text -- no student PII. Intervention data stays server-side; only anonymized aggregate results shown.
+
+6. **Dependency direction:** `apps/web -> packages/db` (new schema), `apps/web -> packages/llm` (new prompt). No new cross-package dependencies.
+
+---
 
 ## Sources
 
-- Turborepo structuring guide: https://turborepo.dev/docs/crafting-your-repository/structuring-a-repository
-- pgvector HNSW indexing and dedup patterns: https://www.instaclustr.com/education/vector-database/pgvector-key-features-tutorial-and-pros-and-cons-2026-guide/
-- NVIDIA SemDedup (cosine threshold deduplication): https://docs.nvidia.com/nemo-framework/user-guide/25.07/datacuration/semdedup.html
-- LLM-empowered KG construction survey: https://arxiv.org/html/2510.20345v1
-- KnowEdu educational KG architecture: https://www.researchgate.net/publication/325303797_KnowEdu_A_System_to_Construct_Knowledge_Graph_for_Education
-- D3 force-directed graph with Next.js: https://medium.com/@abdulmajeedamm33/elevating-network-visualizations-d3-force-next-js-2ce1a322d746
-- Socratic LLM multi-agent architectures: https://princeton-nlp.github.io/SocraticAI/
-- Next.js LLM streaming patterns: https://ai-sdk.dev/docs/getting-started/nextjs-app-router
-- Monorepo production architecture: https://mavro.dev/blog/building-production-monorepo-turborepo
+- Direct code analysis of existing codebase (HIGH confidence)
+- Existing architecture patterns from `.planning/codebase/ARCHITECTURE.md` (HIGH confidence)
+- React Three Fiber multi-canvas considerations (MEDIUM confidence -- based on training data, verify with current R3F docs)
+- Sonner toast library API for replacement justification (HIGH confidence -- visible in current bridge-toast.tsx implementation)
 
 ---
-*Architecture research for: AI-powered K-12 educational knowledge graph (MindMap)*
-*Researched: 2026-04-08*
+
+*Architecture integration analysis: 2026-04-14*

@@ -1,316 +1,440 @@
-# Pitfalls Research
+# Domain Pitfalls: v1.1 Value Experience
 
-**Domain:** AI-powered K-12 educational knowledge graph with misconception detection
-**Researched:** 2026-04-08
-**Confidence:** HIGH (COPPA/FERPA regulatory specifics), MEDIUM (technical implementation patterns), MEDIUM (LLM pedagogy patterns)
+**Domain:** Adding graph animation, bridge discovery UX, and teacher action loop to existing R3F + Next.js education app
+**Researched:** 2026-04-14
+**Milestone:** v1.1 Value Experience
+**Confidence:** HIGH (R3F/Three.js pitfalls verified against official docs + codebase), MEDIUM (Next.js real-time patterns), MEDIUM (teacher workflow state machines)
 
 ---
 
 ## Critical Pitfalls
 
-### Pitfall 1: Concept Deduplication Threshold Miscalibration
+These cause rewrites, broken features, or unfixable performance regressions if not addressed upfront.
+
+---
+
+### Pitfall 1: InstancedMesh Count Cannot Grow — Graph Animation Requires Mesh Recreation
 
 **What goes wrong:**
-A single cosine similarity threshold is chosen (e.g., 0.85) and applied uniformly across all concept comparisons. "Gravity (physics)" and "gravity (baking)" end up merged because their embeddings are similar enough. Conversely, "photosynthesis" asked by a 5th grader ("how do plants make food?") and a 10th grader ("light-dependent reactions") end up as separate nodes because phrasing diverges. The knowledge graph becomes either a mess of false duplicates or an explosion of orphaned near-duplicate nodes. Either failure mode destroys the graph's value.
+The "graph-as-hero" feature needs to animate new nodes flying into the graph after a question is asked. The current `SolarNodes` component uses `THREE.InstancedMesh` with `args={[undefined, undefined, layoutNodes.length]}` and a `key={layoutNodes.length}` prop. When new concepts arrive, `layoutNodes.length` increases, but Three.js `InstancedMesh.count` cannot be increased beyond the buffer size allocated at construction time. You can decrease `count` (hide instances), but increasing it requires destroying and recreating the entire mesh with a larger buffer. The current `key={layoutNodes.length}` actually does force remounting on count change — but remounting destroys ALL animation state (positions, colors, matrices) and causes a visible flash/reset of the entire graph.
 
 **Why it happens:**
-Developers test deduplication with clean, well-formed concept names during development. Real student questions are messy, domain-crossing, and grade-band-dependent. A single threshold value that works for a test corpus of 20 concepts silently fails at 200. The LLM disambiguation step (second-pass after pgvector shortlisting) gets skipped or under-prompt-engineered because it seems like gold-plating at the time.
+Three.js allocates fixed-size `Float32Array` buffers (`instanceMatrix`, `instanceColor`) at construction based on the initial count. These WebGL buffer objects cannot be resized in-place. The R3F community documents this as a fundamental constraint, not a bug.
 
-**How to avoid:**
-- Build a two-stage pipeline from day one: pgvector shortlist (broad threshold ~0.7–0.8 cosine similarity) then LLM disambiguation pass with domain-context-aware prompting
-- Create a golden test set of 50+ concept pairs (true duplicates, true distincts, and ambiguous cross-domain cases) before writing deduplication code
-- Test threshold values against the golden set; do not pick a threshold by intuition
-- Include domain/subject field in concept records and pass it to the LLM disambiguation prompt: "Are 'gravity' in the context of [PHYSICS] and 'gravity' in the context of [COOKING] the same concept?"
-- pgvector's `<=>` operator returns cosine *distance* (0 = identical, 2 = opposite) — verify you are not accidentally treating it as similarity (1 = identical). This is a confirmed production bug in the Supabase/pgvector ecosystem.
+**Consequences:**
+- Naive approach: change `layoutNodes.length` prop, mesh remounts, entire graph pops/flickers
+- Students see the "reward" animation as a jarring reset instead of smooth growth
+- On mobile (375px viewport, limited GPU), the mesh recreation + re-upload of all matrices causes a frame budget spike
 
-**Warning signs:**
-- During testing, you see the same concept appearing twice on a student's graph
-- Graph node count grows faster than expected relative to unique question count
-- Teacher dashboard shows suspiciously diverse misconception clusters (deduplication collapsed unrelated concepts)
-- Students see a "You already learned X" message but the X doesn't match their mental model
+**Prevention:**
+1. **Over-allocate the InstancedMesh buffer.** Set `args` to `[undefined, undefined, layoutNodes.length + GROWTH_BUFFER]` where `GROWTH_BUFFER` is 20-50. Set `mesh.count = layoutNodes.length` (the visible count). When new nodes arrive, increment `count` and set the new instance matrices — no mesh recreation needed.
+2. **Remove the `key={layoutNodes.length}` pattern** once over-allocation is in place. The key-based remount is currently the only thing that "works" but it defeats animation.
+3. **When buffer is exhausted** (more than `GROWTH_BUFFER` new nodes at once), recreate the mesh with a larger buffer and cross-fade: render both old and new meshes for 2-3 frames, then dispose the old one. This should be rare (students add 2-5 concepts per question, not 50).
+4. **Initialize new instance matrices at the camera position** (not at origin) and lerp them to their layout target over 30-60 frames. This produces the "fly-in" effect.
 
-**Phase to address:** Concept extraction and deduplication pipeline phase (before or early in knowledge graph build phase)
+**Detection:**
+- Flash/flicker when graph updates after asking a question
+- New nodes appear at origin (0,0,0) then jump to position
+- Frame rate drops on mesh recreation (profile with `r3f-perf`)
+
+**Codebase locations:** `apps/web/components/graph/solar-nodes.tsx:117` (key prop), `solar-nodes.tsx:80-96` (matrix initialization)
+
+**Phase to address:** Graph Animation phase (first)
 
 ---
 
-### Pitfall 2: LLM Delivers Adult-Calibrated Socratic Probing to Young Children
+### Pitfall 2: useFrame setState Loop Kills Frame Rate During Animation
 
 **What goes wrong:**
-The Socratic diagnostic prompts are written for a generic student. A 7-year-old is asked: "Can you articulate what you understand about the relationship between force and acceleration in Newtonian mechanics?" The student is confused, gives up, and the system logs a non-response as a misconception. Alternatively, a 10th-grader receives baby-talk probing that feels condescending; engagement collapses.
+To animate new nodes flying in, a developer calls `useState` or `useReducer` to track animation progress, then reads that state in `useFrame`. Each `setState` call triggers a full React reconciliation — at 60fps, this means 60 React renders per second across the entire `SolarScene` component tree. The graph drops from 60fps to 15-20fps during animation, exactly when smooth motion matters most.
 
 **Why it happens:**
-Developers prototype with adult-level examples. Grade band is passed as a metadata field to the LLM but the system prompt doesn't structurally enforce age-appropriate vocabulary and question complexity. Research (documented in the ACL 2025 multi-agent Socratic teaching paper) shows that LLMs exhibit "asymmetric feedback" — they fail to adjust question difficulty based on implicit cognitive state signals from students.
+This is the #1 documented pitfall in the official React Three Fiber documentation. The pattern feels natural to React developers: "I need to track animation state, so I use React state." But Three.js mutations (position, scale, color, matrix) bypass React entirely — they write directly to GPU buffers. Routing these through React's scheduler adds 5-15ms per frame of pure overhead.
 
-**How to avoid:**
-- Define 3–4 grade bands (K-2, 3-5, 6-8, 9-12) with explicit vocabulary constraints and reading level targets in the system prompt, not just as a passed variable
-- Include concrete examples of acceptable and unacceptable probe phrasing for each grade band in the prompt (few-shot examples, not just instructions)
-- Add a post-generation validation step: call the LLM again with a simple "Is this question appropriate for a [GRADE_BAND] student? Rate 1-5." — reject and regenerate anything below 4
-- Test every prompt template with representative students from each grade band before shipping the diagnostic flow
-- Never use technical jargon in probe questions without first checking whether the concept record's grade band includes that vocabulary
+**Consequences:**
+- Janky animation during the "hero moment" (new nodes flying in)
+- Bloom postprocessing amplifies frame drops (each dropped frame is visible as stuttering glow)
+- Mobile devices (the 375px target) hit GPU thermal throttling
 
-**Warning signs:**
-- Student session transcripts show repeated "I don't know" or one-word answers in diagnostic mode (may indicate overload, not ignorance)
-- Short diagnostic sessions with no resolved misconception — students are disengaging, not learning
-- The "probe" question text contains words not in the Flesch-Kincaid grade level for the target band
+**Prevention:**
+1. **All animation state must live in `useRef`, not `useState`.** Current code already does this correctly for `pulseRef`, `isFlying`, `targetPosition` — extend this pattern to new-node fly-in animation.
+2. **Use delta-based animation:** `position.lerp(target, delta * speed)` not `position.lerp(target, 0.06)` (the current camera lerp uses a fixed 0.06 factor, which is refresh-rate-dependent — works on 60Hz, too fast on 120Hz, too slow on 30Hz).
+3. **Batch InstancedMesh updates.** Call `meshRef.current.setMatrixAt(i, matrix)` for all animating nodes in a single `useFrame` callback, then set `instanceMatrix.needsUpdate = true` once. Do NOT set `needsUpdate` per-node.
+4. **Do not use `setNearbyNodes()` (the current proximity label update) during active animation.** The existing code already throttles to every 10 frames, but during a fly-in animation, even this triggers React re-renders that interrupt the animation. Add a `isAnimating.current` ref guard.
 
-**Phase to address:** Misconception diagnostic / Socratic dialogue phase; re-validated when misconception library is populated
+**Detection:**
+- Use `r3f-perf` or browser performance panel during graph updates
+- Watch for `React.setState` calls in the flame chart during animation frames
+- Proximity labels flickering during node fly-in
+
+**Codebase locations:** `solar-scene.tsx:260-275` (setNearbyNodes in useFrame), `solar-scene.tsx:277-293` (camera lerp with fixed factor)
+
+**Phase to address:** Graph Animation phase (first)
 
 ---
 
-### Pitfall 3: COPPA Violations from Incidental Data Collection or Retention
+### Pitfall 3: d3-force-3d Layout Recomputes Entire Graph on New Nodes — Destroys Existing Positions
 
 **What goes wrong:**
-Student questions and dialogue are stored indefinitely in PostgreSQL. The LLM API is called with full conversation history as context. A third-party analytics SDK is added to the Next.js frontend to understand usage. Any of these creates a COPPA violation: the FTC's 2025 rule amendments (effective June 2025, full compliance April 2026) mandate strict data retention limits, prohibit third-party data sharing for targeted advertising, and require a published written data retention policy. Violations are now $51,744 per affected child.
+The current `useGraphLayout` hook runs `simulation.tick(300)` synchronously inside `useMemo` on every change to the `nodes` or `edges` arrays. When new concepts are added, the entire force simulation re-runs from scratch with fresh random initial positions for ALL nodes. Every existing node jumps to a new position because the simulation converges to a different local minimum. The "graph-as-hero" animation becomes "graph-as-earthquake."
 
 **Why it happens:**
-COPPA compliance is deferred as a "legal concern" until later. Developers think "school consent covers everything" — but the 2025 rule makes clear that school consent only covers educational purpose use; any incidental commercial use (even analytics) voids it. Open-source self-hosted tools often assume the deployer handles compliance, but the operator (you, for the Vercel demo instance) is also liable.
+d3-force-3d mutates node objects in place, setting `x`, `y`, `z` during simulation. The current code deep-clones nodes before simulation (`nodes.map((n) => ({ ...n }))`), which means existing node positions are lost between renders. The simulation starts every node from scratch each time.
 
-**How to avoid:**
-- Build data retention limits into the schema from day one: add `created_at` and `delete_after` to all student data tables; run a scheduled job to purge expired records
-- Write and publish the data retention policy before launching the demo deployment (it's a COPPA 2025 requirement, not just good practice)
-- Zero third-party analytics SDKs — not Mixpanel, not Vercel Analytics in its default form, not Google Fonts loaded from CDN (which leaks IP addresses to Google). Self-host fonts.
-- Route all LLM API calls through a server-side proxy that strips student PII before constructing context (student ID → session token; no names in prompts)
-- Add a COPPA compliance section to the self-hosting README so deployers understand their obligations
+**Consequences:**
+- After asking a question, the entire graph reshuffles — existing nodes jump to random new positions
+- The student loses spatial memory ("my chemistry concepts were over there")
+- Bridge connections visually break and reform in different orientations
+- Animation of "new nodes flying in" is impossible if existing nodes are also moving
 
-**Warning signs:**
-- Any third-party script tag in `_document.tsx` or `layout.tsx`
-- Student records with no `delete_after` or `retention_policy` field
-- Raw student names or email addresses appearing in LLM prompt logs
-- Vercel deployment with default analytics enabled
+**Prevention:**
+1. **Preserve existing node positions across layout runs.** Before running the simulation, copy `x`, `y`, `z` from the previous layout result onto matching nodes (by id). Only new nodes get random initial positions.
+2. **Pin existing nodes during the initial simulation phase.** Set `fx`, `fy`, `fz` (fixed position) on existing nodes for the first ~50 ticks, then release them and run 50 more ticks. This lets new nodes settle into the existing structure without disrupting it.
+3. **Run the simulation incrementally.** Instead of `tick(300)` synchronously, run `tick(50)` initially, then use `requestAnimationFrame` or `useFrame` to tick 1-2 steps per frame for the "settling" animation. This makes layout changes visible as smooth motion rather than an instant jump.
+4. **Separate "initial layout" (first render) from "incremental layout" (new nodes added).** Initial layout runs the full 300 ticks. Incremental layout pins existing nodes and runs 100 ticks.
 
-**Phase to address:** Auth and data model phase (schema level); verified again before any public/demo deployment
+**Detection:**
+- After asking a question, all nodes jump to new positions
+- Spatial clusters (domain galaxies) rearrange on every page refresh
+- The `useMemo` dependency on `[nodes, edges]` fires on every graph data change
+
+**Codebase locations:** `apps/web/components/graph/use-graph-layout.ts:72-116` (entire layout hook)
+
+**Phase to address:** Graph Animation phase (first — must be solved before any fly-in animation work)
 
 ---
 
-### Pitfall 4: Knowledge Graph Visualization Freezes on Mobile at ~200 Nodes
+### Pitfall 4: onFinish Silent Failure Creates "Ghost Animations" — Graph Updates Without Data
 
 **What goes wrong:**
-D3.js force-directed graph using SVG works perfectly in development with 20–30 nodes. By week 8 of the demo (60-day session), a student has 200+ concept nodes. SVG performance degrades severely: every DOM mutation triggers reflow, the force simulation ticks cause jank, mobile browsers (especially iOS Safari) become unresponsive. The demo crashes at the worst possible moment.
+The "graph-as-hero" feature needs the client to know when new concepts have been persisted so it can animate them flying in. But the current `/api/ask` route streams the answer immediately via `streamText`, then runs ALL concept extraction and persistence in an `onFinish` callback (lines 93-341). This callback: (a) has no mechanism to notify the client when it completes, (b) silently swallows all errors in a single try/catch, and (c) takes 2-8 seconds to complete after the stream ends.
+
+If you implement optimistic graph animation based on the stream ending, the new nodes don't exist in the database yet. If you poll for them, you race against the 2-8 second pipeline. If the pipeline fails silently, you animate "phantom nodes" that don't exist.
 
 **Why it happens:**
-D3.js SVG is the natural default. The performance cliff is not visible during feature development — it only appears with realistic data volume. The force simulation runs every tick against all nodes (O(n²) naive repulsion), and SVG keeps every node as a live DOM element. Research confirms SVG handles ~1,000 nodes adequately on desktop but degrades sharply on mobile below that threshold.
+The `onFinish` pattern was designed for fire-and-forget background processing. The original design didn't need the client to know when processing completed — the student navigated to the graph page later. But "graph-as-hero" requires real-time coordination between the background pipeline and the client animation.
 
-**How to avoid:**
-- Set SVG as the initial renderer but architect for a Canvas fallback: separate the data model from the render layer so swapping renderers doesn't require rewriting graph logic
-- Freeze/pause the force simulation after it stabilizes (use `simulation.stop()` after alpha < 0.001) — do not let it run indefinitely
-- Implement a node budget: cluster small related nodes below a "zoom threshold" (show the cluster, not individual nodes); expand on click
-- Cap the default viewport at 150 visible nodes; add pagination or time-based filtering ("Show last 30 days")
-- Test visualization with the 60-day seed data on a real mobile device before any demo
+**Consequences:**
+- Student sees "New concepts added" toast but graph shows no new nodes (pipeline still running or failed)
+- Graph animation triggers before data is persisted, then nodes vanish on next data fetch
+- Silent failures mean concepts are never extracted but the student thinks they were
+- Race condition: polling fetches stale data, animation never fires
 
-**Warning signs:**
-- Force simulation never appears to fully settle (alpha threshold not set)
-- Node count in seed data exceeds 150 but no clustering strategy is implemented
-- No mobile performance test in the test plan
-- SVG element count in the DOM exceeds 500 during a test session
+**Prevention:**
+1. **Do NOT try to make onFinish notify the client.** The streaming response is already closed when onFinish runs. Instead:
+2. **Option A (Recommended): Two-phase response.** Stream the answer text, then after the stream, return a structured JSON epilogue with the new concept IDs. Requires switching from `useCompletion` (text-only) to `useChat` with tool calls or a custom streaming protocol that appends a JSON trailer.
+3. **Option B: Server-Sent Events (SSE) sidecar.** After the stream completes, open a separate SSE connection that listens for a "concepts-ready" event. The onFinish callback publishes to a lightweight pub/sub (even a database polling row works for single-server deployments).
+4. **Option C: Smart polling with exponential backoff.** The current code already polls 3 times at 2-second intervals for diagnostic sessions (question-form.tsx:88-99). Extend this pattern: after stream ends, poll `getTodayQuestionConcepts()` every 1.5s, up to 5 attempts. Trigger animation when new concepts appear. This is the simplest change but adds 1.5-7.5 seconds of delay.
+5. **Whichever approach: handle the failure case.** If concepts don't appear after timeout, show a subtle "Your concepts are still processing" message, not a broken empty animation.
 
-**Phase to address:** Knowledge graph visualization phase; tested explicitly with maximum seed data volume
+**Detection:**
+- "Explore on your graph" button navigates to graph with no new nodes visible
+- Console shows `[onFinish] concept extraction failed` but student sees success UI
+- New concepts appear on graph only after a manual page refresh
+
+**Codebase locations:** `apps/web/app/api/ask/route.ts:89-342` (onFinish), `apps/web/components/questions/question-form.tsx:69-111` (onFinish client handler, polling)
+
+**Phase to address:** Graph Animation phase (must be solved before animation — you need to know WHAT to animate)
 
 ---
 
-### Pitfall 5: Misconception Library Becomes a Bottleneck and Then Stagnates
+### Pitfall 5: Drei `<Line>` Per-Edge Renders Create O(N) Draw Calls — Blocks Edge Animation at Scale
 
 **What goes wrong:**
-The 35-entry misconception library is hand-curated before launch. The routing engine does a substring or exact-match lookup against this library to decide whether to enter diagnostic mode. Over time, the library isn't maintained; students encounter misconceptions not in the library, the system silently falls back to enrich mode, and teachers stop seeing diagnostic data. Alternatively, the YAML schema is underdocumented, community contributions are low-quality, and merging them manually becomes a maintenance burden.
+The current `SolarEdges` component renders each edge as a separate `<Line>` component from `@react-three/drei`. Each `<Line>` is a separate Three.js `Line2` object with its own material and geometry — meaning each edge is a separate GPU draw call. With 50 edges this is fine. With 200+ edges (a student with 100+ concepts), the scene hits 200+ draw calls just for edges, plus the InstancedMesh draw call for nodes, plus the bloom postprocessing pass. GPU frame budget is blown.
+
+Adding animation (edges growing/fading in) to individual `<Line>` components means mutating 200+ separate objects per frame, which cannot be batched.
 
 **Why it happens:**
-The library is treated as a static asset. No contribution pipeline is built. The routing engine logic isn't tested against edge cases (concept in library but grade-band mismatch; concept close but not matching; synonym not captured). CI validation is "I'll add it later."
+`<Line>` from drei is designed for convenience, not performance at scale. It wraps `Line2` which supports variable-width lines (the current code uses `lineWidth` per edge type). But each instance is a separate draw call because Three.js has no "InstancedLine" equivalent to InstancedMesh.
 
-**How to avoid:**
-- Define the YAML schema strictly (JSON Schema validation in CI from phase 1, not after the library is populated)
-- Build the routing engine to use pgvector similarity against library entries, not exact string match — this makes the library more robust to paraphrasing
-- Add a "confidence" field to each library entry; low-confidence entries trigger enrich mode by default
-- Create a `CONTRIBUTING.md` for the misconception library with explicit research citation requirements (e.g., "must cite Chi or equivalent peer-reviewed source")
-- Add a GitHub Actions workflow that validates YAML syntax, checks required fields, and runs a semantic duplicate check against existing entries on every PR
+**Consequences:**
+- Edge animation (grow-in, fade-in) is janky with 100+ edges
+- Mobile GPU budget exceeded — frame drops below 30fps
+- Adding new edges during fly-in animation compounds the problem
 
-**Warning signs:**
-- Routing engine uses `indexOf` or `===` to check concept against library entries
-- Library YAML has no schema validation in CI
-- Library entries lack research citations (anyone can submit anything)
-- No process for retiring or updating entries as educational research evolves
+**Prevention:**
+1. **For static edges (existing before the question), use a single `BufferGeometry` with `LineSegments`.** Merge all edge positions into one `Float32Array`. This is ONE draw call for all edges. Color per-edge via vertex colors.
+2. **For animated edges (new edges forming), use a small set of individual `<Line>` components** (typically 3-8 new edges per question). Animate these with opacity 0 -> 1 and length 0 -> full over 500ms. Once animation completes, merge them into the static buffer.
+3. **Accept losing variable `lineWidth` on static edges.** `LineSegments` uses `linewidth` which is GPU-capped at 1px on most hardware. For static edges this is acceptable — the visual difference between 0.5px and 2.5px edges is minimal at the scale of a 200-node graph. Keep variable width only for the few animated edges.
+4. **Alternative: keep `<Line>` but limit edge count.** If the graph has 200+ edges, show only the top-N by weight (e.g., top 100 edges + all bridge/misconception edges). This is a product decision but may be acceptable.
 
-**Phase to address:** Misconception library and routing engine phase; CI validation before community contributions are opened
+**Detection:**
+- GPU profiler shows 100+ draw calls from edge rendering
+- Frame rate drops as student accumulates more concepts
+- Edge animation stutters while node animation is smooth
+
+**Codebase locations:** `apps/web/components/graph/solar-edges.tsx:77-101` (individual Line render)
+
+**Phase to address:** Graph Animation phase (optimize before adding animation, or animation will be DOA)
 
 ---
 
-### Pitfall 6: Dual Deployment (Docker + Vercel) Creates Silent Behavior Differences
+## Moderate Pitfalls
+
+These cause visible quality issues, wasted effort, or tech debt that blocks future work.
+
+---
+
+### Pitfall 6: Bridge Toast Dismissal Means Students Miss the "Surprise Connection" Moment Entirely
 
 **What goes wrong:**
-The application works on Vercel but not in Docker Compose. Or it works in Docker but fails silently on Vercel. Common failure modes: environment variables injected at build time on Vercel are not available at runtime in Docker; Next.js serverless function timeouts (10s default on Vercel hobby, 60s on pro) are insufficient for LLM + pgvector disambiguation pipeline; file system writes work in Docker but fail on Vercel (no persistent file system); Neon connection pooling required for serverless is not needed for Docker but misconfigured for one target.
+The current bridge detection surfaces discoveries via a `sonner` toast that auto-dismisses after 8 seconds, with a 7-day cooldown stored in localStorage. The v1.1 goal is to make bridge discoveries "prominent" and "unmissable." But if the toast fires while the student is reading their answer (the first 8 seconds after asking), they never see it. The 7-day cooldown means they won't see it again for a week. The entire "surprise connection" feature is invisible to most students.
 
 **Why it happens:**
-Vercel does not support Docker images — these are fundamentally different runtime architectures. Developers build on one target, assume parity, and discover differences during demo prep. The serverless vs. long-running process distinction is particularly sharp: a Vercel function that times out during a concept disambiguation chain silently fails with a 504 that looks like a network error.
+Toasts are designed for transient, non-critical notifications. Bridge discovery is a core value moment — treating it as a toast was appropriate for v1.0 (better than nothing) but is architecturally wrong for v1.1.
 
-**How to avoid:**
-- Define deployment targets as explicit test environments: `pnpm dev:docker` and `pnpm dev:vercel` (using `vercel dev`) — test against both regularly, not just before demo
-- Never write to the filesystem in application code; use the database for all persistence from day one
-- Set all Next.js route timeouts explicitly: `export const maxDuration = 30` in every API route that calls the LLM, and design the pipeline to complete within that limit
-- Use separate `.env.docker` and `.env.vercel` files (gitignored) and document every variable that differs between them
-- Keep the pgvector disambiguation pipeline under 8 seconds end-to-end; if it exceeds this, return a "processing" state and poll — do not rely on a single long-running serverless request
+**Consequences:**
+- Most students never notice bridge connections
+- The "surprise" is anti-climactic even when noticed (8-second auto-dismiss, small text)
+- Teacher value proposition weakened ("students don't seem to care about connections")
 
-**Warning signs:**
-- Any `fs.writeFile` or `fs.readFile` in application code outside of build-time scripts
-- LLM + disambiguation pipeline has no timeout handling
-- API routes lack explicit `maxDuration` export
-- "Works on my machine (Docker)" but 504 errors on Vercel during testing
+**Prevention:**
+1. **Replace toast with an in-graph visual event.** When a bridge is detected after a question: (a) camera automatically flies to the bridge node, (b) a brief "connection discovered" animation plays (particles, glow pulse, or edge highlight), (c) a persistent but dismissible overlay shows the connection explanation.
+2. **Time the bridge reveal to happen AFTER the graph fly-in animation.** First animate new nodes appearing, then pause 500ms, then reveal the bridge connection. This creates a narrative arc: "You learned new things -> and they connect to something unexpected!"
+3. **Remove the localStorage cooldown** for the new surface. The old cooldown was to prevent toast fatigue. An in-graph event is not fatiguing — it's the reward.
+4. **Keep the toast as a fallback** for when the student is NOT on the graph page (e.g., on the questions page). But the graph page should use the full visual treatment.
 
-**Phase to address:** Infrastructure and deployment phase; enforced in both Docker and Vercel integration tests
+**Detection:**
+- Analytics/observation shows students clicking "Explore on graph" but never interacting with bridge nodes
+- Teacher feedback: "students don't mention connections"
+
+**Codebase locations:** `apps/web/components/graph/bridge-toast.tsx` (entire component), `apps/web/app/student/graph/graph-page-client.tsx:97-105` (BridgeToast mount)
+
+**Phase to address:** Bridge Discovery phase (second)
 
 ---
 
-### Pitfall 7: LLM Concept Extraction Hallucinates or Over-Extracts Concepts
+### Pitfall 7: Teacher "Mark Done" Without Re-probe Creates False Resolution Signal
 
 **What goes wrong:**
-A student asks "Why is the sky blue?" The LLM extracts: "sky", "blue", "color", "light scattering", "Rayleigh scattering", "atmosphere", "wavelength", "optics". Seven concepts are added to the graph from a single question. Over 30 sessions, the graph has 300 nodes, many of which are trivially common words or fragments ("blue", "color") that pollute the misconception matching pipeline. Alternatively, the LLM extracts the wrong canonical form: "Rayleigh Scattering" vs. "rayleigh scattering" vs. "Rayleigh scattering" become three separate nodes.
+The teacher action loop is: cluster -> activity -> mark done -> re-probe. If "mark done" simply sets `outcome: 'resolved'` on diagnostic sessions without re-probing the students, the teacher dashboard shows improvement that hasn't been verified. The misconception may still be present. Teachers lose trust in the system when "resolved" students demonstrate the same misconception again later.
 
 **Why it happens:**
-Concept extraction prompts are under-constrained. Without explicit instructions about granularity, the LLM defaults to over-extraction. Canonical form normalization is skipped because it seems like a polish item.
+"Mark done" is the easy part to implement. Re-probe (creating new diagnostic sessions that test whether the classroom activity actually changed student understanding) requires: (a) a mechanism to create diagnostic sessions without a student question trigger, (b) determining WHICH students to re-probe (all affected? only unresolved?), (c) waiting for students to complete re-probe sessions before updating the dashboard. Developers implement "mark done" first and defer re-probe "for later" — but without re-probe, "mark done" is meaningless.
 
-**How to avoid:**
-- Constrain extraction prompts: "Extract 1-3 core scientific or mathematical concepts only. Exclude common words, adjectives, and vague terms. Return concepts in Title Case canonical form."
-- Define a "concept quality rubric" in the prompt: a concept must be a noun phrase representing a specific, learnable idea (not "sky", not "blue" — yes to "Rayleigh scattering", "atmospheric optics")
-- Run canonical normalization on extracted concept names (lowercase comparison for deduplication; display in Title Case)
-- Add a minimum concept "weight" threshold: concepts appearing in fewer than N student queries don't generate graph nodes — they stay as raw extractions pending confirmation
-- Log all extraction outputs for the first 100 queries and manually audit; tune the prompt before scaling
+**Consequences:**
+- Teacher dashboard shows false positives (misconceptions marked resolved without evidence)
+- System credibility erodes when "resolved" misconceptions reappear
+- The action loop becomes "cluster -> activity -> click button -> forget about it"
 
-**Warning signs:**
-- Graph nodes include single common English words ("light", "color", "force")
-- Graph node count grows by 5+ per question on average
-- Multiple nodes for the same concept with different capitalization or punctuation
+**Prevention:**
+1. **Design "mark done" as a two-step process from the start.** Step 1: Teacher marks activity as "delivered" (a teaching event). Step 2: System creates re-probe diagnostic sessions for affected students. Step 3: As students complete re-probes, outcomes update automatically.
+2. **"Mark done" should change the activity status, NOT the diagnostic session outcomes.** Introduce a `teacher_activities` table that tracks: theme/misconception, classId, status (planned/delivered/verified), deliveredAt, verifiedAt. Diagnostic session outcomes should only change when students complete re-probe conversations.
+3. **Show the teacher a clear distinction:** "Activity delivered (3 students re-probed, 2 resolved, 1 still struggling)" vs the current binary resolved/unresolved.
+4. **Make re-probe opt-in for students** (not forced). Show a prompt on their next visit: "Your teacher did an activity about X — want to explore your understanding?" This respects student agency and avoids forced testing.
 
-**Phase to address:** Concept extraction pipeline phase; audited before knowledge graph visualization is built
+**Detection:**
+- Dashboard shows 100% resolution rate after teacher clicks "mark done" (too good to be true)
+- No new diagnostic sessions created after activity delivery
+- Students never see re-probe prompts
 
----
-
-## Technical Debt Patterns
-
-| Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
-|----------|-------------------|----------------|-----------------|
-| Single exact-match against misconception library | Fast to implement | Misses paraphrased or synonym concepts; library never scales | Never — use pgvector similarity from the start |
-| Hardcode Anthropic API key in `.env.local` without token budget limits | Saves time on auth flow | Uncontrolled API spend; a misbehaving loop drains budget overnight | Development only; add per-student daily budget cap before any user access |
-| Skip the LLM disambiguation pass in deduplication pipeline | Faster concept ingestion | Concept graph becomes meaningless after ~100 nodes | Never for the core deduplication path; optional for low-confidence fast path |
-| SVG-only graph renderer | Easier to implement | Freezes at 150+ nodes on mobile | MVP only with explicit node cap enforced server-side |
-| No data retention TTL on student records | Simpler schema | COPPA violation on first real student | Never — add TTL fields in the initial schema migration |
-| In-memory rate limiting (no Redis) | No Redis dependency | Rate limits reset on server restart; Vercel serverless creates multiple instances so in-memory limits don't work | Docker Compose local dev only; must use DB-backed rate limiting on Vercel |
-| `turbo prune` skipped in Dockerfile | Simpler Dockerfile | Every dependency installed even for single-app builds; Docker images are 3–5x larger; CI is slow | Never for production Docker images |
+**Phase to address:** Teacher Action Loop phase (third)
 
 ---
 
-## Integration Gotchas
+### Pitfall 8: Graph Animation + Bloom Postprocessing = Mobile Frame Budget Exceeded
 
-| Integration | Common Mistake | Correct Approach |
-|-------------|----------------|------------------|
-| pgvector `<=>` operator | Treating cosine distance as cosine similarity (0 = identical vs. 1 = identical) | Verify: `1 - (embedding <=> query_embedding)` gives similarity; `<=>` alone gives distance |
-| Neon serverless on Vercel | Using standard `pg` driver without connection pooling; each serverless invocation opens a new connection | Use `@neondatabase/serverless` driver or PgBouncer connection string for all Vercel deployments |
-| Anthropic Claude API in monorepo | Importing the SDK directly in `apps/web` — breaks Docker isolation | All LLM calls must go through `packages/llm` adapter; never import `@anthropic-ai/sdk` outside that package |
-| Turborepo Docker builds | Not using `turbo prune --scope=web` before `npm install` in Dockerfile | Use `turbo prune` in a separate Docker build stage to produce a minimal workspace before install |
-| D3.js + React | Mixing D3 DOM mutation and React state; React re-renders trash D3's simulation state | Use D3 for math/simulation only; let React own the DOM; sync via `useEffect` with stable refs |
-| pgvector HNSW index | Building HNSW index before inserting data; re-indexing is extremely slow (32x slower than IVFFlat at build time) | Use IVFFlat for initial development; migrate to HNSW only after data volume justifies it and during a maintenance window |
-| Next.js App Router + serverless LLM | Default function timeout (10s on Vercel hobby plan) is too short for LLM + pgvector disambiguation | Set `export const maxDuration = 30` on LLM routes; architect pipeline to fail gracefully under time pressure |
+**What goes wrong:**
+The current scene runs `EffectComposer > Bloom` with `intensity={1.5}` and `mipmapBlur`. Bloom is a multi-pass shader effect: it extracts bright pixels, downsamples through a mip chain, blurs each level, then composites back. This is already expensive on mobile GPUs (fills the entire framebuffer 6-8 times per frame). Adding per-frame animation (node position lerps, edge fading, camera movement) on top pushes the GPU past its frame budget. On a 375px viewport, even with `dpr={[1, 2]}`, the bloom pass renders at device resolution.
 
----
+**Why it happens:**
+Bloom looks spectacular on desktop but is disproportionately expensive on mobile. The `mipmapBlur` option trades quality for some performance, but the fundamental cost is multi-pass fullscreen rendering. Developers test on MacBook Pro GPUs and don't notice the problem until testing on actual mobile devices.
 
-## Performance Traps
+**Consequences:**
+- Animation stutters on mobile during graph updates
+- Battery drain accelerates (GPU at sustained high load)
+- Thermal throttling kicks in after 30 seconds, making subsequent interactions worse
 
-| Trap | Symptoms | Prevention | When It Breaks |
-|------|----------|------------|----------------|
-| Force simulation running indefinitely | CPU pegged in browser; battery drain on mobile; UI unresponsive | Call `simulation.stop()` when `alpha < 0.001`; add `simulation.alphaDecay(0.05)` | At any scale on low-end mobile devices |
-| Exact-string concept matching against growing library | Routing decisions take linearly longer as library grows | Use indexed pgvector similarity from day one | ~500 library entries |
-| N+1 queries for knowledge graph fetch | Loading each concept's connections in separate queries; API latency spikes on large graphs | Single CTE or JOIN query to fetch all nodes and edges for a student in one round trip | ~50 concept nodes |
-| SVG node count explosion | Browser tab becomes unresponsive; forced reload | Implement node clustering below zoom threshold; hard cap at 150 visible nodes | ~300 SVG elements on mobile iOS Safari |
-| LLM disambiguation on every concept extraction | API costs blow up; latency unacceptable | Only invoke LLM disambiguation when pgvector returns candidates above a similarity floor (e.g., 0.70–0.90 band); skip if no candidates in range | Any scale — this is a design issue, not a scale issue |
-| Full conversation history as LLM context | Token costs grow quadratically per session; context window exceeded after 20+ turns | Use a sliding window (last 5 exchanges) + a compressed summary for Socratic dialogue; never send full history | ~15 dialogue turns |
+**Prevention:**
+1. **Disable or reduce Bloom during active animation.** When `isAnimating.current` is true, either remove the `<Bloom>` effect entirely or reduce `intensity` to 0.3 and set `luminanceThreshold` to 0.95 (barely visible). Restore full bloom after animation settles.
+2. **Use `dpr={1}` on mobile during animation.** The `Canvas` already has `dpr={[1, 2]}` which lets R3F choose. During animation, force `dpr={1}` via `gl.setPixelRatio(1)` to halve the pixel count for bloom passes.
+3. **Test on actual mobile hardware.** Use Chrome DevTools mobile throttling (4x CPU, slow 3G) as a minimum, but actual device testing is irreplaceable. iOS Safari has different WebGL limits than Chrome.
+4. **Consider `frameloop="demand"` when the graph is idle.** Only render frames when the user interacts or animation is active. The current setup renders 60fps continuously even when the student is just reading.
 
----
+**Detection:**
+- FPS drops below 30 on mobile during graph updates
+- `r3f-perf` shows bloom pass taking >8ms per frame
+- Device feels hot during graph page usage
 
-## Security Mistakes
+**Codebase locations:** `apps/web/components/graph/solar-graph.tsx:65-70` (EffectComposer + Bloom)
 
-| Mistake | Risk | Prevention |
-|---------|------|------------|
-| Student PII (name, email) included in LLM prompts | Data sent to Anthropic servers; violates COPPA data minimization; potential FERPA breach | Map student identity to session token at API boundary; only pass anonymized session ID and grade band to LLM |
-| No per-student LLM rate limiting | A student can spam questions; API costs grow unbounded; a loop in client code drains budget | Enforce 1 question/day at database level (unique constraint on student_id + date); secondary rate limit of 10 API calls/hour per student |
-| Teacher dashboard exposes other classes' data | FERPA violation: teachers can only see their own students | Row-level security policies in PostgreSQL: all dashboard queries must include `WHERE class.teacher_id = :current_teacher_id` |
-| Self-hosted deployment ships with debug logging enabled | Student questions logged to stdout, which may be captured by cloud logging services | Disable debug logging by default in Docker image; document how to enable for troubleshooting |
-| YAML misconception library includes community-contributed malicious content | LLM is prompted with attacker-controlled text (prompt injection via library entries) | Sanitize all library strings before interpolation into prompts; validate library entries in CI against a character allowlist; treat library content as untrusted user input |
+**Phase to address:** Graph Animation phase (first — profile before adding animation)
 
 ---
 
-## UX Pitfalls
+### Pitfall 9: teacher_activities Table Missing — No Schema for Activity Tracking
 
-| Pitfall | User Impact | Better Approach |
-|---------|-------------|-----------------|
-| Entering diagnostic mode without explaining why | Student is suddenly asked probing questions without context; feels interrogated, not curious | Display a brief "I noticed something interesting about how you think about [concept]..." transition screen before diagnostic flow |
-| Showing all graph nodes at once on first visit | Overwhelming; student sees a blob of nodes with no clear meaning | Progressive reveal: show only the last 7 days by default; let student expand to full graph |
-| Socratic probe questions that reveal the answer | Student is told the misconception rather than confronting it themselves; no cognitive conflict achieved | Probe questions must be answered by the student; never include the correct answer in the question itself; test each prompt template for this anti-pattern |
-| "No misconceptions detected" shown as a positive | Students with unprobed concepts are not told their knowledge is unvalidated | Use "Not yet explored" state for unprobed concepts; only "Healthy" after successful probe resolution |
-| Generic error messages when LLM fails | Student sees "Something went wrong" and gets no learning value | LLM failures should degrade gracefully to enrich mode (not diagnostic); never show a blank graph or error state without a recovery path |
-| Teacher dashboard uses misconception jargon | Teachers unfamiliar with conceptual change theory are confused by "probe/classify/confront" language | Use plain English in the dashboard: "Common misunderstanding", "Students who think X but it's actually Y" |
+**What goes wrong:**
+The teacher action loop requires tracking: which misconceptions/themes the teacher addressed, when they delivered classroom activities, which students were targeted, and whether re-probing has been scheduled/completed. None of this exists in the current schema. The closest is `themeLessonPlans` (stores generated lesson plans) and `diagnosticSessions` (stores individual student diagnostic outcomes). There is no table for teacher-initiated classroom activities.
 
----
+**Why it happens:**
+v1.0 was read-only for teachers — they viewed data but never wrote actions back. The action loop introduces teacher WRITE operations for the first time. This requires new tables, new server actions, and new authorization patterns (teacher writes that affect student data).
 
-## "Looks Done But Isn't" Checklist
+**Consequences:**
+- Without proper schema design upfront, the action loop devolves into ad-hoc state scattered across multiple tables
+- "Mark done" becomes a flag on `themeLessonPlans` (wrong abstraction — a lesson plan is not an activity record)
+- Re-probe tracking has nowhere to live
+- Multiple teachers in future (if the same student is in two classes) have no isolation
 
-- [ ] **Concept deduplication:** pgvector threshold is set — but has it been validated against a golden test set of domain-crossing concepts (gravity/physics vs. gravity/baking)?
-- [ ] **Socratic probing:** Prompts return age-appropriate text — but have they been tested against all 4 grade bands with a post-generation validation pass?
-- [ ] **COPPA compliance:** No third-party analytics — but have all CDN-loaded fonts, images, and external script tags been audited? Is the data retention policy published?
-- [ ] **Knowledge graph:** Renders correctly in dev — but has it been tested with 200-node seed data on a mobile device?
-- [ ] **Misconception library:** YAML files are valid — but does CI run JSON Schema validation on every PR? Are all entries research-cited?
-- [ ] **Docker deployment:** `docker compose up` works — but does the production Dockerfile use `turbo prune`? Are all environment variables documented?
-- [ ] **Vercel deployment:** Deployed successfully — but are LLM routes setting `maxDuration`? Is the Neon serverless driver in use (not standard `pg`)?
-- [ ] **Teacher dashboard:** Shows student data — but does every query enforce `teacher_id` row-level security? Is there a test for cross-class data leakage?
-- [ ] **Rate limiting:** Daily question cap implemented — but does it work across multiple Vercel serverless instances (not in-memory)?
-- [ ] **LLM context:** Diagnostic dialogue works — but is conversation history bounded to a sliding window to prevent token cost blowup?
+**Prevention:**
+1. **Design the `teacher_activities` table before writing any UI code.** Suggested schema:
+   - `id`, `classId`, `themeId` (or `misconceptionId`), `teacherId`
+   - `status` enum: `planned | delivered | re_probing | verified`
+   - `affectedStudentIds` (array or join table)
+   - `deliveredAt`, `verifiedAt`
+   - `lessonPlanId` (FK to `themeLessonPlans`, nullable)
+2. **Add a `teacher_re_probes` table** (or join to `diagnostic_sessions`):
+   - `activityId`, `studentId`, `diagnosticSessionId`, `outcome`
+   - This links the teacher's activity to individual student re-probe results
+3. **Migration-first development.** Write the Drizzle schema + migration before any server action code. The current codebase has only one migration file and uses `drizzle-kit push` — this is fine for development but the schema must be right before pushing.
 
----
+**Detection:**
+- Developer finds themselves adding columns to `themeLessonPlans` for activity tracking
+- "Mark done" has no persistent state beyond the client
+- Re-probe sessions cannot be distinguished from organic diagnostic sessions
 
-## Recovery Strategies
-
-| Pitfall | Recovery Cost | Recovery Steps |
-|---------|---------------|----------------|
-| Concept deduplication threshold wrong — graph is polluted | HIGH | Data migration to re-run deduplication pipeline on all existing concepts; manual review of merged/split nodes; rebuild embeddings if model changed |
-| COPPA violation discovered post-launch | CRITICAL | Immediate data deletion of affected records; legal review; notification to school administrators; FTC voluntary disclosure (reduces penalty exposure) |
-| SVG graph freezes in live demo | LOW | Switch to filtered view (last 7 days); add node count cap as hotfix; Canvas migration deferred |
-| LLM delivers age-inappropriate content to a student | HIGH | Immediate disable of diagnostic mode; manual review of all sessions; prompt re-engineering with post-generation validation; incident log for deployers |
-| Misconception library schema change breaks YAML files | MEDIUM | Version the schema; write a migration script; add backward-compatibility to the validator before deploying schema changes |
-| Docker and Vercel behavior diverge discovered late | MEDIUM | Prioritize Docker parity fixes (self-host promise); document Vercel-specific limitations explicitly in README; add both targets to CI |
+**Phase to address:** Teacher Action Loop phase (third — schema design first task)
 
 ---
 
-## Pitfall-to-Phase Mapping
+### Pitfall 10: Camera Lerp Fixed Factor Breaks on High Refresh Rate Displays
 
-| Pitfall | Prevention Phase | Verification |
-|---------|------------------|--------------|
-| Concept deduplication threshold miscalibration | Concept extraction pipeline phase | Golden test set of 50+ concept pairs passes with < 5% false merge/split rate |
-| LLM age-inappropriate Socratic probing | Misconception diagnostic / Socratic dialogue phase | Manual review of 20+ probe questions across all 4 grade bands; Flesch-Kincaid check passes |
-| COPPA data retention / third-party leakage | Auth and data model phase | Schema has `delete_after` on all student tables; zero external script tags in audit; retention policy document published |
-| Knowledge graph SVG performance degradation | Knowledge graph visualization phase | 200-node seed data renders at > 30fps on a mid-range mobile device |
-| Misconception library becoming a bottleneck | Misconception library and routing engine phase | CI validates YAML schema; routing engine uses pgvector similarity (not string match); all entries have research citations |
-| Docker/Vercel deployment behavior drift | Infrastructure and deployment phase | Automated integration test suite runs against both `docker compose` and `vercel dev` targets in CI |
-| LLM over-extraction / hallucinated concepts | Concept extraction pipeline phase | Manual audit of 100 extraction outputs; node count per question averages ≤ 2.5; no common English words in graph nodes |
-| Student PII in LLM prompts | Auth and data model phase | Code review confirms no `student.name` or `student.email` fields in any LLM prompt template |
-| D3 / React state mutation conflict | Knowledge graph visualization phase | Graph simulation does not flicker on React re-render; force simulation alpha decays to zero |
-| LLM context window cost blowup | Misconception diagnostic / Socratic dialogue phase | Dialogue context tested at 30 turns; token count stays under 4,000 input tokens per request |
+**What goes wrong:**
+The current camera fly-to uses `camera.position.lerp(targetPosition.current, 0.06)` inside `useFrame`. On a 60Hz display, this produces a ~1 second fly animation. On a 120Hz display (iPad Pro, modern iPhones, gaming monitors), the lerp runs twice as many frames at the same factor, completing in ~0.5 seconds (too fast, feels abrupt). On a 30Hz throttled mobile device, it takes ~2 seconds (too slow, feels broken).
+
+**Why it happens:**
+Linear interpolation with a fixed factor per-frame is refresh-rate-dependent. The official R3F documentation specifically warns about this: "Use deltas instead of fixed values so that your app is refresh-rate independent."
+
+**Consequences:**
+- Animation feels different on every device
+- On high-refresh-rate displays, the camera snap looks jarring
+- On throttled mobile, the camera crawl feels sluggish during the "hero moment"
+
+**Prevention:**
+1. **Replace fixed-factor lerp with delta-based damping.** Instead of `lerp(target, 0.06)`, use:
+   ```typescript
+   const dampingFactor = 1 - Math.pow(0.001, delta); // delta from useFrame
+   camera.position.lerp(targetPosition.current, dampingFactor);
+   ```
+   This produces consistent-duration animation regardless of refresh rate.
+2. **Apply the same fix to the bridge pulse animation** and any new fly-in animations.
+3. **Test on multiple refresh rates.** Chrome DevTools allows setting custom refresh rates in the rendering panel.
+
+**Codebase locations:** `apps/web/components/graph/solar-scene.tsx:278` (camera lerp), `solar-scene.tsx:282` (controls target lerp)
+
+**Phase to address:** Graph Animation phase (fix during animation work)
+
+---
+
+## Minor Pitfalls
+
+These cause confusion, wasted debugging time, or small UX issues.
+
+---
+
+### Pitfall 11: Missing DB Indexes Will Make Dashboard Slow During Re-probe Queries
+
+**What goes wrong:**
+The existing CONCERNS.md documents missing indexes on `concepts.userId` and `conceptQuestions` join columns. These are already a performance issue for v1.0. The teacher action loop adds MORE queries against these tables: "find all diagnostic sessions for students in class X who were affected by misconception Y" requires joining `classEnrollments`, `diagnosticSessions`, and `concepts`. Without indexes, these queries degrade as class sizes grow.
+
+**Prevention:**
+Add the three missing indexes documented in CONCERNS.md BEFORE building any new teacher query actions:
+1. `concepts.userId` index
+2. `conceptQuestions.conceptId` and `conceptQuestions.questionId` indexes
+3. `classEnrollments.studentId` standalone index
+
+**Phase to address:** Any phase (standalone migration, do first)
+
+---
+
+### Pitfall 12: Graph Page SSR Fetch Defeats Animation — Data is Stale on Mount
+
+**What goes wrong:**
+The current graph page (`/student/graph/page.tsx`) fetches data at server render time via `getGraphData()` and `getBridgeConnection()`. The data is passed as props to `GraphPageClient`. When a student asks a question and then clicks "Explore on your graph," the navigation triggers a full server render with the LATEST data. There is no "before" state to animate FROM — the graph mounts already showing the new nodes in their final positions.
+
+**Why it happens:**
+Server-side rendering provides fresh data on every navigation. For static display, this is ideal. For animation ("show me what changed"), you need both the before-state and after-state, which requires client-side state management that persists across navigations or a diff mechanism.
+
+**Prevention:**
+1. **Client-side graph data management.** Instead of fetching in the server component, fetch via a client-side hook (`useSWR` or manual `useEffect`). Store the previous graph data in a ref. When new data arrives, diff to find new nodes/edges and animate those.
+2. **Alternative: pass "new concept IDs" via URL params.** When navigating from question page to graph, include `?newConcepts=id1,id2,id3`. The graph page mounts with all data but marks those IDs as "animate-in." No need for before/after diff.
+3. **Alternative: use `router.push` with shallow routing + `revalidatePath`.** Keep the graph data in client state, use `revalidatePath('/student/graph')` from the question submission, and detect changes client-side.
+
+**Detection:**
+- Graph always mounts showing all nodes in final positions, no fly-in animation visible
+- No way to distinguish "new" nodes from "existing" ones at mount time
+
+**Codebase locations:** `apps/web/app/student/graph/page.tsx:16-19` (server-side fetch), `graph-page-client.tsx:27` (receives data as props)
+
+**Phase to address:** Graph Animation phase (fundamental architecture decision)
+
+---
+
+### Pitfall 13: Proximity Labels (`<Html>`) During Animation Create DOM Thrash
+
+**What goes wrong:**
+The current `SolarScene` renders up to 12 proximity labels using drei's `<Html>` component, which creates real DOM elements overlaid on the WebGL canvas. During node fly-in animation, node positions change every frame. The proximity label update (every 10 frames) recalculates which nodes are "nearby" and triggers React re-renders to mount/unmount `<Html>` elements. Each mount/unmount is a DOM operation that competes with the GPU for the main thread.
+
+**Prevention:**
+1. Suppress proximity label updates entirely during active animation (check `isAnimating.current` ref).
+2. Resume proximity labels only after animation settles.
+3. Consider using Three.js `TextGeometry` or SDF text (via troika-three-text) for labels that live entirely in the WebGL context, avoiding DOM/WebGL synchronization overhead.
+
+**Codebase locations:** `apps/web/components/graph/solar-scene.tsx:253-275` (proximity label update logic), `solar-scene.tsx:413-437` (Html label rendering)
+
+**Phase to address:** Graph Animation phase
+
+---
+
+### Pitfall 14: `experimental_output` Throughout LLM Layer — Breaking Change Risk During v1.1
+
+**What goes wrong:**
+The CONCERNS.md documents that every structured output call in the LLM layer uses `experimental_output: Output.object(...)` instead of the stable `generateObject` API. During v1.1 development (which will take weeks), a Vercel AI SDK update could deprecate or change the `experimental_output` API, breaking the concept extraction pipeline that feeds the graph animation feature.
+
+**Prevention:**
+Migrate all `experimental_output` calls to `generateObject` before starting v1.1 feature work. This is a low-risk, high-value cleanup that prevents mid-milestone breakage. The migration is mechanical — `generateObject` with a Zod schema is the stable replacement.
+
+**Codebase locations:** Listed in CONCERNS.md: `packages/llm/src/prompts/extract.ts`, `disambiguate.ts`, `diagnose-resolve.ts`, `generate-lesson-plan.ts`, `analyze-student-themes.ts`, `packages/router/src/semantic-fallback.ts`
+
+**Phase to address:** Pre-work before any v1.1 phase (housekeeping)
+
+---
+
+## Phase-Specific Warnings
+
+| Phase Topic | Likely Pitfall | Severity | Mitigation |
+|-------------|---------------|----------|------------|
+| Graph Animation: Node Fly-in | InstancedMesh buffer cannot grow (Pitfall 1) | CRITICAL | Over-allocate buffer, remove key-based remount |
+| Graph Animation: Node Fly-in | d3-force-3d resets all positions (Pitfall 3) | CRITICAL | Preserve existing positions, pin nodes during incremental layout |
+| Graph Animation: Node Fly-in | No client notification when concepts ready (Pitfall 4) | CRITICAL | Polling or two-phase response |
+| Graph Animation: Node Fly-in | Graph page SSR defeats animation (Pitfall 12) | MODERATE | Client-side data management or URL-param approach |
+| Graph Animation: Performance | setState in useFrame (Pitfall 2) | CRITICAL | All animation state in refs, not React state |
+| Graph Animation: Performance | Bloom + animation on mobile (Pitfall 8) | MODERATE | Reduce bloom during animation |
+| Graph Animation: Performance | Per-edge Line components (Pitfall 5) | MODERATE | Batch into LineSegments or limit count |
+| Graph Animation: Performance | Camera lerp refresh-rate dependent (Pitfall 10) | MINOR | Delta-based damping |
+| Graph Animation: Performance | Proximity label DOM thrash (Pitfall 13) | MINOR | Suppress during animation |
+| Bridge Discovery | Toast is wrong surface (Pitfall 6) | MODERATE | In-graph visual event, not toast |
+| Teacher Action Loop | Mark done without re-probe (Pitfall 7) | MODERATE | Design two-step process upfront |
+| Teacher Action Loop | No schema for activities (Pitfall 9) | MODERATE | Design table before UI |
+| Teacher Action Loop | Missing DB indexes (Pitfall 11) | MINOR | Add indexes in migration first |
+| All Phases | experimental_output breaking change (Pitfall 14) | MINOR | Migrate before starting features |
 
 ---
 
 ## Sources
 
-- FTC COPPA 2025 Final Rule: https://www.ftc.gov/news-events/news/press-releases/2025/01/ftc-finalizes-changes-childrens-privacy-rule-limiting-companies-ability-monetize-kids-data
-- COPPA 2025 compliance guide for EdTech: https://blog.promise.legal/startup-central/coppa-compliance-in-2025-a-practical-guide-for-tech-edtech-and-kids-apps/
-- EdTech student privacy compass guide: https://studentprivacycompass.org/wp-content/uploads/2025/09/2025-EdTech-Guide.pdf
-- pgvector cosine distance vs. similarity bug (Supabase issue): https://github.com/supabase/supabase/issues/12244
-- pgvector HNSW vs IVFFlat index performance: https://www.tembo.io/blog/vector-indexes-in-pgvector
-- pgvector vector search filter performance (Achilles heel): https://yudhiesh.github.io/2025/05/09/the-achilles-heel-of-vector-search-filters/
-- Why pgvector benchmarks lie (The New Stack): https://thenewstack.io/why-pgvector-benchmarks-lie/
-- D3.js SVG performance cliff (~1000 nodes): https://graphaware.com/visualization/2019/09/05/scale-up-your-d3-graph-visualisation-webgl-canvas-with-pixi-js.html
-- SVG vs Canvas for large graphs: https://medium.com/neo4j/scale-up-your-d3-graph-visualisation-part-2-2726a57301ec
-- LLM entity extraction brittleness (GDELT experiments): https://blog.gdeltproject.org/experiments-in-entity-extraction-using-llms-hallucination-how-a-single-apostrophe-can-change-the-results/
-- Socratic LLM asymmetric feedback / cognitive state failure: https://aclanthology.org/2025.findings-emnlp.888.pdf
-- LLM hallucination in educational contexts: https://www.facultyfocus.com/articles/teaching-with-technology-articles/mitigating-hallucinations-in-llms-for-community-college-classrooms-strategies-to-ensure-reliable-and-trustworthy-ai-powered-learning-tools/
-- Turborepo Docker with pnpm — turbo prune: https://turbo.build/repo/docs/handbook/deploying-with-docker
-- Neon serverless connection pooling: https://neon.com/docs/connect/choose-connection
-- Vercel does not support Docker images: https://vercel.com/kb/guide/does-vercel-support-docker-deployments
-- Solo developer project failure modes: https://preview.app.daily.dev/posts/this-is-why-most-solo-dev-projects-fail-dpb5hfvxa
+- [R3F Performance Pitfalls (official)](https://r3f.docs.pmnd.rs/advanced/pitfalls) — setState in useFrame, delta-based animation, mount/unmount costs
+- [R3F Scaling Performance (official)](https://docs.pmnd.rs/react-three-fiber/advanced/scaling-performance) — instancing, draw call reduction
+- [Three.js InstancedMesh.count docs](https://threejs.org/docs/#api/en/objects/InstancedMesh.count) — count can decrease but buffer is fixed
+- [R3F Discussion #1576](https://github.com/pmndrs/react-three-fiber/discussions/1576) — dynamic InstancedMesh count challenges
+- [Three.js forum: dynamic instancecount](https://discourse.threejs.org/t/modified-three-instancedmesh-dynamically-instancecount/18124) — buffer reallocation requirements
+- [Vercel AI SDK useCompletion docs](https://ai-sdk.dev/docs/ai-sdk-ui/completion) — onFinish callback behavior
+- [Next.js SSE in API routes](https://github.com/vercel/next.js/discussions/48427) — SSE streaming patterns
+- [Building Efficient Three.js Scenes (Codrops, Feb 2025)](https://tympanus.net/codrops/2025/02/11/building-efficient-three-js-scenes-optimize-performance-while-maintaining-quality/) — mobile GPU optimization
+- [React Postprocessing Bloom docs](https://react-postprocessing.docs.pmnd.rs/effects/bloom) — selective bloom, performance tradeoffs
+- MindMap codebase analysis (CONCERNS.md, component source) — HIGH confidence, direct code inspection
 
 ---
-*Pitfalls research for: AI-powered K-12 educational knowledge graph with misconception detection (MindMap)*
-*Researched: 2026-04-08*
+
+*Pitfalls audit: 2026-04-14 — v1.1 Value Experience milestone*

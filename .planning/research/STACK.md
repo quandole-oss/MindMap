@@ -1,250 +1,246 @@
-# Stack Research
+# Technology Stack Additions for v1.1 Value Experience
 
-**Domain:** AI-powered K-12 educational knowledge graph tool
-**Researched:** 2026-04-08
-**Confidence:** HIGH (core stack), MEDIUM (supporting libs), notes per layer
+**Project:** MindMap v1.1
+**Researched:** 2026-04-14
+**Focus:** Stack additions/changes for 3 new features (graph animation, bridge discovery UX, teacher action loop)
 
----
+## Executive Summary
 
-## Recommendation Summary
+After analyzing the existing codebase, the v1.1 features require **zero new npm dependencies**. The project already has every tool needed: GSAP for timeline-based 2D animations, `useFrame` for per-frame R3F InstancedMesh manipulation, Sonner for notifications, Drei's Sparkles for particle effects, and React 19's `useOptimistic` (built-in) for teacher workflow state. Adding libraries would introduce compatibility risk and bundle bloat for no gain.
 
-The brief's choices are largely correct. Two changes are worth making:
+## Existing Stack Assets (Already Installed)
 
-1. **Replace Prisma with Drizzle ORM** — Drizzle has a ~90% smaller bundle, runs within 10-20% of raw SQL, has first-class pgvector support, and is now the default in create-t3-app. For a Vercel + Neon deployment with serverless cold starts, Drizzle is meaningfully better.
-2. **Use Vercel AI SDK (`ai`) as the LLM abstraction layer** — rather than hand-rolling the adapter pattern. It ships first-class providers for Anthropic, OpenAI, and Ollama with a two-line swap interface. This is the standard in 2025; rolling your own adds maintenance burden with no benefit.
+These are the tools that cover all v1.1 requirements:
 
-Everything else in the brief (Next.js, Turborepo/pnpm, pgvector, D3.js, Docker/Neon, YAML library) is validated.
+| Already Installed | Version | Covers Feature | How |
+|-------------------|---------|----------------|-----|
+| `@react-three/fiber` useFrame | ^9.5.0 | Graph growth animation | Per-frame InstancedMesh matrix/color manipulation (already used for bridge pulse in solar-scene.tsx) |
+| `@react-three/drei` Sparkles | ^10.7.7 | Bridge discovery visual effect | Floating particle burst at bridge node position |
+| `@react-three/postprocessing` Bloom | ^3.0.4 | Bridge discovery glow emphasis | Temporarily boost emissive intensity on bridge node |
+| `gsap` | ^3.14.2 | 2D overlay animations (celebration, timeline) | Already used in spiral-animation.tsx for canvas particle depth animation |
+| `sonner` | ^2.0.7 | Upgraded bridge notification | Custom toast with richer content, action buttons |
+| `three` (THREE.Color, THREE.Vector3) | ^0.183.2 | Color lerp animation for new nodes | Color.lerp, Vector3.lerp in useFrame loop |
+| React 19 `useOptimistic` | built-in | Teacher mark-done optimistic UI | Native React hook, no library needed |
+| Next.js `revalidatePath` | ^15.3.0 | Teacher action server-side cache bust | Built into Next.js App Router |
+| Drizzle ORM | 0.45.2 | Teacher action persistence (new columns) | Schema migration for action status tracking |
 
----
+## Feature-by-Feature Stack Analysis
 
-## Recommended Stack
+### Feature 1: Graph-as-Hero (Animate Graph Growth)
 
-### Core Technologies
+**What it needs:** After a student asks a question, new nodes should appear with a scale-up animation, new edges should draw in, and the camera should fly to the new region.
 
-| Technology | Version | Purpose | Why Recommended |
-|------------|---------|---------|-----------------|
-| Next.js | 15.x (stable) | Full-stack React framework | App Router + Server Actions eliminate a separate API layer; Vercel-native; RSC pattern fits K-12 dashboard well. Note: Next.js 16 released but 15.x is production-proven and risk-free for a capstone. |
-| React | 19.x | UI rendering | Ships with Next.js 15; Server Components reduce client JS, critical for teacher dashboard page weight |
-| TypeScript | 5.5+ | Type safety across monorepo | `strict: true` across all packages; Zod schemas derive from TS types |
-| Turborepo | 2.x | Monorepo build orchestration | Remote caching, parallel task execution, dependency graph across `/apps` and `/packages`; `create-turbo` scaffold with pnpm is the standard starting point |
-| pnpm | 9.x | Workspace package manager | Symlink-based node_modules saves disk space; workspace protocol (`workspace:*`) enforces local package references; faster than npm/yarn for monorepos |
-| PostgreSQL | 16.x | Primary data store | ACID, mature, battle-tested; required host for pgvector; Neon runs Postgres 16 |
-| pgvector | 0.8.x | Concept deduplication via embeddings | HNSW indexes for cosine similarity; stores 1536-dim OpenAI embeddings or 768-dim smaller models; enables semantic "is this the same concept?" queries |
-| Drizzle ORM | 0.31+ | Type-safe database access + migrations | Code-first TypeScript schema = single source of truth; built-in pgvector column types (`vector`, `halfvec`); ~7.4 KB gzip vs Prisma's ~1.6 MB — critical for Vercel serverless cold starts; replaced Prisma in create-t3-app |
-| Vercel AI SDK | 4.x (`ai`) | LLM provider abstraction | Ships `@ai-sdk/anthropic`, `@ai-sdk/openai`, and community `@ai-sdk/ollama` — swap provider in two lines; `generateObject` with Zod schemas is the standard for structured concept extraction; streaming built-in |
-| Tailwind CSS | 4.x | Utility-first styling | v4 is stable and production-ready as of 2025; CSS-first config (no `tailwind.config.js`); 5x faster builds; pairs with shadcn/ui |
-| shadcn/ui | latest (CLI-based) | Accessible UI component primitives | Not a package dependency — components are inlined (zero runtime overhead); full Server Components support; integrates with Radix UI for accessibility |
+**Stack decision: useFrame + manual InstancedMesh matrix manipulation. No new library.**
 
-### Database Layer Detail
+**Rationale:**
+- The graph already uses InstancedMesh with `setMatrixAt()` for all node rendering (solar-nodes.tsx)
+- The bridge pulse animation in solar-scene.tsx already demonstrates the exact pattern: `useFrame` reads clock, computes scale factor, updates matrix, sets `needsUpdate = true`
+- Neither `@react-spring/three` nor `framer-motion-3d` can animate individual instances within an InstancedMesh -- they operate on React component props, not on per-instance matrix buffers
+- `@react-spring/three` (v10.0.3) is React 19 compatible but adds ~40KB for a capability that `useFrame` + `THREE.MathUtils.lerp` already provides
+- `framer-motion-3d` (v12.4.13) requires `@react-three/fiber: 8.2.2` -- incompatible with the project's R3F v9
 
-| Technology | Version | Purpose | Notes |
-|------------|---------|---------|-------|
-| Neon | serverless | Cloud PostgreSQL host | First-class Vercel integration; per-preview-deployment database branching; native pgvector support; HNSW indexing; 80% storage cost reduction in late 2025 |
-| drizzle-kit | 0.22+ | Migration CLI | `drizzle-kit generate` + `drizzle-kit migrate`; works with Neon serverless driver |
-| `@neondatabase/serverless` | latest | Neon connection driver | Required for edge/serverless; replaces `pg` in Vercel deployments |
-| pgvector-node | 0.2+ | pgvector Node.js bindings | Typed vector arrays for insert/query; works alongside Drizzle |
-
-### LLM Layer
-
-| Technology | Version | Purpose | Notes |
-|------------|---------|---------|-------|
-| `ai` (Vercel AI SDK) | 4.x | Provider-agnostic LLM calls | Core abstraction; `generateObject`, `generateText`, `streamText` |
-| `@ai-sdk/anthropic` | latest | Anthropic Claude provider | Primary provider per brief; Claude 3.5 Sonnet recommended for quality/cost |
-| `@ai-sdk/openai` | latest | OpenAI adapter | Secondary provider; also used for `text-embedding-3-small` (1536 dims) for pgvector |
-| `ollama-ai-provider` | latest | Ollama adapter | Self-hosted LLM for Docker Compose deployment story; air-gap compatible |
-| `@anthropic-ai/sdk` | latest | Direct Anthropic SDK | Keep as peer dep in `/packages/llm` for any capabilities not yet in AI SDK |
-
-**Why Vercel AI SDK over hand-rolled adapters:** The brief specifies a pluggable adapter pattern. The AI SDK *is* that pattern, mature and maintained. Rolling a custom `LLMProvider` interface means maintaining provider-specific error handling, streaming formats, token counting, and retry logic — work that AI SDK already does.
-
-**Why Vercel AI SDK over LangChain:** LangChain JS is heavyweight (~2MB), has frequent breaking changes between versions, and edge runtime restrictions. For this project's use case (structured generation + streaming answers), AI SDK is simpler and more appropriate.
-
-### Visualization Layer
-
-| Technology | Version | Purpose | Notes |
-|------------|---------|---------|-------|
-| D3.js | 7.x | Force-directed graph engine | `d3-force` module handles physics simulation; direct DOM manipulation via `useRef` in React; best customization for node health states (healthy/misconception/bridge/unprobed) |
-| `d3-force` | 3.x | Standalone physics (within D3) | Can import just the force module if bundle size matters |
-
-**D3.js vs react-force-graph trade-off:**
-- `react-force-graph` (vasturiano) is easier to integrate as a React component and handles canvas/WebGL rendering out of the box. It is appropriate if the graph is display-only.
-- Raw D3.js is better when you need custom node rendering per state (the 4 health states with custom SVG/colors), drag-to-explore interactions, and animated transitions on node reclassification. For MindMap's use case, D3.js direct manipulation is the right choice — the brief is correct.
-- Keep D3 manipulation isolated in a single `<KnowledgeGraph>` component that receives graph data as props; don't mix D3 DOM writes with React's virtual DOM.
-
-### Auth
-
-| Technology | Version | Purpose | Notes |
-|------------|---------|---------|-------|
-| Auth.js (NextAuth v5) | 5.0.0-beta.25+ | Email/password auth, session management | Still beta but stable enough for this use case; native App Router support; Credentials provider for email/password; Drizzle adapter available |
-
-**Caveat (MEDIUM confidence):** Auth.js v5 is in extended beta as of April 2026. If instability is a blocker, `lucia-auth` v3 is a well-maintained alternative with simpler session primitives and an explicit Drizzle adapter.
-
-### Validation & Forms
-
-| Library | Version | Purpose | Notes |
-|---------|---------|---------|-------|
-| Zod | 3.x | Schema validation + type inference | Standard for Next.js 15; validates AI SDK `generateObject` output schemas; validates YAML misconception library structure at load time; integrates with react-hook-form |
-| react-hook-form | 7.x | Client-side form handling | Works with Next.js 15 Server Actions via `handleSubmit` bridge; required `"use client"` boundary |
-
-### Monorepo Package Structure
-
-Per the brief, the recommended structure is:
-
-```
-/apps
-  /web              — Next.js 15 app (App Router)
-/packages
-  /db               — Drizzle schema, migrations, db client
-  /llm              — Vercel AI SDK wrapper, provider config
-  /misconceptions   — YAML loader, Zod schema, library types
-  /router           — Enrich/diagnose routing logic
-  /ui               — shadcn/ui components (if shared; optional for solo project)
+**Implementation pattern (no new deps):**
+```typescript
+// In useFrame callback:
+// 1. Track "new node" IDs and their birth timestamps
+// 2. For each new node, compute scale: lerp(0, targetRadius, easeOutElastic(elapsed / DURATION))
+// 3. Update InstancedMesh matrix via setMatrixAt()
+// 4. Optionally boost emissive color temporarily (birth glow)
+// 5. Camera fly-to already exists in solar-scene.tsx (reuse flyToNode)
 ```
 
-Each package exports TypeScript types consumed by `/apps/web`. The `/packages/db` package exports the Drizzle client configured for both local Docker Postgres and Neon serverless.
+**Edge drawing animation:**
+- Current edges use `<Line>` from Drei (solar-edges.tsx) -- these are individual R3F components
+- Animate by lerping the second point from source position to target position over ~0.5s
+- No new library needed -- `useFrame` + `THREE.Vector3.lerp`
 
-### Development & Infrastructure
+**Alternatives rejected:**
 
-| Tool | Purpose | Notes |
-|------|---------|-------|
-| Docker Compose | Local dev + self-host deployment | PostgreSQL 16 + pgvector extension; runs alongside Next.js dev server |
-| Vitest | Unit + integration testing | 10-20x faster than Jest in watch mode; built-in TypeScript + ESM; preferred for monorepo packages; replaces Jest for new Next.js projects |
-| ESLint | Linting | `@typescript-eslint/eslint-plugin` + `eslint-config-next` |
-| Prettier | Formatting | Single config at monorepo root |
-| `js-yaml` | YAML parsing | Loads misconception library at build/startup; Zod validates structure |
+| Library | Why Rejected |
+|---------|-------------|
+| `@react-spring/three` v10 | Cannot animate individual InstancedMesh instances; would require restructuring to individual `<mesh>` elements (destroying the single-draw-call performance). The existing graph can have 100+ nodes. |
+| `framer-motion-3d` v12 | Peer dep requires R3F ^8.2.2 and React 18 only. Incompatible with project's React 19 + R3F ^9.5.0. |
+| `motion` v12 (main package) | R3F support only via `framer-motion-3d` sub-package, which has the same compat issue. The main `motion` package has no R3F exports. |
+| `drei` Float/Trail | Float is constant bobbing (wrong UX for one-shot growth), Trail requires attaching to a moving mesh ref (wrong for appearing nodes). |
 
----
+### Feature 2: Surprising Connections (Bridge Discovery UX)
+
+**What it needs:** When a bridge concept is discovered, make it an unmissable "aha moment" instead of a dismissible toast. The current implementation is a Sonner toast with 7-day cooldown (bridge-toast.tsx).
+
+**Stack decision: Combine existing tools. No new library.**
+
+**Components of the new experience:**
+
+1. **3D graph effect (already have tools):**
+   - Camera fly-to bridge node (already implemented: `flyToNode` in solar-scene.tsx)
+   - Pulse animation on bridge node (already implemented: `pulseRef` in solar-scene.tsx)
+   - `<Sparkles>` from `@react-three/drei` -- already installed, renders floating particles around a position. Add sparkles at bridge node position during discovery moment
+   - Temporarily boost Bloom intensity on the bridge node by increasing emissive multiplier (existing pattern in solar-nodes.tsx: `multiplyScalar(6.0)`)
+
+2. **2D overlay (already have tools):**
+   - Replace toast with a modal/card overlay using existing shadcn/ui `Dialog` or custom overlay
+   - GSAP (already installed) for entrance animation of the overlay card
+   - Show bridge node name, the two domains it connects, and a "Why this matters" explanation
+
+3. **Edge highlight (already have tools):**
+   - Flash the bridge edges brighter by temporarily overriding opacity/lineWidth in SolarEdges
+   - Use `useFrame` time-based lerp to animate edge brightness, same pattern as pulse
+
+**Alternatives rejected:**
+
+| Library | Why Rejected |
+|---------|-------------|
+| `canvas-confetti` | Renders on a separate 2D canvas layer, would fight with the R3F WebGL canvas. Also wrong aesthetic -- this is an insight moment, not a game reward. |
+| `react-confetti-explosion` | Same canvas-layer issue. Also, confetti is extrinsic reward -- conflicts with project's anti-gamification stance (see PROJECT.md Out of Scope). |
+
+### Feature 3: Teacher Action Loop
+
+**What it needs:** Cluster view -> Generate activity -> Mark done -> Re-probe students to measure impact. This is a workflow state machine, not an animation problem.
+
+**Stack decision: React 19 useOptimistic + Next.js Server Actions + Drizzle schema additions. No new library.**
+
+**Rationale:**
+- The teacher dashboard already uses client-side state management with `useState` for expand/collapse, loading states, and lesson plan caching (themes-view.tsx, lesson-plan-card.tsx)
+- "Mark done" is a simple boolean status toggle -- `useOptimistic` (React 19 built-in) handles the instant UI feedback, Server Action persists to DB, `revalidatePath` refreshes the page data
+- No state machine library needed: the workflow has exactly 3 states (pending -> activity_assigned -> completed), which is trivially managed with an enum column in the database and a switch statement in the UI
+- Zustand, XState, or Jotai would be overkill for a 3-state workflow in a single page component
+
+**Schema additions needed (Drizzle migration, no new package):**
+```typescript
+// New columns on theme_lesson_plans table OR new table:
+// - status: enum('pending', 'assigned', 'completed')
+// - assignedAt: timestamp
+// - completedAt: timestamp
+// - reprobeTriggeredAt: timestamp (when teacher requests re-probe)
+```
+
+**Re-probe mechanism:**
+- Server Action marks affected students' diagnostic sessions for re-evaluation
+- Uses existing `@mindmap/router` package to trigger diagnostic mode on next student visit
+- No new infrastructure -- the routing engine already decides enrich vs. diagnose
+
+**Alternatives rejected:**
+
+| Library | Why Rejected |
+|---------|-------------|
+| `zustand` | Global state management for what is page-local UI state. The teacher dashboard is a single route with no cross-page state sharing needs. React useState + useOptimistic covers this. |
+| `xstate` | Formal state machine library. The workflow has 3 states and 2 transitions. A `switch` statement with TypeScript discriminated unions is clearer and has zero bundle cost. |
+| `@tanstack/react-query` | Server Actions with revalidatePath already handle cache invalidation. TanStack Query would duplicate Next.js's built-in data fetching/caching layer and add ~40KB. |
+
+## What NOT to Add
+
+| Avoid | Why | Use Instead |
+|-------|-----|-------------|
+| `@react-spring/three` | Cannot animate InstancedMesh instances; adds 40KB for capability already covered by useFrame | `useFrame` + `THREE.MathUtils.lerp` |
+| `framer-motion-3d` | Incompatible (requires R3F ^8.2.2 + React 18) | Not applicable |
+| `motion` (framer-motion v12) | R3F support broken for React 19; 2D animations covered by existing GSAP + CSS | GSAP (already installed) or Tailwind CSS transitions |
+| `zustand` / `jotai` | Teacher workflow is page-local, 3 states. No cross-component state sharing needed. | `useState` + `useOptimistic` (React 19 built-in) |
+| `xstate` | Over-engineered for a 3-state linear workflow | TypeScript enum + switch |
+| `@tanstack/react-query` | Duplicates Next.js Server Actions + revalidatePath caching | Server Actions + revalidatePath |
+| `canvas-confetti` / `react-confetti-*` | 2D canvas conflicts with R3F; confetti is gamification (explicitly out of scope per PROJECT.md) | `@react-three/drei` Sparkles (already installed) |
+| `lottie-react` | Heavy (~300KB), wrong tool for procedural 3D animations | useFrame procedural animation |
+| `anime.js` | Overlaps with GSAP which is already installed | GSAP |
+
+## New Capabilities from Existing Packages (Not Yet Used)
+
+These are features of already-installed packages that v1.1 should leverage:
+
+| Package | Unused Capability | v1.1 Use Case |
+|---------|-------------------|---------------|
+| `@react-three/drei` Sparkles | Floating particle effect | Sparkle burst around newly discovered bridge node |
+| `@react-three/drei` Html | Already used for labels | Rich HTML overlay at bridge node position for inline discovery card |
+| `@react-three/postprocessing` Bloom | Already used globally | Temporarily increase per-node emissive for "birth glow" effect |
+| `three` MathUtils.lerp | Not used directly yet | Smooth easing for scale, position, color transitions in useFrame |
+| `three` MathUtils.smoothstep | Not used yet | Non-linear easing for more organic animation curves |
+| `three` Color.lerpColors | Not used yet | Smooth color transitions for node state changes |
+| React 19 `useOptimistic` | Not used yet | Instant UI feedback for teacher "mark done" action |
+| React 19 `useTransition` | Already in use (question form) | Wrap server action calls for non-blocking UI updates |
+| `sonner` custom components | Only using basic toast | Rich toast with embedded graph preview for bridge discovery |
 
 ## Installation
 
 ```bash
-# Scaffold monorepo
-npx create-turbo@latest mindmap --package-manager pnpm
-
-# Core app
-cd apps/web
-npx shadcn@latest init
-
-# Database package
-pnpm add drizzle-orm @neondatabase/serverless pgvector
-pnpm add -D drizzle-kit
-
-# LLM package
-pnpm add ai @ai-sdk/anthropic @ai-sdk/openai @anthropic-ai/sdk
-
-# Auth
-pnpm add next-auth@beta @auth/drizzle-adapter
-
-# Validation
-pnpm add zod react-hook-form @hookform/resolvers
-
-# Visualization
-pnpm add d3
-pnpm add -D @types/d3
-
-# YAML + misconceptions package
-pnpm add js-yaml
-pnpm add -D @types/js-yaml
-
-# Testing
-pnpm add -D vitest @vitejs/plugin-react @testing-library/react @testing-library/jest-dom jsdom
+# No new packages to install.
+# All v1.1 features use existing dependencies.
 ```
 
----
+## Schema Migration (Drizzle)
 
-## Alternatives Considered
+The only infrastructure change is a Drizzle schema addition for teacher workflow state:
 
-| Recommended | Alternative | When Alternative Is Better |
-|-------------|-------------|---------------------------|
-| Drizzle ORM | Prisma | Team is already deep in Prisma, needs GUI, or build runs only on long-running servers (not serverless). Prisma 7 narrowed the gap with smaller binaries but still ~1.6 MB vs 7.4 KB. |
-| Vercel AI SDK | Hand-rolled adapters | Never for this project — AI SDK is the pattern, not a constraint. |
-| Vercel AI SDK | LangChain JS | Complex multi-agent orchestration, RAG pipelines with vector store management, or when LangGraph's stateful agent loop is needed. |
-| Auth.js v5 | Lucia Auth v3 | Simpler session model, more predictable beta stability, explicit Drizzle adapter. Choose if Auth.js beta instability appears during implementation. |
-| D3.js direct | react-force-graph | Display-only graph with no custom node states, or 3D graph needed. react-force-graph is faster to scaffold but harder to customize per-node. |
-| Neon | Supabase | When you want a platform layer (Realtime, Storage, Edge Functions) alongside Postgres. For this project, Neon's Vercel integration and database branching are the better fit. |
-| Tailwind CSS v4 | Tailwind CSS v3 | Migrating a large existing codebase where v4's CSS-first config is a migration risk. Greenfield: always v4. |
-| Vitest | Jest | React Native in the monorepo, or heavy reliance on Jest-specific mocking ecosystem. |
+```bash
+# After adding new columns/table to packages/db/src/schema/:
+pnpm --filter @mindmap/db drizzle-kit generate
+pnpm --filter @mindmap/db drizzle-kit migrate
+```
 
----
+## Animation Technique Reference
 
-## What NOT to Use
+For implementers, here are the specific patterns to use with existing tools:
 
-| Avoid | Why | Use Instead |
-|-------|-----|-------------|
-| Prisma on Vercel/serverless | Rust query engine binary is ~1.6 MB after v7 optimizations; cold starts are meaningfully slower; pgvector support requires manual raw SQL for distance functions | Drizzle ORM — native pgvector column types, ~7.4 KB bundle |
-| LangChain JS | ~2 MB bundle, frequent breaking changes (v0.1 → v0.2 → v0.3 all had API rewrites), edge runtime incompatibility, significant complexity overhead for what this project needs | Vercel AI SDK `generateObject` for structured extraction |
-| Supabase JS SDK | Adds a platform-level dependency; pgvector support is fine but the RLS/realtime complexity is unnecessary; ties you to Supabase hosting | Drizzle + Neon directly |
-| Apollo GraphQL | No client-facing API is needed — Next.js Server Actions + RSC handle data fetching; Apollo adds bundle weight and operational complexity | Server Actions + Drizzle queries directly in RSC |
-| Redux / Zustand (heavy) | Knowledge graph state is server-owned; only transient UI state (selected node, zoom level) needs client state | React `useState` / `useReducer` in the graph component; `useContext` for auth session |
-| `mongoose` / MongoDB | pgvector is the core technical requirement; splitting concept embeddings from relational data (students, classes, sessions) into two databases adds operational complexity with no benefit | PostgreSQL + pgvector for everything |
-| `create-react-app` or Vite standalone | Not applicable to this stack but often suggested in search results — Next.js App Router is the correct choice for SSR teacher dashboard and SEO-friendly student pages | Next.js 15 App Router |
+### Scale-up animation (useFrame)
+```typescript
+// Easing function (no library needed)
+function easeOutElastic(t: number): number {
+  const c4 = (2 * Math.PI) / 3;
+  return t === 0 ? 0 : t === 1 ? 1 
+    : Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * c4) + 1;
+}
 
----
+// In useFrame:
+const elapsed = clock.elapsedTime - birthTime;
+const t = Math.min(elapsed / GROW_DURATION, 1);
+const scale = targetRadius * easeOutElastic(t);
+dummy.scale.setScalar(scale);
+```
 
-## Stack Patterns by Variant
+### Color birth glow (useFrame)
+```typescript
+// Bright white -> normal color over 1 second
+const birthColor = new THREE.Color(1, 1, 1); // white
+const targetColor = getNodeColor(node);
+const lerpedColor = birthColor.clone().lerp(targetColor, t);
+meshRef.current.setColorAt(instanceIndex, lerpedColor);
+meshRef.current.instanceColor!.needsUpdate = true;
+```
 
-**Docker Compose self-host (no Neon):**
-- Use `postgres:16-alpine` image with `ankane/pgvector` extension
-- Drizzle connects via `DATABASE_URL=postgresql://user:pass@postgres:5432/mindmap`
-- Replace `@neondatabase/serverless` with standard `pg` driver in db package
-- Next.js runs in standalone output mode (`output: 'standalone'` in next.config.ts)
-
-**Vercel + Neon cloud deployment:**
-- `@neondatabase/serverless` with `neon()` HTTP connection (required for Edge/serverless)
-- `AUTH_SECRET` set in Vercel env; Neon integration auto-sets `DATABASE_URL`
-- Turborepo's `output: 'standalone'` + `outputFileTracingRoot` for Vercel
-
-**Ollama (local LLM for self-host):**
-- Swap `@ai-sdk/anthropic` for `ollama-ai-provider` in `/packages/llm`
-- Embedding model: `nomic-embed-text` (768 dims) instead of OpenAI `text-embedding-3-small` (1536 dims)
-- HNSW index dimension must match embedding model — set at schema creation time
-
----
-
-## Version Compatibility
-
-| Package | Compatible With | Notes |
-|---------|-----------------|-------|
-| Next.js 15.x | React 19.x | Ships together; do not use React 18 with Next.js 15 |
-| Auth.js v5 beta | Next.js 15 App Router | Middleware route protection works; use `5.0.0-beta.25+` specifically |
-| Drizzle ORM 0.31+ | pgvector 0.8.x | Built-in `vector()` column type; HNSW index creation via `sql` template literal |
-| Tailwind CSS v4 | shadcn/ui | shadcn supports v4 as of their 2025 update; run `npx shadcn@latest init` which auto-detects v4 |
-| Vercel AI SDK 4.x | Next.js 15 | Full App Router support including streaming RSC |
-| Vitest | Turborepo 2.x | Runs per-package; add `test` task to turbo.json pipeline |
-
----
+### Edge draw-in (component-level)
+```typescript
+// In SolarEdges, for new edges:
+const drawProgress = Math.min((elapsed) / EDGE_DRAW_DURATION, 1);
+const currentEnd = new THREE.Vector3().lerpVectors(srcPos, tgtPos, drawProgress);
+// Pass [srcPos, currentEnd] to <Line> points prop
+```
 
 ## Confidence Assessment
 
 | Area | Confidence | Basis |
 |------|------------|-------|
-| Next.js 15 + React 19 | HIGH | Official stable release, October 2024; widely adopted |
-| Turborepo 2.x + pnpm | HIGH | Official docs verified; standard pattern for Next.js monorepos |
-| PostgreSQL + pgvector 0.8 | HIGH | Production-proven; HNSW indexing stable; Neon ships it natively |
-| Drizzle ORM + pgvector | HIGH | Official Drizzle docs confirm built-in pgvector column types since 0.31 |
-| Vercel AI SDK 4.x | HIGH | Official Vercel docs; providers for Anthropic/OpenAI/Ollama confirmed |
-| D3.js v7 | HIGH | Official d3.js.org; v7 current; no v8 imminent |
-| Auth.js v5 | MEDIUM | Beta status; API stable in beta.25+ but not semver-stable |
-| Tailwind v4 + shadcn/ui | HIGH | Both officially support each other; stable since early 2025 |
-| Neon + Vercel integration | HIGH | Official Vercel marketplace integration; branching confirmed |
-| Vitest for monorepo testing | MEDIUM | Strong community signal; Vercel community recommends it for Next.js |
-
----
+| No new deps needed for graph animation | HIGH | Verified: InstancedMesh requires useFrame matrix manipulation; react-spring/motion cannot address this; existing pulse animation proves pattern works |
+| framer-motion-3d incompatibility | HIGH | npm peer dep check: requires `@react-three/fiber: 8.2.2`, project uses ^9.5.0 |
+| @react-spring/three React 19 compat | HIGH | npm peer dep check: `react: ^19.0.0` listed; compatible but unnecessary |
+| React 19 useOptimistic availability | HIGH | Built into React 19; project already on React ^19.0.0 |
+| GSAP already sufficient for 2D overlays | HIGH | Already installed and used in spiral-animation.tsx |
+| Drei Sparkles for bridge discovery | MEDIUM | Feature exists in installed @react-three/drei ^10.7.7 but not yet used in codebase; needs integration testing with InstancedMesh scene |
+| Teacher workflow via Server Actions | HIGH | Pattern matches existing themes-view.tsx architecture exactly |
 
 ## Sources
 
-- [Next.js 15 release blog](https://nextjs.org/blog/next-15) — official stable release confirmation
-- [Drizzle ORM pgvector docs](https://orm.drizzle.team/docs/guides/vector-similarity-search) — built-in pgvector support, distance functions
-- [pgvector GitHub](https://github.com/pgvector/pgvector) — v0.8.x changelog, HNSW support
-- [Vercel AI SDK foundations](https://ai-sdk.dev/docs/foundations/providers-and-models) — provider abstraction model
-- [AI SDK 4.2 release blog](https://vercel.com/blog/ai-sdk-4-2) — Anthropic + Ollama provider status
-- [Drizzle vs Prisma (makerkit, 2026)](https://makerkit.dev/blog/tutorials/drizzle-vs-prisma) — bundle size comparison, serverless trade-offs
-- [Neon pgvector docs](https://neon.com/docs/extensions/pgvector) — HNSW indexing, Vercel integration
-- [Auth.js v5 migration guide](https://authjs.dev/getting-started/migrating-to-v5) — beta status, App Router support
-- [Tailwind CSS v4 release](https://tailwindcss.com/blog/tailwindcss-v4) — stability, Next.js compatibility
-- [react-force-graph GitHub](https://github.com/vasturiano/react-force-graph) — canvas/WebGL rendering approach
-- WebSearch (multiple queries, April 2026) — MEDIUM confidence for comparative claims
+- Codebase analysis: `apps/web/components/graph/solar-scene.tsx` (existing useFrame animation patterns)
+- Codebase analysis: `apps/web/components/graph/solar-nodes.tsx` (InstancedMesh rendering)
+- Codebase analysis: `apps/web/components/graph/bridge-toast.tsx` (current bridge notification)
+- Codebase analysis: `apps/web/components/dashboard/themes-view.tsx` (teacher dashboard state management)
+- npm registry: `@react-spring/three@10.0.3` peer deps (React 19 compatible, R3F >=6.0)
+- npm registry: `framer-motion-3d@12.4.13` peer deps (R3F 8.2.2 only -- incompatible)
+- npm registry: `motion@12.38.0` (no R3F exports in main package)
+- [React Three Fiber basic animations](https://r3f.docs.pmnd.rs/tutorials/basic-animations)
+- [React Spring R3F guide](https://react-spring.dev/docs/guides/react-three-fiber)
+- [Motion for R3F docs](https://motion.dev/docs/react-three-fiber) -- "currently only compatible with React 18"
+- [Drei Sparkles docs](https://drei.docs.pmnd.rs/staging/sparkles)
+- [R3F InstancedMesh + react-spring discussion](https://github.com/pmndrs/react-spring/discussions/1539)
+- [Next.js Server Actions docs](https://nextjs.org/docs/13/app/building-your-application/data-fetching/server-actions-and-mutations)
 
 ---
 
-*Stack research for: AI-powered K-12 educational knowledge graph (MindMap)*
-*Researched: 2026-04-08*
+*Stack research for v1.1 Value Experience milestone*
+*Researched: 2026-04-14*
