@@ -85,6 +85,33 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **DEMO-05**: Responsive design works on tablet and mobile browsers
 - [x] **DEMO-06**: Graceful error handling when LLM API is unavailable or slow
 
+## v1.1 Requirements — Value Experience
+
+### Graph Animation
+
+- [ ] **GANIM-01**: After answer streams, student is automatically transitioned to the graph view with animation state
+- [ ] **GANIM-02**: New concept nodes animate in with scale-up from zero (200-500ms stagger per node)
+- [ ] **GANIM-03**: New edges draw in progressively from source to target after nodes settle
+- [ ] **GANIM-04**: Camera auto-frames to include all new content after animation completes
+- [ ] **GANIM-05**: New nodes spawn with particle birth effect (Drei Sparkles) before settling into final appearance
+- [ ] **GANIM-06**: Growth summary overlay shows concept/connection counts after animation ("+3 concepts, +2 connections")
+- [ ] **GANIM-07**: Animation respects `prefers-reduced-motion` (WCAG 2.1 — instant placement, no motion)
+
+### Bridge Discovery
+
+- [ ] **BRIDGE-01**: Bridge concepts receive persistent visual highlight on the graph (not transient)
+- [ ] **BRIDGE-02**: Bridge discovery shows a persistent insight card that stays until explicitly dismissed
+- [ ] **BRIDGE-03**: Bridge reveal includes camera fly-to choreography (pull back, highlight path, fly to bridge node)
+- [ ] **BRIDGE-04**: Edges connecting bridged domains glow during the bridge reveal sequence
+- [ ] **BRIDGE-05**: AI-generated bridge explanation ("why this connection matters") displayed in insight card, cached after first generation
+
+### Teacher Action Loop
+
+- [ ] **TLOOP-01**: Teacher can mark a lesson plan activity as "done" with one click from the dashboard
+- [ ] **TLOOP-02**: Marking an activity done creates re-probe diagnostic sessions for affected students
+- [ ] **TLOOP-03**: Dashboard shows before/after resolution rates for completed interventions
+- [ ] **TLOOP-04**: Router biases toward diagnose mode for students whose teacher completed a relevant intervention
+
 ## v2 Requirements
 
 Deferred to future release. Tracked but not in current roadmap.
@@ -195,4 +222,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-04-08*
-*Last updated: 2026-04-08 after roadmap creation — all 49 requirements mapped*
+*Last updated: 2026-04-15 — v1.1 requirements added (15 new)*
