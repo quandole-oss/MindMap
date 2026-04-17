@@ -1,93 +1,94 @@
 # MindMap
 
+**AI-powered educational tool that reveals what students actually believe — not just what they got wrong.**
 
+MindMap combines a daily curiosity engine with a misconception diagnostic system for K-12 learners. Students ask one question per day about anything they're curious about. The AI answers, extracts concepts, and builds a personal knowledge graph — a living, visual web of everything they've explored. When a concept is commonly misunderstood, the system shifts into diagnostic mode: probing the student's mental model through Socratic dialogue, classifying misconceptions against a research-backed library, and generating cognitive conflict to trigger genuine understanding.
 
-## Getting started
+## Why MindMap Exists
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+Education technology is obsessed with what students get wrong. Red X's on quizzes. Percentage scores. "Try again." But none of that answers the question that actually matters: **why does the student believe what they believe?**
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+A student who says "plants get their food from the soil" isn't guessing randomly — they have a coherent mental model where that makes sense. Until you surface that model, challenge it, and let the student reconcile it themselves, no amount of correct-answer drilling will produce real understanding. The misconception just hides until the next test.
 
-## Add your files
+Meanwhile, curiosity — the single strongest predictor of deep learning — gets zero infrastructure in most classrooms. There's no system that says: *what are you wondering about today?* and then connects that wonder to what you already know.
 
-* [Create](https://docs.gitlab.com/user/project/repository/web_editor/#create-a-file) or [upload](https://docs.gitlab.com/user/project/repository/web_editor/#upload-a-file) files
-* [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
+MindMap changes that.
+
+## What It Does
+
+- **One question a day.** Students ask whatever they're genuinely curious about. The AI answers at an age-appropriate level, extracts core concepts, and maps them onto the student's personal knowledge graph.
+
+- **Misconception diagnosis.** When a concept is commonly misunderstood, the system enters diagnostic mode — Socratic questions probe what the student actually thinks, classify their mental model against a research-backed misconception library, and create cognitive conflict to drive real understanding.
+
+- **Knowledge graph.** Every question, concept, and connection becomes a visual, explorable map. Students see how photosynthesis connects to their question about why leaves change color, which connects to why some animals hibernate. Knowledge stops being isolated chapters and becomes a web they built themselves.
+
+- **Teacher dashboard.** Educators see curiosity patterns (what topics are trending), misconception clusters (where multiple students share the same flawed model), and engagement signals — all without reducing a student to a number.
+
+## What Makes This Different
+
+- **Curiosity-first, not assessment-first.** The entry point is a question the student wants to ask, not a question someone else wrote for them.
+- **Diagnosis over grading.** The system classifies *what kind* of misunderstanding exists and *why* it's stable in the student's mind — not just that an answer was wrong.
+- **Privacy by design.** No telemetry, no data sent home. All student data stays on the deployer's infrastructure. Self-hostable via Docker Compose.
+- **The graph is the product.** Not a score, not a leaderboard, not a badge. A visual map of how one mind understands the world, growing one question at a time.
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Framework | Next.js 15, React 19, TypeScript |
+| Database | PostgreSQL 16 + pgvector, Drizzle ORM |
+| LLM | Vercel AI SDK + Anthropic Claude (adapter pattern for OpenAI/Ollama) |
+| Visualization | D3.js force-directed graph |
+| Auth | Auth.js v5 |
+| Styling | Tailwind CSS v4, shadcn/ui |
+| Monorepo | Turborepo + pnpm |
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 18+
+- pnpm 9+
+- PostgreSQL 16 with pgvector extension (or Docker)
+
+### Setup
+
+```bash
+# Clone the repo
+git clone https://github.com/quandole-oss/MindMap.git
+cd MindMap
+
+# Install dependencies
+pnpm install
+
+# Set up environment variables
+cp apps/web/.env.example apps/web/.env.local
+# Edit .env.local with your database URL and API keys
+
+# Run database migrations
+pnpm db:migrate
+
+# Start the dev server
+pnpm dev
+```
+
+## Project Structure
 
 ```
-cd existing_repo
-git remote add origin https://labs.gauntletai.com/quanle/mindmap.git
-git branch -M main
-git push -uf origin main
+MindMap/
+  apps/
+    web/          # Next.js application
+  packages/
+    db/           # Database schema, migrations, queries (Drizzle)
+    llm/          # LLM provider abstraction (Vercel AI SDK)
+    misconceptions/  # YAML misconception library + validation
+    router/       # Concept extraction and routing logic
 ```
-
-## Integrate with your tools
-
-* [Set up project integrations](https://labs.gauntletai.com/quanle/mindmap/-/settings/integrations)
-
-## Collaborate with your team
-
-* [Invite team members and collaborators](https://docs.gitlab.com/user/project/members/)
-* [Create a new merge request](https://docs.gitlab.com/user/project/merge_requests/creating_merge_requests/)
-* [Automatically close issues from merge requests](https://docs.gitlab.com/user/project/issues/managing_issues/#closing-issues-automatically)
-* [Enable merge request approvals](https://docs.gitlab.com/user/project/merge_requests/approvals/)
-* [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
-
-## Test and Deploy
-
-Use the built-in continuous integration in GitLab.
-
-* [Get started with GitLab CI/CD](https://docs.gitlab.com/ci/quick_start/)
-* [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/user/application_security/sast/)
-* [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/topics/autodevops/requirements/)
-* [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/user/clusters/agent/)
-* [Set up protected environments](https://docs.gitlab.com/ci/environments/protected_environments/)
-
-***
-
-# Editing this README
-
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
-
-## Suggestions for a good README
-
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
-
-## Name
-Choose a self-explaining name for your project.
-
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
-
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
-
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
-
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
-
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
-
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
-
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
 
 ## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
-
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
-
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+Contributions are welcome. The misconception library (`packages/misconceptions`) is YAML + Git, version-controlled, CI-validated, and designed to be community-extensible. If you're an educator or researcher with misconception data, that's the highest-impact place to contribute.
 
 ## License
-For open source projects, say how it is licensed.
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+MIT
